@@ -127,10 +127,12 @@ class RefreshTravelynx(discord.ui.View):
             ) as r:
                 if r.status == 200:
                     data = await r.json()
-                    if self.zugid == zugid(data):
+                    if data["checkedIn"] and self.zugid == zugid(data):
                         await ia.response.edit_message(
                             embed=format_travelynx(bot, self.userid, data), view=self
                         )
+                    else:
+                        await ia.response.send_message("Die Fahrt ist bereits zu Ende.", ephemeral=True)
 
 
 def format_travelynx(bot, userid, data):
@@ -151,7 +153,7 @@ def format_travelynx(bot, userid, data):
         discord.Embed(
             timestamp=datetime.fromtimestamp(data["actionTime"], tz=tz),
             description=desc,
-            colour=color.get(data["train"]["type"]),
+            colour=color.get(data["train"]["type"]) or color.get(data["train"]["line"][0:2]),
         )
         .set_author(
             name=f"{user.name} ist unterwegs",
