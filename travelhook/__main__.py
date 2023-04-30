@@ -6,8 +6,6 @@ import sqlite3
 from aiohttp import ClientSession, web
 import discord
 from discord.ext import commands
-import requests
-import toml
 from zoneinfo import ZoneInfo
 
 config = {}

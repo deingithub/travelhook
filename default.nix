@@ -10,6 +10,6 @@ python310Packages.buildPythonPackage {
   version = "0.0.0";
 
   propagatedBuildInputs =
-    (with python310Packages; [ discordpy toml setuptools flask requests ]);
+    (with python310Packages; [ discordpy setuptools ]);
   format = "pyproject";
 }

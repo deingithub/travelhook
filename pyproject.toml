@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0", "discordpy~=2.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "travelhook"
+version = "0.0.0"
+authors = [
+  { name="Cass Dingenskirchen", email="admin@dingenskirchen.org" },
+]
+description = "what are you, a cop?"
+requires-python = ">=3.10"
+
+[project.scripts]
+travelhook = "travelhook:__main__.main"
