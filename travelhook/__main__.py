@@ -15,14 +15,16 @@ with open("settings.json", "r", encoding="utf-8") as f:
 server = discord.Object(id=config["server"])
 tz = ZoneInfo("Europe/Berlin")
 
+
 def zugid(data):
     return str(data["fromStation"]["scheduledTime"]) + data["train"]["no"]
+
 
 async def receive(bot):
     async def handler(req):
         userid = [
             int(uid)
-            for uid, u in config["users"]items()
+            for uid, u in config["users"].items()
             if u["bearer"] == req.headers["authorization"].removeprefix("Bearer ")
         ][0]
         data = await req.json()
