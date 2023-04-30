@@ -22,7 +22,7 @@ async def receive(bot):
     async def handler(req):
         userid = [
             int(uid)
-            for uid, u in config.users.items()
+            for uid, u in config["users"]items()
             if u["bearer"] == req.headers["authorization"].removeprefix("Bearer ")
         ][0]
         data = await req.json()
