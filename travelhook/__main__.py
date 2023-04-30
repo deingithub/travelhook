@@ -17,17 +17,8 @@ with open("settings.json", "r", encoding="utf-8") as f:
 server = discord.Object(id=config["server"])
 tz = ZoneInfo("Europe/Berlin")
 
-users = {
-    344166495317655562: {
-        "bearer": "owouwu",
-        "api": "2376-055bdb7d-a2df-41b2-b4a9-00018b3a8303",
-    }
-}
-
-
 def zugid(data):
     return str(data["fromStation"]["scheduledTime"]) + data["train"]["no"]
-
 
 async def receive(bot):
     async def handler(req):
