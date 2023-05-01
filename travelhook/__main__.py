@@ -153,7 +153,7 @@ def format_travelynx(bot, userid, data):
         discord.Embed(
             timestamp=datetime.fromtimestamp(data["actionTime"], tz=tz),
             description=desc,
-            colour=color.get(data["train"]["type"]) or color.get(data["train"]["line"][0:2]),
+            colour=color.get(data["train"]["type"]) or (color.get(data["train"].get("line", "  ")[0:2])),
         )
         .set_author(
             name=f"{user.name} ist unterwegs",
