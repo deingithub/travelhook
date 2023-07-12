@@ -12,7 +12,7 @@ config = {}
 with open("settings.json", "r", encoding="utf-8") as f:
     config = json.load(f)
 
-server = discord.Object(id=config["server"])
+servers = [discord.Object(id=i) for i in config["servers"]]
 tz = ZoneInfo("Europe/Berlin")
 
 
@@ -35,10 +35,15 @@ async def receive(bot):
         ):
             raise web.HTTPOk()
 
-        await bot.get_channel(config["channel"]).send(
-            embed=format_travelynx(bot, userid, data["status"]),
-            view=RefreshTravelynx(userid, data["status"]),
-        )
+        channels = [config["channel"]]
+        if c := config["users"][str(userid)].get("channel"):
+            channels.append(c)
+
+        for channel in channels:
+            await bot.get_channel(channel).send(
+                embed=format_travelynx(bot, userid, data["status"]),
+                view=RefreshTravelynx(userid, data["status"]),
+            )
 
         return web.Response(text="")
 
@@ -72,12 +77,13 @@ bot = commands.Bot(command_prefix=" ", intents=intents)
 
 @bot.event
 async def on_ready():
-    await bot.tree.sync(guild=server)
+    for server in servers:
+        await bot.tree.sync(guild=server)
     bot.loop.create_task(receive(bot))
     print(f"logged in as {bot.user}")
 
 
-@bot.tree.command(description="Get current travelynx status", guild=server)
+@bot.tree.command(description="Get current travelynx status", guilds=servers)
 @discord.app_commands.describe(
     member="the member whose status to query, defaults to current user"
 )
@@ -132,7 +138,9 @@ class RefreshTravelynx(discord.ui.View):
                             embed=format_travelynx(bot, self.userid, data), view=self
                         )
                     else:
-                        await ia.response.send_message("Die Fahrt ist bereits zu Ende.", ephemeral=True)
+                        await ia.response.send_message(
+                            "Die Fahrt ist bereits zu Ende.", ephemeral=True
+                        )
 
 
 def format_travelynx(bot, userid, data):
@@ -146,14 +154,16 @@ def format_travelynx(bot, userid, data):
     desc = f'**{emoji.get(data["train"]["type"], data["train"]["type"])}**'
     if l := data["train"]["line"]:
         desc += f" **{l}**"
-    desc += f' [*{data["train"]["no"]}*](https://dbf.finalrewind.org/z/{data["train"]["type"]}%20{data["train"]["no"]}/{data["fromStation"]["ds100"]})\n'
+    link = f'https://bahn.expert/details/{data["train"]["type"]}%20{data["train"]["no"]}/{datetime.fromtimestamp(data["fromStation"]["scheduledTime"], tz=tz).isoformat()}/?station={data["fromStation"]["uic"]}'
+    desc += f' [*{data["train"]["no"]}*]({link})\n'
     desc += f'Ankunft {format_time(0, data["toStation"]["realTime"], False)}'
 
     e = (
         discord.Embed(
             timestamp=datetime.fromtimestamp(data["actionTime"], tz=tz),
             description=desc,
-            colour=color.get(data["train"]["type"]) or (color.get(data["train"].get("line", "  ")[0:2])),
+            colour=color.get(data["train"]["type"])
+            or (color.get(data["train"].get("line", "  ")[0:2])),
         )
         .set_author(
             name=f"{user.name} ist unterwegs",
