@@ -223,6 +223,9 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                     view=RefreshTravelynx(member.id, current_trips[-1]),
                 )
 
+# TODO privacy adjust command
+
+# TODO register command
 
 class RefreshTravelynx(discord.ui.View):
     def __init__(self, userid, data):
@@ -245,7 +248,7 @@ class RefreshTravelynx(discord.ui.View):
                     if data["checkedIn"] and self.zugid == zugid(data):
                         handle_status_update(self.userid, "update", data)
                         current_trips = database.execute(
-                            "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time ASC", (self.userid)
+                            "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time ASC", (self.userid,)
                         ).fetchall()
                         current_trips = [
                             row["travelynx_status"] for row in current_trips
