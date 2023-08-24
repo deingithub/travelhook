@@ -5,29 +5,19 @@ import discord
 from .helpers import format_time, train_type_emoji, train_type_color, tz
 
 
-def format_travelynx(bot, userid, data):
-    user = bot.get_user(userid)
-    if not data["checkedIn"]:
-        return discord.Embed().set_author(
-            name=f"{user.name} ist gerade nicht unterwegs",
-            icon_url=user.avatar.url,
-        )
-
+def format_train(data):
     is_hafas = "|" in data["train"]["id"]
 
     # chop off long city names in station name
     short_from_name = data["fromStation"]["name"]
-    if is_hafas:
-        short_from_name = short_from_name.split(", ")[0]
     short_to_name = data["toStation"]["name"]
     if is_hafas:
+        short_from_name = short_from_name.split(", ")[0]
         short_to_name = short_to_name.split(", ")[0]
 
     train_headsign = f'({data["toStation"]["name"]})'
 
     desc = ""
-    # TODO multi trip
-    # desc += f'### {format_time(data["fromStation"]["scheduledTime"], data["fromStation"]["realTime"])} {data["fromStation"]["name"]}\n'
 
     # account for "ME RE2" instead of "RE 2"
     train_type = data["train"]["type"]
@@ -68,8 +58,8 @@ def format_travelynx(bot, userid, data):
     # if HAFAS, add journeyid to link to make sure it gets the right one
     if is_hafas:
         link += "&jid=" + data["train"]["id"]
-
     desc += link + ")**\n"
+
     desc += (
         f'{short_from_name} {format_time(data["fromStation"]["scheduledTime"], data["fromStation"]["realTime"])}'
         " – "
@@ -78,12 +68,33 @@ def format_travelynx(bot, userid, data):
     if comment := data["comment"]:
         desc += f"> {comment}\n"
 
-    # TODO multi trip
-    # desc += f'### {format_time(data["toStation"]["scheduledTime"], data["toStation"]["realTime"])} {data["toStation"]["name"]}'
+    # return description and train type because we need it for the embed color
+    return (desc, train_type)
+
+
+def format_travelynx(bot, userid, statuses, continue_link=None):
+    user = bot.get_user(userid)
+
+    trains = [format_train(status) for status in statuses]
+    desc = "".join([train[0] for train in trains])
+
+    if continue_link:
+        desc += f"**Weiterfahrt ➤** {continue_link}"
+    else:
+        to_time = format_time(
+            statuses[-1]["toStation"]["scheduledTime"],
+            statuses[-1]["toStation"]["realTime"],
+            True,
+        )
+        desc = (
+            f'### {statuses[0]["fromStation"]["name"]} \n'
+            + desc
+            + f'### ➤ {statuses[-1]["toStation"]["name"]} {to_time}'
+        )
 
     e = discord.Embed(
         description=desc,
-        colour=train_type_color.get(train_type),
+        colour=train_type_color.get(trains[-1][1]),
     ).set_author(
         name=f"{user.name} ist unterwegs",
         icon_url=user.avatar.url,

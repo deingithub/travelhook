@@ -10,6 +10,6 @@ python310Packages.buildPythonPackage {
   version = "0.0.0";
 
   propagatedBuildInputs =
-    (with python310Packages; [ discordpy setuptools ]);
+    (with python310Packages; [ discordpy setuptools haversine ]);
   format = "pyproject";
 }
