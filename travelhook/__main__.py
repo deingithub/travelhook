@@ -251,7 +251,7 @@ class RefreshTravelynx(discord.ui.View):
                             "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time ASC", (self.userid,)
                         ).fetchall()
                         current_trips = [
-                            row["travelynx_status"] for row in current_trips
+                            json.loads(row["travelynx_status"]) for row in current_trips
                         ]
                         await ia.response.edit_message(
                             embed=format_travelynx(bot, self.userid, current_trips),
