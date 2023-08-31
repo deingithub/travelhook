@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from enum import IntEnum
+import json
 
 import discord
 from haversine import haversine
@@ -23,9 +24,12 @@ def is_new_journey(database, status, userid):
     "determine if the user has merely changed into a new transport or if they have started another journey altogether"
 
     if last_journey := database.execute(
-        "SELECT to_lat, to_lon, to_time FROM trips WHERE user_id = ? ORDER BY from_time DESC LIMIT 1;",
+        "SELECT to_lat, to_lon, to_time, travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time DESC LIMIT 1;",
         (userid,),
     ).fetchone():
+        if status["train"]["id"] == json.loads(last_journey["travelynx_status"])["train"]["id"]:
+            return False
+
         next_journey = status["fromStation"]
 
         change_distance = haversine(

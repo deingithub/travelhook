@@ -100,6 +100,13 @@ async def receive(bot):
         channels = [bot.get_channel(c["live_channel"]) for c in channels]
 
         for channel in channels:
+            if (
+                not channel.guild.get_member(userid)
+                or not channel.permissions_for(
+                    channel.guild.get_member(userid)
+                ).read_messages
+            ):
+                continue
             # check if we already have a message for this particular trip
             # edit it if it exists, otherwise create a new one and submit it into the database
             if message := database.execute(
@@ -142,7 +149,7 @@ async def receive(bot):
                     )
                     database.execute(
                         "DELETE FROM messages WHERE message_id = ?",
-                        (prev_message["message_id"],),
+                        (prev_message.id,),
                     )
 
         return web.Response(
