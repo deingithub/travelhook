@@ -7,7 +7,7 @@ from haversine import haversine
 
 
 def zugid(data):
-    return str(data["fromStation"]["scheduledTime"]) + data["train"]["no"]
+    return str(data["fromStation"]["scheduledTime"]) + data["train"]["id"]
 
 
 class Privacy(IntEnum):
@@ -38,7 +38,8 @@ def is_new_journey(database, status, userid):
         change_duration = datetime.fromtimestamp(
             next_journey["realTime"], tz=tz
         ) - datetime.fromtimestamp(last_journey["to_time"], tz=tz)
-        return (change_distance > 0.5) or change_duration > timedelta(hours=2)
+
+        return (change_distance > 0.75) or change_duration > timedelta(hours=1)
 
     return True
 

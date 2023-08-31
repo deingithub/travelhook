@@ -32,6 +32,7 @@ def handle_status_update(userid, reason, status):
             database, status, userid
         ):
             database.execute("DELETE FROM trips WHERE user_id = ?", (userid,))
+            database.execute("DELETE FROM messages WHERE user_id = ?", (userid,))
 
     database.execute(
         "INSERT INTO trips(journey_id, user_id, travelynx_status, from_time, from_station, from_lat, from_lon, to_time, to_station, to_lat, to_lon) "
@@ -39,7 +40,7 @@ def handle_status_update(userid, reason, status):
         "from_time = excluded.from_time, from_station=excluded.from_station, from_lat=excluded.from_lat, from_lon=excluded.from_lon, "
         "to_time = excluded.to_time, to_station=excluded.to_station, to_lat=excluded.to_lat, to_lon=excluded.to_lon ",
         (
-            status["train"]["id"],
+            zugid(status),
             userid,
             json.dumps(status),
             status["fromStation"]["realTime"],
@@ -75,7 +76,7 @@ async def receive(bot):
             # just to make sure we don't have it lying around for some reason anyway
             database.execute(
                 "DELETE FROM trips WHERE user_id = ? AND journey_id = ?",
-                (userid, data["status"]["train"]["id"]),
+                (userid, zugid(data["status"])),
             )
             return web.Response(
                 text=f'Not publishing private checkin in {data["status"]["train"]["type"]} {data["status"]["train"]["no"]}'
@@ -103,11 +104,9 @@ async def receive(bot):
             # edit it if it exists, otherwise create a new one and submit it into the database
             if message := database.execute(
                 "SELECT * FROM messages WHERE journey_id = ? AND user_id = ? AND channel_id = ?",
-                (data["status"]["train"]["id"], userid, channel.id),
+                (zugid(data["status"]), userid, channel.id),
             ).fetchone():
-                message = await channel.fetch_message(
-                    message["message_id"]
-                )
+                message = await channel.fetch_message(message["message_id"])
                 await message.edit(
                     embed=format_travelynx(bot, userid, current_trips),
                     view=RefreshTravelynx(userid, current_trips[-1]),
@@ -119,14 +118,15 @@ async def receive(bot):
                 )
                 database.execute(
                     "INSERT INTO messages(journey_id, user_id, channel_id, message_id) VALUES(?,?,?,?)",
-                    (data["status"]["train"]["id"], userid, channel.id, message.id),
+                    (zugid(data["status"]), userid, channel.id, message.id),
                 )
                 # shrink previous message to prevent clutter
+                # TODO just delete it if it has no reactions and is immediately above the new one
                 if len(current_trips) > 1:
                     prev_message = database.execute(
                         "SELECT message_id, channel_id FROM messages JOIN trips ON messages.journey_id = trips.journey_id "
                         "WHERE messages.channel_id = ? AND messages.user_id = ? AND messages.journey_id = ?",
-                        (channel.id, userid, current_trips[-2]["train"]["id"]),
+                        (channel.id, userid, zugid(current_trips[-2])),
                     ).fetchone()
                     prev_message = await bot.get_channel(
                         prev_message["channel_id"]
@@ -139,6 +139,10 @@ async def receive(bot):
                             continue_link=message.jump_url,
                         ),
                         view=None,
+                    )
+                    database.execute(
+                        "DELETE FROM messages WHERE message_id = ?",
+                        (prev_message["message_id"],),
                     )
 
         return web.Response(
