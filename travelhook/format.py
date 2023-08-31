@@ -76,7 +76,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
     user = bot.get_user(userid)
 
     trains = [format_train(status) for status in statuses]
-    desc = "".join([train[0] for train in trains])
+    desc = "\n".join([train[0] for train in trains])
 
     if continue_link:
         desc += f"**Weiterfahrt ➤** {continue_link}"

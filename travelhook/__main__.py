@@ -59,7 +59,7 @@ async def receive(bot):
     async def handler(req):
         user = database.execute(
             "SELECT * FROM users WHERE token_webhook = ?",
-            (req.headers["authorization"].removeprefix("Bearer "),)
+            (req.headers["authorization"].removeprefix("Bearer "),),
         ).fetchone()
         userid = user["discord_id"]
         data = await req.json()
@@ -252,7 +252,8 @@ class RefreshTravelynx(discord.ui.View):
                     if data["checkedIn"] and self.zugid == zugid(data):
                         handle_status_update(self.userid, "update", data)
                         current_trips = database.execute(
-                            "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time ASC", (self.userid,)
+                            "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time ASC",
+                            (self.userid,),
                         ).fetchall()
                         current_trips = [
                             json.loads(row["travelynx_status"]) for row in current_trips
