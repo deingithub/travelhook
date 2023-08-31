@@ -1,23 +1,13 @@
 from datetime import datetime
 
 import discord
+from haversine import haversine
 
-from .helpers import format_time, train_type_emoji, train_type_color, tz
+from .helpers import format_time, train_type_emoji, line_emoji, train_type_color, tz
 
 
-def format_train(data):
+def train_presentation(data):
     is_hafas = "|" in data["train"]["id"]
-
-    # chop off long city names in station name
-    short_from_name = data["fromStation"]["name"]
-    short_to_name = data["toStation"]["name"]
-    if is_hafas:
-        short_from_name = short_from_name.split(", ")[0]
-        short_to_name = short_to_name.split(", ")[0]
-
-    train_headsign = f'({data["toStation"]["name"]})'
-
-    desc = ""
 
     # account for "ME RE2" instead of "RE 2"
     train_type = data["train"]["type"]
@@ -46,8 +36,6 @@ def format_train(data):
     if train_type == "U" and short_from_name.startswith("Wien "):
         train_type = short_from_name[-3:-1]
 
-    desc += f"**{train_type_emoji.get(train_type, train_type)} [{train_line} ➤ {train_headsign}]("
-
     link = (
         f'https://bahn.expert/details/{data["train"]["type"]}%20{data["train"]["no"]}/'
         + datetime.fromtimestamp(
@@ -58,25 +46,59 @@ def format_train(data):
     # if HAFAS, add journeyid to link to make sure it gets the right one
     if is_hafas:
         link += "&jid=" + data["train"]["id"]
-    desc += link + ")**\n"
 
-    desc += (
-        f'{short_from_name} {format_time(data["fromStation"]["scheduledTime"], data["fromStation"]["realTime"])}'
-        " – "
-        f'{short_to_name} {format_time(data["toStation"]["scheduledTime"], data["toStation"]["realTime"])}\n'
-    )
-    if comment := data["comment"]:
-        desc += f"> {comment}\n"
-
-    # return description and train type because we need it for the embed color
-    return (desc, train_type)
+    return (train_type, train_line, link)
 
 
 def format_travelynx(bot, userid, statuses, continue_link=None):
     user = bot.get_user(userid)
 
-    trains = [format_train(status) for status in statuses]
-    desc = "\n".join([train[0] for train in trains])
+    desc = ""
+    color = None
+
+    for i, train in enumerate(statuses):
+        start_emoji = line_emoji["start"] if i == 0 else line_emoji["change_start"]
+        departure = format_time(
+            train["fromStation"]["scheduledTime"], train["fromStation"]["realTime"]
+        )
+        desc += f'{start_emoji}{departure} {train["fromStation"]["name"]}\n'
+
+        train_type, train_line, route_link = train_presentation(train)
+        train_headsign = f'({train["toStation"]["name"]})'
+        desc += f'{line_emoji["rail"]} {train_type_emoji[train_type]} [**{train_line}** ➤ {train_headsign}]({route_link})\n'
+
+        if train["comment"]:
+            desc += f'{line_emoji["rail"]} *«{train["comment"]}»*\n'
+        desc += f'{line_emoji["rail"]}\n'
+
+        arrival = format_time(
+            train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
+        )
+        if i + 1 < len(statuses):
+            desc += f'{line_emoji["change_end"]}{arrival} '
+
+            next_train = statuses[i + 1]
+
+            if train["toStation"]["name"] != next_train["fromStation"]["name"]:
+                desc += train["toStation"]["name"]
+
+            desc += "\n"
+
+            distance = (
+                haversine(
+                    (train["toStation"]["latitude"], train["toStation"]["longitude"]),
+                    (
+                        next_train["fromStation"]["latitude"],
+                        next_train["fromStation"]["longitude"],
+                    ),
+                )
+                * 1000
+            )
+            if distance > 40:
+                desc += f'{line_emoji["change"]} *— {int(distance)}m —*\n'
+        else:
+            desc += f'{line_emoji["end"]}{arrival} {train["toStation"]["name"]}\n'
+            color = train_type_color.get(train_type)
 
     if continue_link:
         desc += f"**Weiterfahrt ➤** {continue_link}"
@@ -86,15 +108,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             statuses[-1]["toStation"]["realTime"],
             True,
         )
-        desc = (
-            f'### {statuses[0]["fromStation"]["name"]} \n'
-            + desc
-            + f'### ➤ {statuses[-1]["toStation"]["name"]} {to_time}'
-        )
+        desc += f'### ➤ {statuses[-1]["toStation"]["name"]} {to_time}'
 
     e = discord.Embed(
         description=desc,
-        colour=train_type_color.get(trains[-1][1]),
+        colour=color,
     ).set_author(
         name=f"{user.name} ist unterwegs",
         icon_url=user.avatar.url,

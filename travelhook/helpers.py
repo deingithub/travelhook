@@ -27,7 +27,10 @@ def is_new_journey(database, status, userid):
         "SELECT to_lat, to_lon, to_time, travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time DESC LIMIT 1;",
         (userid,),
     ).fetchone():
-        if status["train"]["id"] == json.loads(last_journey["travelynx_status"])["train"]["id"]:
+        if (
+            status["train"]["id"]
+            == json.loads(last_journey["travelynx_status"])["train"]["id"]
+        ):
             return False
 
         next_journey = status["fromStation"]
@@ -47,6 +50,15 @@ def is_new_journey(database, status, userid):
 
     return True
 
+
+line_emoji = {
+    "start": "<:start:1146748019245588561>",
+    "end": "<:end:1146748021586010182>",
+    "change_start": "<:change_start:1146748016422821948>",
+    "change_end": "<:change_end:1146748013490999379>",
+    "rail": "<:rail:1146748024358441001>",
+    "change": "<:change:1146749106337894490>",
+}
 
 train_type_emoji = {
     "Bus": "<:Bus:1143105600121741462>",
