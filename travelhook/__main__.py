@@ -169,6 +169,65 @@ async def on_ready():
     print(f"logged in as {bot.user}")
 
 
+@bot.tree.command(
+    description="Query or change your current privacy settings on this server",
+    guilds=servers,
+)
+@discord.app_commands.describe(
+    level="leave empty to query current level. set to ME to only allow you to use /zug, set to EVERYONE to allow everyone to use /zug and set to LIVE to activate the live feed."
+)
+async def privacy(ia, level: typing.Optional[Privacy]):
+    def explain(level: typing.Optional[Privacy]):
+        desc = "This means that, on this server,\n"
+        match level:
+            case Privacy.ME:
+                desc += "- Only you can use the **/zug** command to share your current journey."
+            case Privacy.EVERYONE:
+                desc += "- Everyone can use the **/zug** command to see your current journey."
+            case Privacy.LIVE:
+                desc += "- Everyone can use the **/zug** command to see your current journey.\n"
+                if live_channel := database.execute(
+                    "SELECT live_channel FROM servers WHERE server_id = ?",
+                    (ia.guild.id,),
+                ).fetchone()["live_channel"]:
+                    desc += f"- Live updates will posted into {bot.get_channel(live_channel).mention} with your entire journey."
+                else:
+                    desc += (
+                        f"- Live updates with your entire journey can be posted into a dedicated channel.\n"
+                        f"- Note: This server has not set up a live channel. No live updates will be posted until it is set up."
+                    )
+        desc += "\n- Note: If your checkin is set to **private visibility** on travelynx, this bot will not post it anywhere."
+        return desc
+
+    if level is None:
+        user = database.execute(
+            "SELECT * FROM users LEFT JOIN privacy ON privacy.user_id = users.discord_id AND server_id = ? WHERE users.discord_id = ?",
+            (
+                ia.guild.id,
+                ia.user.id,
+            ),
+        ).fetchone()
+        priv = Privacy(user["privacy_level"] or 0)
+
+        await ia.response.send_message(
+            f"Your privacy level is set to **{priv.name}**. {explain(priv)}"
+        )
+
+    else:
+        database.execute(
+            "INSERT INTO privacy(user_id, server_id, privacy_level) VALUES(?,?,?) "
+            "ON CONFLICT DO UPDATE SET privacy_level=excluded.privacy_level",
+            (
+                ia.user.id,
+                ia.guild.id,
+                int(level),
+            ),
+        )
+        await ia.response.send_message(
+            f"Your privacy level has been set to **{level.name}**. {explain(level)}"
+        )
+
+
 @bot.tree.command(description="Get current travelynx status", guilds=servers)
 @discord.app_commands.describe(
     member="the member whose status to query, defaults to current user"
@@ -204,7 +263,9 @@ async def zug(ia, member: typing.Optional[discord.Member]):
             if r.status == 200:
                 status = await r.json()
 
-                if not status["checkedIn"]:
+                if not status["checkedIn"] or (
+                    data["status"]["visibility"]["desc"] == "private"
+                ):
                     await ia.response.send_message(
                         embed=discord.Embed().set_author(
                             name=f"{member.name} ist gerade nicht unterwegs",
@@ -227,9 +288,9 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                     view=RefreshTravelynx(member.id, current_trips[-1]),
                 )
 
-# TODO privacy adjust command
 
 # TODO register command
+
 
 class RefreshTravelynx(discord.ui.View):
     def __init__(self, userid, data):
