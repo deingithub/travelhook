@@ -54,6 +54,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
     user = bot.get_user(userid)
 
     desc = ""
+    comments = ""
     color = None
 
     for i, train in enumerate(statuses):
@@ -66,11 +67,13 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
 
         train_type, train_line, route_link = train_presentation(train)
         train_headsign = f'({train["toStation"]["name"]})'
-        desc += f'{line_emoji["rail"]} {train_type_emoji[train_type]} [**{train_line}** ➤ {train_headsign}]({route_link})\n'
+        desc += (
+            f'{line_emoji["rail"]} {train_type_emoji[train_type]} [**{train_line}** ➤ {train_headsign}]({route_link})\n'
+            f'{line_emoji["rail"]}\n'
+        )
 
         if train["comment"]:
-            desc += f'{line_emoji["rail"]} *«{train["comment"]}»*\n'
-        desc += f'{line_emoji["rail"]}\n'
+            comments += f'> **{train_type_emoji[train_type]} ➤ {train_headsign}** {train["comment"]}\n'
 
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
@@ -85,7 +88,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
 
             desc += "\n"
 
-            distance = (
+            change_meters = int(
                 haversine(
                     (train["toStation"]["latitude"], train["toStation"]["longitude"]),
                     (
@@ -93,10 +96,13 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                         next_train["fromStation"]["longitude"],
                     ),
                 )
-                * 1000
+                * 1000,
             )
-            if distance > 40:
-                desc += f'{line_emoji["change"]} *— {int(distance)}m —*\n'
+            change_secs = (
+                train["fromStation"]["realTime"] - train["toStation"]["realTime"]
+            )
+            if change_meters > 100 or change_secs > (60 * 30):
+                desc += f'{line_emoji["change"]} *— {change_meters}m — {change_secs//60}′  —*\n'
         else:
             desc += f'{line_emoji["end"]}{arrival} **{train["toStation"]["name"]}**\n'
             color = train_type_color.get(train_type)
@@ -110,6 +116,8 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             True,
         )
         desc += f'### ➤ {statuses[-1]["toStation"]["name"]} {to_time}'
+        if comments:
+            desc += "\n" + comments
 
     e = discord.Embed(
         description=desc,
@@ -118,4 +126,12 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         name=f"{user.name} ist unterwegs",
         icon_url=user.avatar.url,
     )
+
+    if "Durlacher Tor/KIT-Campus Süd" in (
+        statuses[-1]["fromStation"]["name"] + statuses[-1]["toStation"]["name"]
+    ):
+        e = e.set_image(
+            url="https://cdn.discordapp.com/attachments/552251414097690630/1147252343881080832/image.png"
+        )
+
     return e

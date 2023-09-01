@@ -46,7 +46,7 @@ def is_new_journey(database, status, userid):
             next_journey["realTime"], tz=tz
         ) - datetime.fromtimestamp(last_journey["to_time"], tz=tz)
 
-        return (change_distance > 0.75) or change_duration > timedelta(hours=1)
+        return (change_distance > 0.75) or change_duration > timedelta(hours=2)
 
     return True
 
