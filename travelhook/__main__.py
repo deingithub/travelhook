@@ -271,7 +271,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                 status = await r.json()
 
                 if not status["checkedIn"] or (
-                    data["status"]["visibility"]["desc"] == "private"
+                    status["visibility"]["desc"] == "private"
                 ):
                     await ia.response.send_message(
                         embed=discord.Embed().set_author(

@@ -9,7 +9,7 @@ from .helpers import format_time, train_type_emoji, line_emoji, train_type_color
 def train_presentation(data):
     is_hafas = "|" in data["train"]["id"]
 
-    # account for "ME RE2" instead of "RE 2"
+    # account for "ME RE2" instead of "RE  "
     train_type = data["train"]["type"]
     train_line = data["train"]["line"]
     if train_type not in train_type_emoji.keys():
@@ -33,8 +33,8 @@ def train_presentation(data):
     ):
         train_type = "Ü"
 
-    if train_type == "U" and short_from_name.startswith("Wien "):
-        train_type = short_from_name[-3:-1]
+    if train_type == "U" and data["fromStation"]["name"].startswith("Wien "):
+        train_type = data["fromStation"]["name"][-3:-1]
 
     link = (
         f'https://bahn.expert/details/{data["train"]["type"]}%20{data["train"]["no"]}/'
@@ -58,10 +58,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
 
     for i, train in enumerate(statuses):
         start_emoji = line_emoji["start"] if i == 0 else line_emoji["change_start"]
+        bold = "**" if i == 0 else ""
         departure = format_time(
             train["fromStation"]["scheduledTime"], train["fromStation"]["realTime"]
         )
-        desc += f'{start_emoji}{departure} {train["fromStation"]["name"]}\n'
+        desc += f'{start_emoji}{departure} {bold}{train["fromStation"]["name"]}{bold}\n'
 
         train_type, train_line, route_link = train_presentation(train)
         train_headsign = f'({train["toStation"]["name"]})'
@@ -97,7 +98,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             if distance > 40:
                 desc += f'{line_emoji["change"]} *— {int(distance)}m —*\n'
         else:
-            desc += f'{line_emoji["end"]}{arrival} {train["toStation"]["name"]}\n'
+            desc += f'{line_emoji["end"]}{arrival} **{train["toStation"]["name"]}**\n'
             color = train_type_color.get(train_type)
 
     if continue_link:
