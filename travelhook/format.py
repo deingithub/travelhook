@@ -73,7 +73,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         )
 
         if train["comment"]:
-            comments += f'> **{train_type_emoji[train_type]} ➤ {train_headsign}** {train["comment"]}\n'
+            comments += f'> **{train_type_emoji[train_type]} {train_line} ➤ {train_headsign}** {train["comment"]}\n'
 
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
