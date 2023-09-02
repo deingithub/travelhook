@@ -99,7 +99,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 * 1000,
             )
             change_secs = (
-                train["fromStation"]["realTime"] - train["toStation"]["realTime"]
+                next_train["fromStation"]["realTime"] - train["toStation"]["realTime"]
             )
             if change_meters > 100 or change_secs > (60 * 30):
                 desc += f'{line_emoji["change"]} *— {change_meters}m — {change_secs//60}′  —*\n'
