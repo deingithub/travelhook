@@ -65,7 +65,7 @@ async def receive(bot):
         data = await req.json()
 
         if (
-            not data["reason"] in ("update", "checkin", "ping")
+            not data["reason"] in ("update", "checkin", "ping", "checkout")
             or not data["status"]["toStation"]["name"]
             or not data["status"]["checkedIn"]
         ):
@@ -121,7 +121,7 @@ async def receive(bot):
             else:
                 message = await channel.send(
                     embed=format_travelynx(bot, userid, current_trips),
-                    view=RefreshTravelynx(userid, current_trips[-1]),
+                    view=RefreshTravelynx(userid, current_trips[-1]) if not data["reason"] == "checkout",
                 )
                 database.execute(
                     "INSERT INTO messages(journey_id, user_id, channel_id, message_id) VALUES(?,?,?,?)",
@@ -153,7 +153,7 @@ async def receive(bot):
                     )
 
         return web.Response(
-            text=f'Successfully published {data["status"]["train"]["type"]} {data["status"]["train"]["no"]} to {len(channels)} channels'
+            text=f'Successfully published {data["status"]["train"]["type"]} {data["status"]["train"]["no"]} {data["reason"]} to {len(channels)} channels'
         )
 
     app = web.Application()
