@@ -3,7 +3,7 @@ from datetime import datetime
 import discord
 from haversine import haversine
 
-from .helpers import format_time, train_type_emoji, line_emoji, train_type_color, tz
+from .helpers import fetch_headsign, format_time, train_type_emoji, line_emoji, train_type_color, tz
 
 
 def train_presentation(data):
@@ -58,7 +58,7 @@ def train_presentation(data):
     return (train_type, train_line, link)
 
 
-def format_travelynx(bot, userid, statuses, continue_link=None):
+def format_travelynx(bot, database, userid, statuses, continue_link=None):
     user = bot.get_user(userid)
 
     desc = ""
@@ -74,11 +74,10 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         desc += f'{start_emoji}{departure} {bold}{train["fromStation"]["name"]}{bold}\n'
 
         train_type, train_line, route_link = train_presentation(train)
-        train_headsign = f'({train["toStation"]["name"]})'
-        desc += f'{line_emoji["rail"]} {train_type_emoji.get(train_type, train_type)} [**{train_line}** ➤ {train_headsign}]({route_link})\n'
+        desc += f'{line_emoji["rail"]} {train_type_emoji.get(train_type, train_type)} [**{train_line}** ➤ {fetch_headsign(database, train)}]({route_link})\n'
 
         if train["comment"]:
-            comments += f'> **{train_type_emoji.get(train_type, train_type)} {train_line} ➤ {train_headsign}** {train["comment"]}\n'
+            comments += f'> **{train_type_emoji.get(train_type, train_type)} {train_line} ➤ {fetch_headsign(database, train)}** {train["comment"]}\n'
 
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
