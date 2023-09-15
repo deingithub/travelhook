@@ -38,14 +38,14 @@ def train_presentation(data):
 
     link = (
         f'https://bahn.expert/details/{data["train"]["type"]}%20{data["train"]["no"]}/'
-        + datetime.fromtimestamp(
-            data["fromStation"]["scheduledTime"], tz=tz
-        ).isoformat()
-        + f'/?station={data["fromStation"]["uic"]}'
+        + str(data["fromStation"]["scheduledTime"])
     )
     # if HAFAS, add journeyid to link to make sure it gets the right one
-    if is_hafas:
-        link += "&jid=" + data["train"]["id"]
+    # if we don't have an hafas id link it to a station instead to disambiguate
+    if jid := data["train"]["hafasId"] or (data["train"]["id"] if is_hafas else None):
+        link += f"/?jid={jid}"
+    else:
+        link += f'/?station={data["fromStation"]["uic"]}'
 
     return (train_type, train_line, link)
 
@@ -67,7 +67,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
 
         train_type, train_line, route_link = train_presentation(train)
         train_headsign = f'({train["toStation"]["name"]})'
-        desc += f'{line_emoji["rail"]} {train_type_emoji[train_type]} [**{train_line}** ➤ {train_headsign}]({route_link})\n'
+        desc += f'{line_emoji["rail"]} {train_type_emoji.get(train_type, train_type)} [**{train_line}** ➤ {train_headsign}]({route_link})\n'
 
         if train["comment"]:
             comments += f'> **{train_type_emoji.get(train_type, train_type)} {train_line} ➤ {train_headsign}** {train["comment"]}\n'

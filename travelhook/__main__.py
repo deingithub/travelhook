@@ -79,7 +79,7 @@ async def receive(bot):
                 (userid, zugid(data["status"])),
             )
             return web.Response(
-                text=f'Not publishing private checkin in {data["status"]["train"]["type"]} {data["status"]["train"]["no"]}'
+                text=f'Not publishing private {data["reason"]} in {data["status"]["train"]["type"]} {data["status"]["train"]["no"]}'
             )
 
         # update database to maintain trip data
@@ -116,7 +116,9 @@ async def receive(bot):
                 message = await channel.fetch_message(message["message_id"])
                 await message.edit(
                     embed=format_travelynx(bot, userid, current_trips),
-                    view=RefreshTravelynx(userid, current_trips[-1]),
+                    view=RefreshTravelynx(userid, current_trips[-1])
+                    if not data["reason"] == "checkout"
+                    else None,
                 )
             else:
                 message = await channel.send(
