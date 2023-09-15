@@ -24,7 +24,7 @@ def train_presentation(data):
     if not train_line:
         train_line = data["train"]["no"]
 
-    # the funky
+    # special treatment for üstra because i love you
     is_in_hannover = lambda lat, lon: (lat > 52.2047 and lat < 52.4543) and (
         lon > 9.5684 and lon < 9.9996
     )
@@ -33,8 +33,16 @@ def train_presentation(data):
     ):
         train_type = "Ü"
 
+    # special treatment for wien U6 (and the others too i guess)
     if train_type == "U" and data["fromStation"]["name"].startswith("Wien "):
         train_type = data["fromStation"]["name"][-3:-1]
+
+    # special treatment for austrian s-bahn
+    if train_type == "S" and (
+        str(data["fromStation"]["uic"]).startswith("81")
+        or str(data["toStation"]["uic"]).startswith("81")
+    ):
+        train_type = "ATS"
 
     link = (
         f'https://bahn.expert/details/{data["train"]["type"]}%20{data["train"]["no"]}/'
