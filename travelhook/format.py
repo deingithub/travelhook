@@ -3,7 +3,14 @@ from datetime import datetime
 import discord
 from haversine import haversine
 
-from .helpers import fetch_headsign, format_time, train_type_emoji, line_emoji, train_type_color, tz
+from .helpers import (
+    fetch_headsign,
+    format_time,
+    train_type_emoji,
+    line_emoji,
+    train_type_color,
+    tz,
+)
 
 
 def train_presentation(data):

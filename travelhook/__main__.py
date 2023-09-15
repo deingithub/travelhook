@@ -67,9 +67,8 @@ async def receive(bot):
         if (
             not data["reason"] in ("update", "checkin", "ping", "checkout")
             or not data["status"]["toStation"]["name"]
-            or not data["status"]["checkedIn"]
-        ):
-            raise web.HTTPOk()
+        ) or (data["reason"] == "ping" and not data["status"]["checkedIn"]):
+            raise web.HTTPNoContent()
 
         # don't share completely private checkins, only unlisted and upwards
         if data["status"]["visibility"]["desc"] == "private":
@@ -332,7 +331,9 @@ class RefreshTravelynx(discord.ui.View):
                             json.loads(row["travelynx_status"]) for row in current_trips
                         ]
                         await ia.response.edit_message(
-                            embed=format_travelynx(bot, database, self.userid, current_trips),
+                            embed=format_travelynx(
+                                bot, database, self.userid, current_trips
+                            ),
                             view=self,
                         )
                     else:

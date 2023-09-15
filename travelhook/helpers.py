@@ -22,6 +22,7 @@ class Privacy(IntEnum):
 tz = ZoneInfo("Europe/Berlin")
 hafas = HafasClient(DBProfile())
 
+
 def is_new_journey(database, status, userid):
     "determine if the user has merely changed into a new transport or if they have started another journey altogether"
 
@@ -65,8 +66,11 @@ def format_time(sched, actual, relative=False):
 
     return f"<t:{int(time.timestamp())}:t>{diff}"
 
+
 def fetch_headsign(database, status):
-    cached = database.execute("SELECT headsign FROM trips WHERE journey_id = ?", (zugid(status),)).fetchone()
+    cached = database.execute(
+        "SELECT headsign FROM trips WHERE journey_id = ?", (zugid(status),)
+    ).fetchone()
     if cached and cached["headsign"]:
         return cached["headsign"]
     else:
@@ -75,9 +79,16 @@ def fetch_headsign(database, status):
             trip = hafas.trip(status["train"]["hafasId"] or status["train"]["id"])
             headsign = trip.destination.name
         except:
-                pass
-        database.execute("UPDATE trips SET headsign = ? WHERE journey_id = ?", (headsign, zugid(status),))
+            pass
+        database.execute(
+            "UPDATE trips SET headsign = ? WHERE journey_id = ?",
+            (
+                headsign,
+                zugid(status),
+            ),
+        )
         return headsign
+
 
 line_emoji = {
     "start": "<:start:1146748019245588561>",
@@ -152,5 +163,3 @@ train_type_color = {
         "WB": "#2e86ce",
     }.items()
 }
-
-
