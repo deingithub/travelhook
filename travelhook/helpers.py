@@ -101,7 +101,7 @@ def fetch_headsign(database, status):
                     and c.legs[0].arrival == arrival
                     and c.legs[0].name.endswith(status["train"]["line"])
                 ]
-                headsign = candidates[0].destination.name
+                headsign = hafas.trip(candidates[0].legs[0].id).destination.name
             except:
                 # ok i give up
                 pass
