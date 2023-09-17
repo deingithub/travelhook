@@ -114,14 +114,14 @@ async def receive(bot):
             ).fetchone():
                 message = await channel.fetch_message(message["message_id"])
                 await message.edit(
-                    embed=format_travelynx(bot, database, userid, current_trips),
+                    embeds=format_travelynx(bot, database, userid, current_trips),
                     view=RefreshTravelynx(userid, current_trips[-1])
                     if not data["reason"] == "checkout"
                     else None,
                 )
             else:
                 message = await channel.send(
-                    embed=format_travelynx(bot, database, userid, current_trips),
+                    embeds=format_travelynx(bot, database, userid, current_trips),
                     view=RefreshTravelynx(userid, current_trips[-1])
                     if not data["reason"] == "checkout"
                     else None,
@@ -142,11 +142,11 @@ async def receive(bot):
                         prev_message["channel_id"]
                     ).fetch_message(prev_message["message_id"])
                     await prev_message.edit(
-                        embed=format_travelynx(
+                        embeds=format_travelynx(
                             bot,
                             database,
                             userid,
-                            [current_trips[-2]],
+                            current_trips[0:-1],
                             continue_link=message.jump_url,
                         ),
                         view=None,
@@ -295,7 +295,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                 ]
 
                 await ia.response.send_message(
-                    embed=format_travelynx(bot, database, member.id, current_trips),
+                    embeds=format_travelynx(bot, database, member.id, current_trips),
                     view=RefreshTravelynx(member.id, current_trips[-1]),
                 )
 
@@ -331,7 +331,7 @@ class RefreshTravelynx(discord.ui.View):
                             json.loads(row["travelynx_status"]) for row in current_trips
                         ]
                         await ia.response.edit_message(
-                            embed=format_travelynx(
+                            embeds=format_travelynx(
                                 bot, database, self.userid, current_trips
                             ),
                             view=self,

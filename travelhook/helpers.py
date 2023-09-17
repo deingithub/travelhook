@@ -49,7 +49,7 @@ def is_new_journey(database, status, userid):
             next_journey["realTime"], tz=tz
         ) - datetime.fromtimestamp(last_journey["to_time"], tz=tz)
 
-        return (change_distance > 0.75) or change_duration > timedelta(hours=2)
+        return (change_distance > 2.0) or change_duration > timedelta(hours=2)
 
     return True
 
@@ -62,9 +62,9 @@ def format_time(sched, actual, relative=False):
 
     if actual > sched:
         diff = (actual - sched) // 60
-        diff = f" **+{diff}′**"
+        diff = f" +{diff}′"
 
-    return f"<t:{int(time.timestamp())}:t>{diff}"
+    return f"**{time:%H:%M}{diff}**"
 
 
 def fetch_headsign(database, status):
@@ -81,11 +81,26 @@ def fetch_headsign(database, status):
         except:
             # we didn't get the hafas id for some reason, let's try finding the trip on our own
             try:
-                departure = datetime.fromtimestamp(status["fromStation"]["scheduledTime"],tz=tz)
-                arrival = datetime.fromtimestamp(status["toStation"]["scheduledTime"],tz=tz)
+                departure = datetime.fromtimestamp(
+                    status["fromStation"]["scheduledTime"], tz=tz
+                )
+                arrival = datetime.fromtimestamp(
+                    status["toStation"]["scheduledTime"], tz=tz
+                )
 
-                candidates = hafas.journeys(origin=status["fromStation"]["uic"], destination=status["toStation"]["uic"], date=departure, max_changes=0)
-                candidates = [c for c in candidates if c.legs[0].departure == departure and c.legs[0].arrival == arrival and c.legs[0].name.endswith(status["train"]["line"])]
+                candidates = hafas.journeys(
+                    origin=status["fromStation"]["uic"],
+                    destination=status["toStation"]["uic"],
+                    date=departure,
+                    max_changes=0,
+                )
+                candidates = [
+                    c
+                    for c in candidates
+                    if c.legs[0].departure == departure
+                    and c.legs[0].arrival == arrival
+                    and c.legs[0].name.endswith(status["train"]["line"])
+                ]
                 headsign = candidates[0].destination.name
             except:
                 # ok i give up
@@ -101,14 +116,18 @@ def fetch_headsign(database, status):
         return headsign
 
 
-line_emoji = {
-    "start": "<:start:1146748019245588561>",
-    "end": "<:end:1146748021586010182>",
-    "change_start": "<:change_start:1146748016422821948>",
-    "change_end": "<:change_end:1146748013490999379>",
-    "rail": "<:rail:1146748024358441001>",
-    "change": "<:change:1146749106337894490>",
-}
+class LineEmoji:
+    START = "<:A1:1146748019245588561>"
+    END = "<:A2:1146748021586010182>"
+    CHANGE_SAME_STOP = "<:B0:1152624963677868185>"
+    CHANGE_LEAVE_STOP = "<:B2:1146748013490999379>"
+    CHANGE_WALK = "<:B3:1152615187375988796>"
+    CHANGE_ENTER_STOP = "<:B1:1146748016422821948>"
+    RAIL = "<:C1:1146748024358441001>"
+    COMPACT_JOURNEY_START = "<:A3:1152995610216104077>"
+    COMPACT_JOURNEY = "<:A4:1152930006478106724>"
+    SPACER = " "
+
 
 train_type_emoji = {
     "ATS": "<:SBahn:1152254307660484650>",

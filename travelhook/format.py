@@ -7,7 +7,7 @@ from .helpers import (
     fetch_headsign,
     format_time,
     train_type_emoji,
-    line_emoji,
+    LineEmoji,
     train_type_color,
     tz,
 )
@@ -72,50 +72,123 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
     comments = ""
     color = None
 
+    # in the format loop, get the train after the current one or None if we're at the last
+    _next = (
+        lambda statuses, current_index: statuses[current_index + 1]
+        if (current_index + 1) < len(statuses)
+        else None
+    )
+    # in the format loop, get the train before the current one or None if we're at the first
+    _prev = (
+        lambda statuses, current_index: statuses[current_index - 1]
+        if (current_index - 1) >= 0
+        else None
+    )
+
     for i, train in enumerate(statuses):
-        start_emoji = line_emoji["start"] if i == 0 else line_emoji["change_start"]
-        bold = "**" if i == 0 else ""
         departure = format_time(
             train["fromStation"]["scheduledTime"], train["fromStation"]["realTime"]
         )
-        desc += f'{start_emoji}{departure} {bold}{train["fromStation"]["name"]}{bold}\n'
+        # compact layout for completed trips
+        if continue_link and _next(statuses, i):
+            if not _prev(statuses, i):
+                desc += (
+                    f"{LineEmoji.COMPACT_JOURNEY_START}{departure} {train['fromStation']['name']}\n"
+                )
+                desc += f"{LineEmoji.COMPACT_JOURNEY}{LineEmoji.SPACER}"
+
+            # draw only train type and line number in one line
+            train_type, train_line, _ = train_presentation(train)
+            desc += f"{train_type_emoji.get(train_type, train_type)} **{train_line}**"
+            # draw an arrow to the next trip in the compact section until the last one in the section
+            if _next(statuses, i + 1):
+                desc += " → "
+            else:
+                desc += "\n"
+            # ignore the rest of the format loop until we're at the last trip of the journey
+            continue
+
+        # regular layout for full journey display
+        # if we're the first trip of the journey, draw a journey start icon
+        if not _prev(statuses, i):
+            desc += f"{LineEmoji.START}{departure} **{train['fromStation']['name']}**\n"
+        elif prev_train := _prev(statuses, i):
+            # if we've just drawn the last compact mode entry, draw a station
+            if continue_link and not _next(statuses, i):
+                desc += f"{LineEmoji.CHANGE_SAME_STOP}{departure} **{train['fromStation']['name']}**\n"
+            # if our trip starts on a different station than the last ended, draw a new station icon
+            elif prev_train["toStation"]["uic"] != train["fromStation"]["uic"]:
+                desc += f"{LineEmoji.CHANGE_ENTER_STOP}{departure} {train['fromStation']['name']}\n"
+            # if our trip starts on the same station as the last ended, we've already drawn the change icon
+            else:
+                pass
 
         train_type, train_line, route_link = train_presentation(train)
-        desc += f'{line_emoji["rail"]} {train_type_emoji.get(train_type, train_type)} [**{train_line}** ➤ {fetch_headsign(database, train)}]({route_link})\n'
-
-        if train["comment"]:
-            comments += f'> **{train_type_emoji.get(train_type, train_type)} {train_line} ➤ {fetch_headsign(database, train)}** {train["comment"]}\n'
+        desc += (
+            LineEmoji.RAIL
+            + LineEmoji.SPACER
+            + train_type_emoji.get(train_type, train_type)
+            + f" [**{train_line} » {fetch_headsign(database, train)}**]({route_link})"
+            + (f"{LineEmoji.SPACER}💬" if train["comment"] else "")
+            + "\n"
+            # add more spacing for current journey if not compact
+            + (
+                f"{LineEmoji.RAIL}\n"
+                if not _next(statuses, i) and not continue_link
+                else ""
+            )
+        )
 
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
         )
-        if i + 1 < len(statuses):
-            desc += f'{line_emoji["change_end"]}{arrival} '
-
-            next_train = statuses[i + 1]
-
-            if train["toStation"]["name"] != next_train["fromStation"]["name"]:
-                desc += train["toStation"]["name"]
-
-            desc += "\n"
-
-            change_meters = int(
-                haversine(
-                    (train["toStation"]["latitude"], train["toStation"]["longitude"]),
-                    (
-                        next_train["fromStation"]["latitude"],
-                        next_train["fromStation"]["longitude"],
-                    ),
+        # if we're on the last trip of the journey, draw an end icon
+        if not _next(statuses, i):
+            desc += f"{LineEmoji.END}{arrival} **{train['toStation']['name']}**\n"
+        # if we don't leave the station to change, draw a single change line
+        elif next_train := _next(statuses, i):
+            if next_train["fromStation"]["uic"] == train["toStation"]["uic"]:
+                next_train_departure = format_time(
+                    next_train["fromStation"]["scheduledTime"],
+                    next_train["fromStation"]["realTime"],
                 )
-                * 1000,
-            )
-            if change_meters > 100:
-                desc += f'{line_emoji["change"]} *— {change_meters}m —*\n'
-        else:
-            desc += f'{line_emoji["end"]}{arrival} **{train["toStation"]["name"]}**\n'
-            color = train_type_color.get(train_type)
+                desc += (
+                    f"{LineEmoji.CHANGE_SAME_STOP}{arrival} "
+                    + f"{train['toStation']['name']} → {next_train_departure}\n"
+                )
+            else:
+                # if we leave the station, draw the upper part of a two-line change
+                desc += (
+                    f"{LineEmoji.CHANGE_LEAVE_STOP}{arrival} "
+                    + f"{train['toStation']['name']}\n"
+                )
+                train_end_location = (
+                    train["toStation"]["latitude"],
+                    train["toStation"]["longitude"],
+                )
+                next_train_start_location = (
+                    next_train["fromStation"]["latitude"],
+                    next_train["fromStation"]["longitude"],
+                )
+                change_meters = haversine(
+                    train_end_location, next_train_start_location, unit="m"
+                )
+                if change_meters > 200.0:
+                    desc += f"{LineEmoji.CHANGE_WALK}{LineEmoji.SPACER}*— {int(change_meters)} m —*\n"
+
+        # overwrite last set embed color with the current color
+        color = train_type_color.get(train_type)
+        if train["comment"]:
+            if continue_link:
+                comments += "> "
+            else:
+                comments += f"1. **{train_type_emoji.get(train_type, train_type)} {train_line} » {fetch_headsign(database, train)}** "
+            comments += train["comment"] + "\n"
+
+    # end of format loop, finish up embed
 
     if continue_link:
+        desc += comments
         desc += f"**Weiterfahrt ➤** {continue_link}"
     else:
         to_time = format_time(
@@ -124,22 +197,26 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
             True,
         )
         desc += f'### ➤ {statuses[-1]["toStation"]["name"]} {to_time}'
-    if comments:
-        desc += "\n" + comments
 
-    e = discord.Embed(
-        description=desc,
-        colour=color,
-    ).set_author(
-        name=f"{user.name} ist unterwegs",
-        icon_url=user.avatar.url,
-    )
+    embeds = [
+        discord.Embed(
+            description=desc,
+            colour=color,
+        ).set_author(
+            name=f"{user.name} {'war' if continue_link else 'ist'} unterwegs",
+            icon_url=user.avatar.url,
+        )
+    ]
 
     if "Durlacher Tor/KIT-Campus Süd" in (
         statuses[-1]["fromStation"]["name"] + statuses[-1]["toStation"]["name"]
     ):
-        e = e.set_image(
+        embeds[0] = embeds[0].set_image(
             url="https://cdn.discordapp.com/attachments/552251414097690630/1147252343881080832/image.png"
         )
 
-    return e
+    if comments and not continue_link:
+        embeds.append(discord.Embed(description=comments))
+
+    return embeds
+
