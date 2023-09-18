@@ -75,6 +75,7 @@ def fetch_headsign(database, status):
         return cached["headsign"]
     else:
         headsign = f'({status["toStation"]["name"]})'
+        if status["train"]["hafasId"] or
         try:
             trip = hafas.trip(status["train"]["hafasId"] or status["train"]["id"])
             headsign = trip.destination.name
@@ -99,9 +100,11 @@ def fetch_headsign(database, status):
                     for c in candidates
                     if c.legs[0].departure == departure
                     and c.legs[0].arrival == arrival
-                    and c.legs[0].name.endswith(status["train"]["line"])
                 ]
-                headsign = hafas.trip(candidates[0].legs[0].id).destination.name
+                if len(candidates) == 1:
+                    headsign = hafas.trip(candidates[0].legs[0].id).destination.name
+                else:
+                    print(origin, destination, departure, candidates)
             except:
                 # ok i give up
                 pass
