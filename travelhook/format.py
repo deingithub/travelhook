@@ -92,9 +92,7 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
         # compact layout for completed trips
         if continue_link and _next(statuses, i):
             if not _prev(statuses, i):
-                desc += (
-                    f"{LineEmoji.COMPACT_JOURNEY_START}{departure} {train['fromStation']['name']}\n"
-                )
+                desc += f"{LineEmoji.COMPACT_JOURNEY_START}{departure} {train['fromStation']['name']}\n"
                 desc += f"{LineEmoji.COMPACT_JOURNEY}{LineEmoji.SPACER}"
 
             # draw only train type and line number in one line
@@ -117,7 +115,9 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
             if continue_link and not _next(statuses, i):
                 desc += f"{LineEmoji.CHANGE_SAME_STOP}{departure} **{train['fromStation']['name']}**\n"
             # if our trip starts on a different station than the last ended, draw a new station icon
-            elif (prev_train["toStation"]["uic"] != train["fromStation"]["uic"]) and (prev_train["toStation"]["name"] != train["fromStation"]["name"]):
+            elif (prev_train["toStation"]["uic"] != train["fromStation"]["uic"]) and (
+                prev_train["toStation"]["name"] != train["fromStation"]["name"]
+            ):
                 desc += f"{LineEmoji.CHANGE_ENTER_STOP}{departure} {train['fromStation']['name']}\n"
             # if our trip starts on the same station as the last ended, we've already drawn the change icon
             else:
@@ -147,7 +147,9 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
             desc += f"{LineEmoji.END}{arrival} **{train['toStation']['name']}**\n"
         # if we don't leave the station to change, draw a single change line
         elif next_train := _next(statuses, i):
-            if (next_train["fromStation"]["uic"] == train["toStation"]["uic"]) or (prev_train["toStation"]["name"] == train["fromStation"]["name"]):
+            if (next_train["fromStation"]["uic"] == train["toStation"]["uic"]) or (
+                prev_train["toStation"]["name"] == train["fromStation"]["name"]
+            ):
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
                     next_train["fromStation"]["realTime"],
@@ -219,4 +221,3 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
         embeds.append(discord.Embed(description=comments))
 
     return embeds
-
