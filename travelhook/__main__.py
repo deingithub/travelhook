@@ -115,16 +115,20 @@ async def receive(bot):
                 message = await channel.fetch_message(message["message_id"])
                 await message.edit(
                     embeds=format_travelynx(bot, database, userid, current_trips),
-                    view=(RefreshTravelynx(userid, current_trips[-1])
-                    if not data["reason"] == "checkout"
-                    else None),
+                    view=(
+                        RefreshTravelynx(userid, current_trips[-1])
+                        if not data["reason"] == "checkout"
+                        else None
+                    ),
                 )
             else:
                 message = await channel.send(
                     embeds=format_travelynx(bot, database, userid, current_trips),
-                    view=(RefreshTravelynx(userid, current_trips[-1])
-                    if not data["reason"] == "checkout"
-                    else None),
+                    view=(
+                        RefreshTravelynx(userid, current_trips[-1])
+                        if not data["reason"] == "checkout"
+                        else None
+                    ),
                 )
                 database.execute(
                     "INSERT INTO messages(journey_id, user_id, channel_id, message_id) VALUES(?,?,?,?)",
