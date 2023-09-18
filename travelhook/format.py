@@ -148,7 +148,7 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
         # if we don't leave the station to change, draw a single change line
         elif next_train := _next(statuses, i):
             if (next_train["fromStation"]["uic"] == train["toStation"]["uic"]) or (
-                prev_train["toStation"]["name"] == train["fromStation"]["name"]
+                next_train["toStation"]["name"] == train["fromStation"]["name"]
             ):
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
