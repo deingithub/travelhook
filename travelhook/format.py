@@ -13,6 +13,25 @@ from .helpers import (
 )
 
 
+def is_one_line_change(from_station, to_station):
+    "check if we should collapse a transfer into one line instead of two (if it's the same station)"
+    return (from_station["uic"] == to_station["uic"]) or (
+        from_station["name"] == to_station["name"]
+    )
+
+
+def shortened_name(previous_station, this_station):
+    "if the last station follows the 'Stop , City' convention and we're still in the same city, drop that suffix"
+    previous_name = previous_station["name"].split(", ")
+    this_name = this_station["name"].split(", ")
+    if not (len(previous_name) > 1 and len(this_name) > 1):
+        return this_station["name"]
+    elif previous_name[-1] == this_name[-1]:
+        return ", ".join(this_name[0:-1])
+    else:
+        return this_station["name"]
+
+
 def train_presentation(data):
     is_hafas = "|" in data["train"]["id"]
 
@@ -115,10 +134,11 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
             if continue_link and not _next(statuses, i):
                 desc += f"{LineEmoji.CHANGE_SAME_STOP}{departure} **{train['fromStation']['name']}**\n"
             # if our trip starts on a different station than the last ended, draw a new station icon
-            elif (prev_train["toStation"]["uic"] != train["fromStation"]["uic"]) and (
-                prev_train["toStation"]["name"] != train["fromStation"]["name"]
-            ):
-                desc += f"{LineEmoji.CHANGE_ENTER_STOP}{departure} {train['fromStation']['name']}\n"
+            elif not is_one_line_change(prev_train["toStation"], train["fromStation"]):
+                station_name = shortened_name(
+                    prev_train["toStation"], train["fromStation"]
+                )
+                desc += f"{LineEmoji.CHANGE_ENTER_STOP}{departure} {station_name}\n"
             # if our trip starts on the same station as the last ended, we've already drawn the change icon
             else:
                 pass
@@ -144,26 +164,20 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
         )
         # if we're on the last trip of the journey, draw an end icon
         if not _next(statuses, i):
-            desc += f"{LineEmoji.END}{arrival} **{train['toStation']['name']}**\n"
+            station_name = shortened_name(train["fromStation"], train["toStation"])
+            desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
         # if we don't leave the station to change, draw a single change line
         elif next_train := _next(statuses, i):
-            if (next_train["fromStation"]["uic"] == train["toStation"]["uic"]) or (
-                next_train["toStation"]["name"] == train["fromStation"]["name"]
-            ):
+            station_name = shortened_name(next_train["fromStation"], train["toStation"])
+            if is_one_line_change(next_train["fromStation"], train["toStation"]):
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
                     next_train["fromStation"]["realTime"],
                 )
-                desc += (
-                    f"{LineEmoji.CHANGE_SAME_STOP}{arrival} "
-                    + f"{train['toStation']['name']} → {next_train_departure}\n"
-                )
+                desc += f"{LineEmoji.CHANGE_SAME_STOP}{arrival} {station_name} → {next_train_departure}\n"
             else:
                 # if we leave the station, draw the upper part of a two-line change
-                desc += (
-                    f"{LineEmoji.CHANGE_LEAVE_STOP}{arrival} "
-                    + f"{train['toStation']['name']}\n"
-                )
+                desc += f"{LineEmoji.CHANGE_LEAVE_STOP}{arrival} " + f"{station_name}\n"
                 train_end_location = (
                     train["toStation"]["latitude"],
                     train["toStation"]["longitude"],
