@@ -61,6 +61,10 @@ async def receive(bot):
             "SELECT * FROM users WHERE token_webhook = ?",
             (req.headers["authorization"].removeprefix("Bearer "),),
         ).fetchone()
+        if not user:
+            print(f"unknown user {req.headers['authorization']}")
+            return
+
         userid = user["discord_id"]
         data = await req.json()
 

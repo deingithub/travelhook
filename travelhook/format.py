@@ -174,7 +174,7 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
                     next_train["fromStation"]["scheduledTime"],
                     next_train["fromStation"]["realTime"],
                 )
-                desc += f"{LineEmoji.CHANGE_SAME_STOP}{arrival} {station_name} → {next_train_departure}\n"
+                desc += f"{LineEmoji.CHANGE_SAME_STOP}{arrival} → {next_train_departure} {station_name}\n"
             else:
                 # if we leave the station, draw the upper part of a two-line change
                 desc += f"{LineEmoji.CHANGE_LEAVE_STOP}{arrival} " + f"{station_name}\n"
