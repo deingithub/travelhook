@@ -196,10 +196,12 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
 
     # end of format loop, finish up embed
 
-    if continue_link:
-        if comment := statuses[-1]["comment"]:
-            desc += f"> {comment}\n"
+    if comment := statuses[-1]["comment"]:
+        if len(comment) >= 500:
+            comment = comment[0:500] + "…"
+        desc += f"> {comment}\n"
 
+    if continue_link:
         desc += f"**Weiterfahrt ➤** {continue_link}"
     else:
         to_time = format_time(
@@ -214,18 +216,15 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
             description=desc,
             colour=color,
         ).set_author(
-            name=f"{user.name} {'war' if continue_link else 'ist'} unterwegs",
+            name=f"{user.name} {'war' if not statuses[-1]['checkedIn'] else 'ist'} unterwegs",
             icon_url=user.avatar.url,
         )
     ]
-
     if "Durlacher Tor/KIT-Campus Süd" in (
         statuses[-1]["fromStation"]["name"] + statuses[-1]["toStation"]["name"]
     ):
         embeds[0] = embeds[0].set_image(
             url="https://cdn.discordapp.com/attachments/552251414097690630/1147252343881080832/image.png"
         )
-    if statuses[-1]["comment"] and not continue_link:
-        embeds.append(discord.Embed(description="> " + statuses[-1]["comment"]))
 
     return embeds
