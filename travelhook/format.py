@@ -88,7 +88,6 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
     user = bot.get_user(userid)
 
     desc = ""
-    comments = ""
     color = None
 
     # in the format loop, get the train after the current one or None if we're at the last
@@ -194,17 +193,13 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
 
         # overwrite last set embed color with the current color
         color = train_type_color.get(train_type)
-        if train["comment"]:
-            if continue_link:
-                comments += "> "
-            else:
-                comments += f"1. **{train_type_emoji.get(train_type, train_type)} {train_line} » {fetch_headsign(database, train)}** "
-            comments += train["comment"] + "\n"
 
     # end of format loop, finish up embed
 
     if continue_link:
-        desc += comments
+        if comment := statuses[-1]["comment"]:
+            desc += f"> {comment}\n"
+
         desc += f"**Weiterfahrt ➤** {continue_link}"
     else:
         to_time = format_time(
@@ -230,8 +225,7 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
         embeds[0] = embeds[0].set_image(
             url="https://cdn.discordapp.com/attachments/552251414097690630/1147252343881080832/image.png"
         )
-
-    if comments and not continue_link:
-        embeds.append(discord.Embed(description=comments))
+    if statuses[-1]["comment"] and not continue_link:
+        embeds.append(discord.Embed(description="> " + statuses[-1]["comment"]))
 
     return embeds
