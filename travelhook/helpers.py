@@ -68,44 +68,57 @@ def format_time(sched, actual, relative=False):
 
 
 def fetch_headsign(database, status):
+    def get_headsign_from_trip(trip):
+        headsign = trip.destination.name
+        return replace_headsign.get(
+            (status["train"]["type"] + status["train"]["line"], headsign), headsign
+        )
+
     cached = database.execute(
         "SELECT headsign FROM trips WHERE journey_id = ?", (zugid(status),)
     ).fetchone()
     if cached and cached["headsign"]:
         return cached["headsign"]
     else:
-        headsign = f'({status["toStation"]["name"]})'
+        headsign = "?"
+        # do a wild guess which train we're on
         try:
-            trip = hafas.trip(status["train"]["hafasId"] or status["train"]["id"])
-            headsign = trip.destination.name
-        except:
-            # we didn't get the hafas id for some reason, let's try finding the trip on our own
-            try:
-                departure = datetime.fromtimestamp(
-                    status["fromStation"]["scheduledTime"], tz=tz
-                )
-                arrival = datetime.fromtimestamp(
-                    status["toStation"]["scheduledTime"], tz=tz
-                )
+            departure = datetime.fromtimestamp(
+                status["fromStation"]["scheduledTime"], tz=tz
+            )
+            arrival = datetime.fromtimestamp(
+                status["toStation"]["scheduledTime"], tz=tz
+            )
 
-                candidates = hafas.journeys(
-                    origin=status["fromStation"]["uic"],
-                    destination=status["toStation"]["uic"],
-                    date=departure,
-                    max_changes=0,
-                )
+            candidates = hafas.journeys(
+                origin=status["fromStation"]["uic"],
+                destination=status["toStation"]["uic"],
+                date=departure,
+                max_changes=0,
+            )
+            candidates = [
+                c
+                for c in candidates
+                if c.legs[0].departure == departure and c.legs[0].arrival == arrival
+            ]
+            if len(candidates) == 1:
+                headsign = get_headsign_from_trip(hafas.trip(candidates[0].legs[0].id))
+            else:
                 candidates = [
                     c
                     for c in candidates
-                    if c.legs[0].departure == departure and c.legs[0].arrival == arrival
+                    if c.legs[0].name.removeprefix(status["train"]["type"]).strip()
+                    == (status["train"]["line"] or status["train"]["no"])
                 ]
                 if len(candidates) == 1:
-                    headsign = hafas.trip(candidates[0].legs[0].id).destination.name
+                    headsign = get_headsign_from_trip(
+                        hafas.trip(candidates[0].legs[0].id)
+                    )
                 else:
+                    # ok i give up
                     print(origin, destination, departure, candidates)
-            except:
-                # ok i give up
-                pass
+        except Exception as e:
+            print(f"error fetching headsign: {e}")
 
         database.execute(
             "UPDATE trips SET headsign = ? WHERE journey_id = ?",
