@@ -211,3 +211,31 @@ train_type_color = {
         "WB": "#2e86ce",
     }.items()
 }
+
+replace_headsign = {
+    # Vienna
+    ("U1", "Wien Alaudagasse (U1)"): "Alaudagasse",
+    ("U1", "Wien Leopoldau Bahnhst (U1)"): "Leopoldau",
+    ("U1", "Wien Oberlaa (U1)"): "Oberlaa",
+    ("U2", "Wien Schottentor (U2)"): "Schottentor",
+    ("U2", "Wien Seestadt (U2)"): "Seestadt",
+    ("U3", "Wien Ottakring Bahnhst (U3)"): "Ottakring",
+    ("U3", "Wien Simmering Bahnhof (U3)"): "Simmering",
+    ("U4", "Wien Heiligenstadt Bf (U4)"): "Heiligenstadt",
+    ("U4", "Wien Hütteldorf Bf (U4)"): "Hütteldorf",
+    ("U6", "Wien Floridsdorf Bf (U6)"): "Floridsdorf",
+    ("U6", "Wien Siebenhirten (U6)"): "Siebenhirten",
+    # Hannover
+    ("STR1", "Laatzen (GVH)"): "Laatzen",
+    ("STR1", "Langenhagen (Hannover) (GVH)"): "Langenhagen",
+    ("STR1", "Sarstedt (Endpunkt GVH)"): "Sarstedt",
+    ("STR2", "Rethen(Leine) Nord, Laatzen"): "Rethen/Nord",
+    ("STR3", "Altwarmbüchen, Isernhagen"): "Altwarmbüchen",
+    ("STR9", "Empelde (Bus/Tram), Ronnenberg"): "Empelde",
+    # jesus christ KVV please fix this nonsense
+    ("S2", "Blankenloch Nord, Stutensee"): "Blankenloch",
+    ("S2", "Daxlanden Dornröschenweg, Karlsruhe"): "Rheinstrandsiedlung",
+    ("S2", "Hagsfeld Reitschulschlag (Schleife), Karlsruhe"): "Reitschulschlag",
+    ("S2", "Mörsch Bach-West, Rheinstetten"): "Rheinstetten",
+    ("S2", "Spöck Richard-Hecht-Schule, Stutensee"): "Spöck",
+}
