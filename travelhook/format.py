@@ -220,11 +220,18 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
             icon_url=user.avatar.url,
         )
     ]
-    if "Durlacher Tor/KIT-Campus Süd" in (
-        statuses[-1]["fromStation"]["name"] + statuses[-1]["toStation"]["name"]
-    ):
-        embeds[0] = embeds[0].set_image(
-            url="https://cdn.discordapp.com/attachments/552251414097690630/1147252343881080832/image.png"
-        )
+    embeds[0] = sillies(statuses[-1], embeds[0])
 
     return embeds
+
+
+def sillies(status, embed):
+    if "Durlacher Tor" in (status["fromStation"]["name"] + status["toStation"]["name"]):
+        return embed.set_image(url="https://i.imgur.com/6WhzdSp.png")
+    if "Ziegelstein" in (status["fromStation"]["name"] + status["toStation"]["name"]):
+        return embed.set_thumbnail(url="https://i.imgur.com/W3mPNEn.gif")
+    if "Gumpendorfer Straße" in (
+        status["fromStation"]["name"] + status["toStation"]["name"]
+    ):
+        return embed.set_image(url="https://i.imgur.com/9P15eRQ.png")
+    return embed
