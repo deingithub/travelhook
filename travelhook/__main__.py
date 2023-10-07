@@ -96,8 +96,11 @@ async def receive(bot):
                 channel = bot.get_channel(message["channel_id"])
                 msg = await channel.fetch_message(message["message_id"])
                 await msg.delete()
-            database.execute("DELETE FROM messages WHERE user_id = ? AND journey_id = ?", (userid, zugid(current_trips[-1])),)
-            
+            database.execute(
+                "DELETE FROM messages WHERE user_id = ? AND journey_id = ?",
+                (userid, zugid(current_trips[-1])),
+            )
+
             if len(current_trips) > 1:
                 messages_to_edit = database.execute(
                     "SELECT * FROM messages WHERE user_id = ? AND journey_id = ?",
