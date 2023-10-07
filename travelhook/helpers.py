@@ -72,7 +72,12 @@ def fetch_headsign(database, status):
     def get_headsign_from_jid(jid):
         headsign = hafas.trip(jid).destination.name
         return replace_headsign.get(
-            (status["train"]["type"] + status["train"]["line"], headsign), headsign
+            (
+                status["train"]["type"]
+                + (status["train"]["line"] or status["train"]["no"]),
+                headsign,
+            ),
+            headsign,
         )
 
     # have we already fetched the headsign? just use that.
