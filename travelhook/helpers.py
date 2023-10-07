@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from enum import IntEnum
+import traceback
 import json
 
 import discord
@@ -68,66 +69,84 @@ def format_time(sched, actual, relative=False):
 
 
 def fetch_headsign(database, status):
-    def get_headsign_from_trip(trip):
-        headsign = trip.destination.name
+    def get_headsign_from_jid(jid):
+        headsign = hafas.trip(jid).destination.name
         return replace_headsign.get(
             (status["train"]["type"] + status["train"]["line"], headsign), headsign
         )
 
+    # have we already fetched the headsign? just use that.
     cached = database.execute(
         "SELECT headsign FROM trips WHERE journey_id = ?", (zugid(status),)
     ).fetchone()
     if cached and cached["headsign"]:
         return cached["headsign"]
-    else:
-        headsign = "?"
-        # do a wild guess which train we're on
-        try:
-            departure = datetime.fromtimestamp(
-                status["fromStation"]["scheduledTime"], tz=tz
-            )
-            arrival = datetime.fromtimestamp(
-                status["toStation"]["scheduledTime"], tz=tz
-            )
 
-            candidates = hafas.journeys(
-                origin=status["fromStation"]["uic"],
-                destination=status["toStation"]["uic"],
-                date=departure,
-                max_changes=0,
+    headsign = "?"
+    # first let's try to get the train directly using its hafas jid
+    try:
+        jid = status["train"]["hafasId"] or status["train"]["id"]
+        if "|" in jid:
+            headsign = get_headsign_from_jid(jid)
+            database.execute(
+                "UPDATE trips SET headsign = ? WHERE journey_id = ?",
+                (
+                    headsign,
+                    zugid(status),
+                ),
             )
+            return headsign
+
+    except Exception as e:
+        print("error fetching headsign from hafas jid:")
+        traceback.print_exc()
+
+    # ok that didn't work out somehow, let's do a wild guess which train we're on instead
+    try:
+        departure = datetime.fromtimestamp(
+            status["fromStation"]["scheduledTime"], tz=tz
+        )
+        arrival = datetime.fromtimestamp(status["toStation"]["scheduledTime"], tz=tz)
+
+        # get suggested trips for our journey
+        candidates = hafas.journeys(
+            origin=status["fromStation"]["uic"],
+            destination=status["toStation"]["uic"],
+            date=departure,
+            max_changes=0,
+        )
+        # filter out all that aren't at the time our trip is
+        candidates = [
+            c
+            for c in candidates
+            if c.legs[0].departure == departure and c.legs[0].arrival == arrival
+        ]
+        if len(candidates) == 1:
+            headsign = get_headsign_from_jid(candidates[0].legs[0].id)
+        else:
             candidates = [
                 c
                 for c in candidates
-                if c.legs[0].departure == departure and c.legs[0].arrival == arrival
+                if c.legs[0].name.removeprefix(status["train"]["type"]).strip()
+                == (status["train"]["line"] or status["train"]["no"])
             ]
             if len(candidates) == 1:
-                headsign = get_headsign_from_trip(hafas.trip(candidates[0].legs[0].id))
+                headsign = get_headsign_from_jid(candidates[0].legs[0].id)
             else:
-                candidates = [
-                    c
-                    for c in candidates
-                    if c.legs[0].name.removeprefix(status["train"]["type"]).strip()
-                    == (status["train"]["line"] or status["train"]["no"])
-                ]
-                if len(candidates) == 1:
-                    headsign = get_headsign_from_trip(
-                        hafas.trip(candidates[0].legs[0].id)
-                    )
-                else:
-                    # ok i give up
-                    print(origin, destination, departure, candidates)
-        except Exception as e:
-            print(f"error fetching headsign: {e}")
+                # yeah i give up
+                print(origin, destination, departure, candidates)
+    except Exception as e:
+        print(f"error fetching headsign from journey:")
+        traceback.print_exc()
 
-        database.execute(
-            "UPDATE trips SET headsign = ? WHERE journey_id = ?",
-            (
-                headsign,
-                zugid(status),
-            ),
-        )
-        return headsign
+    database.execute(
+        "UPDATE trips SET headsign = ? WHERE journey_id = ?",
+        (
+            headsign,
+            zugid(status),
+        ),
+    )
+    return headsign
 
 
 class LineEmoji:
