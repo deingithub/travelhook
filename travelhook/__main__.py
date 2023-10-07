@@ -69,10 +69,53 @@ async def receive(bot):
         data = await req.json()
 
         if (
-            not data["reason"] in ("update", "checkin", "ping", "checkout")
+            not data["reason"] in ("update", "checkin", "ping", "checkout", "undo")
             or not data["status"]["toStation"]["name"]
         ) or (data["reason"] == "ping" and not data["status"]["checkedIn"]):
             raise web.HTTPNoContent()
+
+        # when checkin is undone, delete its message
+        if data["reason"] == "undo" and not data["status"]["checkedIn"]:
+            current_trips = database.execute(
+                "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time ASC",
+                (userid,),
+            ).fetchall()
+            current_trips = [
+                json.loads(row["travelynx_status"]) for row in current_trips
+            ]
+            database.execute(
+                "DELETE FROM trips WHERE user_id = ? AND journey_id = ?",
+                (userid, zugid(data["status"])),
+            )
+
+            messages_to_delete = database.execute(
+                "SELECT * FROM messages WHERE user_id = ? AND journey_id = ?",
+                (userid, zugid(current_trips[-1])),
+            ).fetchall()
+            for message in messages_to_delete:
+                channel = bot.get_channel(message["channel_id"])
+                msg = await channel.fetch_message(message["message_id"])
+                await msg.delete()
+            database.execute("DELETE FROM messages WHERE user_id = ? AND journey_id = ?", (userid, zugid(current_trips[-1])),)
+            
+            if len(current_trips) > 1:
+                messages_to_edit = database.execute(
+                    "SELECT * FROM messages WHERE user_id = ? AND journey_id = ?",
+                    (userid, zugid(current_trips[-2])),
+                ).fetchall()
+                for message in messages_to_edit:
+                    channel = bot.get_channel(message["channel_id"])
+                    msg = await channel.fetch_message(message["message_id"])
+                    await msg.edit(
+                        embeds=format_travelynx(
+                            bot, database, userid, current_trips[0:-1]
+                        ),
+                        view=None,
+                    )
+
+            return web.Response(
+                text=f'Unpublished checkin to {current_trips[-1]["train"]["type"]} {current_trips[-1]["train"]["no"]} for {len(messages_to_delete)} channels'
+            )
 
         # don't share completely private checkins, only unlisted and upwards
         if data["status"]["visibility"]["desc"] == "private":
@@ -158,11 +201,6 @@ async def receive(bot):
                         ),
                         view=None,
                     )
-                    database.execute(
-                        "DELETE FROM messages WHERE message_id = ?",
-                        (prev_message.id,),
-                    )
-
         return web.Response(
             text=f'Successfully published {data["status"]["train"]["type"]} {data["status"]["train"]["no"]} {data["reason"]} to {len(channels)} channels'
         )
