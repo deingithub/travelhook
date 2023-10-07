@@ -70,16 +70,17 @@ def train_presentation(data):
     ):
         train_type = "ATS"
 
-    link = (
-        f'https://bahn.expert/details/{data["train"]["type"]}%20{data["train"]["no"]}/'
-        + str(data["fromStation"]["scheduledTime"] * 1000)
-    )
+    link = "https://bahn.expert/details"
     # if HAFAS, add journeyid to link to make sure it gets the right one
-    # if we don't have an hafas id link it to a station instead to disambiguate
     if jid := data["train"]["hafasId"] or (data["train"]["id"] if is_hafas else None):
-        link += f"/?jid={jid}"
+        link += f"/{data['fromStation']['scheduledTime'] * 1000}/?jid={jid}"
+    # if we don't have an hafas jid link it to a station instead to disambiguate
     else:
-        link += f'/?station={data["fromStation"]["uic"]}'
+        link += (
+            +f"/{data['train']['type']}%20{data['train']['no']}/"
+            + str(data["fromStation"]["scheduledTime"] * 1000)
+            + f"/?station={data['fromStation']['uic']}"
+        )
 
     return (train_type, train_line, link)
 
