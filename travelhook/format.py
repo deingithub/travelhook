@@ -146,7 +146,9 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
         desc += (
             LineEmoji.RAIL
             + LineEmoji.SPACER
-            + train_type_emoji.get(train_type, train_type)
+            + train_type_emoji.get(
+                train_type, f"<:sbbzug:1160275971266576494> {train_type}"
+            )
             + f" [**{train_line} » {fetch_headsign(database, train)}**]({route_link})"
             + (f"{LineEmoji.SPACER}💬" if train["comment"] else "")
             + "\n"
@@ -192,7 +194,7 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
                     desc += f"{LineEmoji.CHANGE_WALK}{LineEmoji.SPACER}*— {int(change_meters)} m —*\n"
 
         # overwrite last set embed color with the current color
-        color = train_type_color.get(train_type)
+        color = train_type_color.get(train_type, discord.Color.from_str("#2e2e7d"))
 
     # end of format loop, finish up embed
 
