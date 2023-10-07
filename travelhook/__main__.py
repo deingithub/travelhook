@@ -139,7 +139,6 @@ async def receive(bot):
                     (zugid(data["status"]), userid, channel.id, message.id),
                 )
                 # shrink previous message to prevent clutter
-                # TODO just delete it if it has no reactions and is immediately above the new one
                 if len(current_trips) > 1:
                     prev_message = database.execute(
                         "SELECT message_id, channel_id FROM messages JOIN trips ON messages.journey_id = trips.journey_id "
