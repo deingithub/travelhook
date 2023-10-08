@@ -8,6 +8,8 @@ from aiohttp import ClientSession
 from pyhafas import HafasClient
 from pyhafas.profile import DBProfile
 
+from . import database as DB
+
 
 def zugid(data):
     """identify a user-trip by its departure time + hafas/iris specific trip id.
@@ -53,11 +55,11 @@ def format_time(sched, actual, relative=False):
     return f"**{time:%H:%M}{diff}**"
 
 
-def fetch_headsign(database, status):
+def fetch_headsign(status):
     "try to fetch a train headsign or destination name from HAFAS"
 
     # have we already fetched the headsign? just use that.
-    cached = database.execute(
+    cached = DB.DB.execute(
         "SELECT headsign FROM trips WHERE journey_id = ?", (zugid(status),)
     ).fetchone()
     if cached and cached["headsign"]:
@@ -80,7 +82,7 @@ def fetch_headsign(database, status):
         jid = status["train"]["hafasId"] or status["train"]["id"]
         if "|" in jid:
             headsign = get_headsign_from_jid(jid)
-            database.execute(
+            DB.DB.execute(
                 "UPDATE trips SET headsign = ? WHERE journey_id = ?",
                 (
                     headsign,
@@ -131,7 +133,7 @@ def fetch_headsign(database, status):
         print("error fetching headsign from journey:")
         traceback.print_exc()
 
-    database.execute(
+    DB.DB.execute(
         "UPDATE trips SET headsign = ? WHERE journey_id = ?",
         (
             headsign,

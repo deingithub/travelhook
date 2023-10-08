@@ -84,7 +84,7 @@ def train_presentation(data):
     return (train_type, train_line, link)
 
 
-def format_travelynx(bot, database, userid, statuses, continue_link=None):
+def format_travelynx(bot, userid, statuses, continue_link=None):
     """the actual formatting function called by message sends and edits
     to render an embed describing the current journey"""
     user = bot.get_user(userid)
@@ -150,7 +150,7 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
             + train_type_emoji.get(
                 train_type, f"<:sbbzug:1160275971266576494> {train_type}"
             )
-            + f" [**{train_line} » {fetch_headsign(database, train)}**]({route_link})"
+            + f" [**{train_line} » {fetch_headsign(train)}**]({route_link})"
             + (f"{LineEmoji.SPACER}💬" if train["comment"] else "")
             + "\n"
             # add more spacing for current journey if not compact

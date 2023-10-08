@@ -113,7 +113,7 @@ async def receive(bot):
                 ):
                     msg = await message.fetch(bot)
                     await msg.edit(
-                        embeds=format_travelynx(bot, DB.DB, userid, current_trips),
+                        embeds=format_travelynx(bot, userid, current_trips),
                         view=None,
                     )
 
@@ -156,12 +156,12 @@ async def receive(bot):
                 msg = await message.fetch(bot)
 
                 await msg.edit(
-                    embeds=format_travelynx(bot, DB.DB, userid, current_trips),
+                    embeds=format_travelynx(bot, userid, current_trips),
                     view=view,
                 )
             else:
                 message = await channel.send(
-                    embeds=format_travelynx(bot, DB.DB, userid, current_trips),
+                    embeds=format_travelynx(bot, userid, current_trips),
                     view=view,
                 )
                 DB.Message.write(user.discord_id, zugid(data["status"]), message)
@@ -175,7 +175,6 @@ async def receive(bot):
                     await prev_msg.edit(
                         embeds=format_travelynx(
                             bot,
-                            DB.DB,
                             userid,
                             current_trips[0:-1],
                             continue_link=message.jump_url,
@@ -287,7 +286,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                 ]
 
                 await ia.response.send_message(
-                    embeds=format_travelynx(bot, DB.DB, member.id, current_trips),
+                    embeds=format_travelynx(bot, member.id, current_trips),
                     view=RefreshTravelynx(member.id, current_trips[-1]),
                 )
 
@@ -324,7 +323,7 @@ class RegisterTravelynxStepZero(discord.ui.View):
     @discord.ui.button(
         label="Connect travelynx account",
         style=discord.ButtonStyle.green,
-        custom_id="register_button:a",
+        custom_id=config["register_button_id"],
     )
     async def doit(self, ia, _):
         "button to proceed to step 1"
@@ -477,9 +476,7 @@ class RefreshTravelynx(discord.ui.View):
                             for trip in DB.Trip.find_current_trips_for(self.userid)
                         ]
                         await ia.response.edit_message(
-                            embeds=format_travelynx(
-                                bot, DB.DB, self.userid, current_trips
-                            ),
+                            embeds=format_travelynx(bot, self.userid, current_trips),
                             view=self,
                         )
                     else:
