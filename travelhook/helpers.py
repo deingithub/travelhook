@@ -6,6 +6,7 @@ import traceback
 import json
 
 import discord
+from aiohttp import ClientSession
 from haversine import haversine
 from pyhafas import HafasClient
 from pyhafas.profile import DBProfile
@@ -58,6 +59,21 @@ def is_new_journey(database, status, userid):
         return (change_distance > 2.0) or change_duration > timedelta(hours=2)
 
     return True
+
+
+async def is_token_valid(token):
+    "check if a status api token actually works"
+    async with ClientSession() as session:
+        async with session.get(f"https://travelynx.de/api/v1/status/{token}") as r:
+            try:
+                data = await r.json()
+                if r.status == 200 and not "error" in data:
+                    return True
+                print(f"token {token} invalid: {r.status} {data}")
+                return False
+            except: # pylint: disable=bare-except
+                print(f"error verifying token {token}:")
+                traceback.print_exc()
 
 
 def format_time(sched, actual, relative=False):
@@ -216,7 +232,7 @@ train_type_emoji = {
     "WB": "***west***",
 }
 train_type_color = {
-    k: discord.Colour.from_str(v)
+    k: discord.Color.from_str(v)
     for (k, v) in {
         "ATS": "#0096d8",
         "Bus": "#a3167e",

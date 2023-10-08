@@ -217,7 +217,7 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
     embeds = [
         discord.Embed(
             description=desc,
-            colour=color,
+            color=color,
         ).set_author(
             name=f"{user.name} {'war' if not statuses[-1]['checkedIn'] else 'ist'} unterwegs",
             icon_url=user.avatar.url,

@@ -1,14 +1,15 @@
 "this contains our bot commands and the incoming webhook handler"
 import json
-import typing
+import secrets
 import sqlite3
+import typing
 
 from aiohttp import ClientSession, web
 import discord
 from discord.ext import commands
 
 from .format import format_travelynx
-from .helpers import is_new_journey, Privacy, zugid
+from .helpers import is_new_journey, is_token_valid, Privacy, train_type_color, zugid
 
 config = {}
 with open("settings.json", "r", encoding="utf-8") as f:
@@ -21,9 +22,28 @@ servers = [
     discord.Object(id=row["server_id"])
     for row in database.execute("SELECT server_id FROM servers").fetchall()
 ]
+intents = discord.Intents.default() | discord.Intents(members=True)
+bot = commands.Bot(command_prefix=" ", intents=intents)
 
 
-def handle_status_update(userid, reason, status):
+async def setup_hook():
+    "enable restart persistence for the register button by adding the view on start"
+    bot.add_view(RegisterTravelynxStepZero())
+
+
+bot.setup_hook = setup_hook
+
+
+@bot.event
+async def on_ready():
+    "once we're logged in, set up commands and start the web server"
+    for server in servers:
+        await bot.tree.sync(guild=server)
+    bot.loop.create_task(receive(bot))
+    print(f"logged in as {bot.user}")
+
+
+def handle_status_update(userid, _, status):
     """update trip data in the database, also starting a new journey if the last data
     we have is too old or distant for this to be a changeover"""
     if last_trip := database.execute(
@@ -74,10 +94,13 @@ async def receive(bot):
         userid = user["discord_id"]
         data = await req.json()
 
+        if data["reason"] == "ping" and not data["status"]["checkedIn"]:
+            return web.Response(text="travelynx relay bot successfully connected!")
+
         if (
             not data["reason"] in ("update", "checkin", "ping", "checkout", "undo")
             or not data["status"]["toStation"]["name"]
-        ) or (data["reason"] == "ping" and not data["status"]["checkedIn"]):
+        ):
             raise web.HTTPNoContent()
 
         # when checkin is undone, delete its message
@@ -222,19 +245,6 @@ async def receive(bot):
     await site.start()
 
 
-intents = discord.Intents.default() | discord.Intents(members=True)
-bot = commands.Bot(command_prefix=" ", intents=intents)
-
-
-@bot.event
-async def on_ready():
-    "once we're logged in, set up commands and start the web server"
-    for server in servers:
-        await bot.tree.sync(guild=server)
-    bot.loop.create_task(receive(bot))
-    print(f"logged in as {bot.user}")
-
-
 @bot.tree.command(guilds=servers)
 @discord.app_commands.describe(
     level="leave empty to query current level. set to ME to only allow you to use /zug, set to EVERYONE to allow everyone to use /zug and set to LIVE to activate the live feed."
@@ -355,7 +365,154 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                 )
 
 
-# TODO register command
+@bot.tree.command(guilds=servers)
+async def register(ia):
+    "Register with the travelynx relay bot and share your journeys today!"
+    await ia.response.send_message(
+        embed=discord.Embed(
+            title="Registering with the travelynx relay bot",
+            color=train_type_color["SB"],
+            description="Thanks for your interest! Using this bot, you can share your public transport journeys "
+            "in and around Germany with your friends and enemies on Discord.\nTo use it, you first need to sign up for "
+            "**[travelynx](https://travelynx.de)** to be able to check in into trains, trams, buses and so on. Then you "
+            "can connect this bot to your travelynx account.\nFinally, for every server you can decide if *only you* want to share "
+            "some of our journeys using the **/zug** command (this is the default), or if you want to let *everyone* "
+            "use the command for you. You can even enable a **live feed** for a specific channel, keeping everyone "
+            "up to date as you check in into new transports. This is fully optional.",
+        ).set_thumbnail(
+            url="https://cdn.discordapp.com/emojis/1160275971266576494.webp"
+        ),
+        view=RegisterTravelynxStepZero(),
+    )
+
+
+class RegisterTravelynxStepZero(discord.ui.View):
+    """view attached to the /register initial response, is persistent over restarts.
+    first we check that we aren't already registered, then offer to proceed to step 1 with token modal"""
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="Connect travelynx account",
+        style=discord.ButtonStyle.green,
+        custom_id="register_button",
+    )
+    async def doit(self, ia, _):
+        "button to proceed to step 1"
+        if database.execute(
+            "SELECT * FROM users WHERE discord_id = ?", (ia.user.id,)
+        ).fetchone():
+            await ia.response.send_message(
+                embed=discord.Embed(
+                    title="Oops!",
+                    color=train_type_color["U1"],
+                    description="It looks like you're already registered. If you want to reset your tokens or need "
+                    "any other assistance, please ask the bot operator.",
+                ),
+                ephemeral=True,
+            )
+        await ia.response.send_message(
+            embed=discord.Embed(
+                title="Step 1/3: Connect Status API",
+                color=train_type_color["SB"],
+                description="For the first step, you'll need to give the bot read access to your travelynx account. "
+                "To do this, head over to the [**travelynx Account page**](https://travelynx.de/account) "
+                "while signed in, scroll down to «API», and click **Generate** in the table row with «Status».\n"
+                " Copy the token you just generated from the row. Return here, click «I have my token ready.» "
+                "below and enter the token into the pop-up.",
+            ).set_image(url="https://i.imgur.com/Tu2Zm6C.png"),
+            view=RegisterTravelynxStepOne(),
+            ephemeral=True,
+        )
+
+
+class RegisterTravelynxStepOne(discord.ui.View):
+    """view attached to the step 1 ephemeral response. ask for and verify the status token,
+    register the user, then offer to proceed to step 2 to copy live feed/webhook credentials."""
+    @discord.ui.button(label="I have my token ready.", style=discord.ButtonStyle.green)
+    async def doit(self, ia, _):
+        "just send the modal when the user has the token ready"
+        await ia.response.send_modal(self.EnterTokenModal())
+
+    class EnterTokenModal(discord.ui.Modal, title="Please enter your travelynx token"):
+        "this contains the actual verification and registration code."
+        token = discord.ui.TextInput(label="Status token")
+
+        async def on_submit(self, ia):
+            """triggered on modal submit, if everything is fine, register the user and
+            edit ephemeral response to proceed to step 2, else ask them to try again"""
+            if await is_token_valid(self.token.value.strip()):
+                database.execute(
+                    "INSERT INTO users (discord_id, token_status, token_webhook) VALUES(?,?,?)",
+                    (ia.user.id, self.token.value.strip(), secrets.token_urlsafe()),
+                )
+                await ia.response.edit_message(
+                    embed=discord.Embed(
+                        title="Step 2/3: Connect Live Feed (optional)",
+                        color=train_type_color["SB"],
+                        description="Great! You've successfully connected your status token to the relay bot. "
+                        "You now use **/zug** for yourself and configure if others can use it with **/privacy**.\n"
+                        "Optionally, you can now also sign up for the live feed by connecting travelynx's webhook "
+                        "to the relay bot's live feed feature. You can also skip this if you're not interested in the live "
+                        "feed. Should you change your mind later, you can bother the bot operator about it.",
+                    ),
+                    view=RegisterTravelynxStepTwo(),
+                )
+            else:
+                await ia.response.edit_message(
+                    embed=discord.Embed(
+                        title="Step 1/3: Connect Status API",
+                        color=train_type_color["U1"],
+                        description="### ❗ The token doesn't seem to be valid, please check it and try again.\n"
+                        "For the first step, you'll need to give the bot read access to your travelynx account. "
+                        "To do this, head over to the [**Account page**](https://travelynx.de/account) "
+                        "while signed in, scroll down to «API», and click **Generate** in the table row with «Status».\n"
+                        " Copy the token you just generated from the row. Return here, click «I have my token ready.» "
+                        "below and enter the token into the pop-up.",
+                    ).set_image(url="https://i.imgur.com/Tu2Zm6C.png")
+                )
+
+
+class RegisterTravelynxStepTwo(discord.ui.View):
+    "view triggered by successful registration in step 1, show credentials for live feed if asked"
+    @discord.ui.button(label="Connect live feed", style=discord.ButtonStyle.green)
+    async def doit(self, ia, _):
+        "offer the live feed webhook credentials for copying"
+        token = database.execute(
+            "SELECT token_webhook FROM users WHERE discord_id = ?", (ia.user.id,)
+        ).fetchone()["token_webhook"]
+        await ia.response.edit_message(
+            embed=discord.Embed(
+                title="Step 3/3: Connect live feed (optional)",
+                color=train_type_color["S"],
+                description="Congratulations! You can now use **/zug** and **/privacy** to share your logged "
+                "journeys on Discord.\n\nWith the live feed enabled on a server, once your server admins have set up a "
+                "live channel  *that you can see yourself*, the relay bot will automatically post non-private "
+                "checkins and try to keep your journey up to date. To connect travelynx's update webhook "
+                "with the relay bot, you need to head to the [**Account » Webhook page**](https://travelynx.de/account/hooks), "
+                "check «Aktiv» and enter the following values: \n\n"
+                f"**URL**\n```{config['webhook_url']}```\n"
+                f"**Token**\n```{token}```\n\n"
+                "Once you've done that, save the webhook settings, and you should be able to read "
+                "«travelynx relay bot successfully connected!» in the server response. If that doesn't happen, "
+                "bother the bot operator about it.\nIf you changed your mind and don't want to connect right now, "
+                "bother the bot operator about it once you've decided otherwise again. Until you copy in the settings, "
+                "no live connection will be made.",
+            ).set_image(url="https://i.imgur.com/LhsH8Nt.png"),
+            view=None,
+        )
+
+    @discord.ui.button(label="No, I don't want that.", style=discord.ButtonStyle.grey)
+    async def dontit(self, ia, _):
+        "just wish them a nice day"
+        await ia.response.edit_message(
+            embed=discord.Embed(
+                title="Step 3/3: Done!",
+                color=train_type_color["S"],
+                description="Congratulations! You can now use **/zug** and **/privacy** to share your logged journeys on Discord.",
+            ),
+            view=None,
+        )
 
 
 class RefreshTravelynx(discord.ui.View):
