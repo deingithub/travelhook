@@ -166,7 +166,7 @@ def fetch_headsign(database, status):
     return headsign
 
 
-class LineEmoji: # pylint: disable=too-few-public-methods
+class LineEmoji:  # pylint: disable=too-few-public-methods
     "namespace for our line-painting emoji stolen from wikipedia"
     START = "<:A1:1146748019245588561>"
     END = "<:A2:1146748021586010182>"

@@ -1,3 +1,4 @@
+"this contains our bot commands and the incoming webhook handler"
 import json
 import typing
 import sqlite3
@@ -23,6 +24,8 @@ servers = [
 
 
 def handle_status_update(userid, reason, status):
+    """update trip data in the database, also starting a new journey if the last data
+    we have is too old or distant for this to be a changeover"""
     if last_trip := database.execute(
         "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time DESC LIMIT 1;",
         (userid,),
@@ -56,6 +59,9 @@ def handle_status_update(userid, reason, status):
 
 
 async def receive(bot):
+    """our own little web server that receives incoming webhooks from
+    travelynx and runs the live feed for the users that have enabled it"""
+
     async def handler(req):
         user = database.execute(
             "SELECT * FROM users WHERE token_webhook = ?",
@@ -222,20 +228,20 @@ bot = commands.Bot(command_prefix=" ", intents=intents)
 
 @bot.event
 async def on_ready():
+    "once we're logged in, set up commands and start the web server"
     for server in servers:
         await bot.tree.sync(guild=server)
     bot.loop.create_task(receive(bot))
     print(f"logged in as {bot.user}")
 
 
-@bot.tree.command(
-    description="Query or change your current privacy settings on this server",
-    guilds=servers,
-)
+@bot.tree.command(guilds=servers)
 @discord.app_commands.describe(
     level="leave empty to query current level. set to ME to only allow you to use /zug, set to EVERYONE to allow everyone to use /zug and set to LIVE to activate the live feed."
 )
 async def privacy(ia, level: typing.Optional[Privacy]):
+    "Query or change your current privacy settings on this server"
+
     def explain(level: typing.Optional[Privacy]):
         desc = "This means that, on this server,\n"
         match level:
@@ -252,8 +258,8 @@ async def privacy(ia, level: typing.Optional[Privacy]):
                     desc += f"- Live updates will posted into {bot.get_channel(live_channel).mention} with your entire journey."
                 else:
                     desc += (
-                        f"- Live updates with your entire journey can be posted into a dedicated channel.\n"
-                        f"- Note: This server has not set up a live channel. No live updates will be posted until it is set up."
+                        "- Live updates with your entire journey can be posted into a dedicated channel.\n"
+                        "- Note: This server has not set up a live channel. No live updates will be posted until it is set up."
                     )
         desc += "\n- Note: If your checkin is set to **private visibility** on travelynx, this bot will not post it anywhere."
         return desc
@@ -287,11 +293,12 @@ async def privacy(ia, level: typing.Optional[Privacy]):
         )
 
 
-@bot.tree.command(description="Get current travelynx status", guilds=servers)
+@bot.tree.command(guilds=servers)
 @discord.app_commands.describe(
     member="the member whose status to query, defaults to current user"
 )
 async def zug(ia, member: typing.Optional[discord.Member]):
+    "Get current travelynx status"
     if not member:
         member = ia.user
 
@@ -352,14 +359,20 @@ async def zug(ia, member: typing.Optional[discord.Member]):
 
 
 class RefreshTravelynx(discord.ui.View):
+    """fetches the current trip rendered in the embed this view's attached to
+    and updates the message accordingly"""
+
     def __init__(self, userid, data):
+        """we store the primary key of the trips table (user id and user-trip zugid)
+        in the view to fetch the correct trip again"""
         super().__init__()
         self.timeout = None
         self.userid = userid
         self.zugid = zugid(data)
 
     @discord.ui.button(emoji="🔄", style=discord.ButtonStyle.grey)
-    async def refresh(self, ia, button):
+    async def refresh(self, ia, _):
+        "the refresh button"
         user = database.execute(
             "SELECT token_status FROM users WHERE discord_id = ?", (self.userid,)
         ).fetchone()
