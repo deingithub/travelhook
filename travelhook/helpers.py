@@ -1,3 +1,4 @@
+"various helper functions that do more than just pure formatting logic. the icon library lives in here too"
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from enum import IntEnum
@@ -11,15 +12,19 @@ from pyhafas.profile import DBProfile
 
 
 def zugid(data):
+    """identify a user-trip by its departure time + hafas/iris specific trip id.
+    forms the primary key of the trips table together with user id."""
     return str(data["fromStation"]["scheduledTime"]) + data["train"]["id"]
 
 
 class Privacy(IntEnum):
+    "users' per-server privacy setting for /zug. LIVE enables the webhook for that server."
     ME = 0
     EVERYONE = 5
     LIVE = 10
 
 
+# globally used timezone
 tz = ZoneInfo("Europe/Berlin")
 hafas = HafasClient(DBProfile())
 
@@ -56,11 +61,16 @@ def is_new_journey(database, status, userid):
 
 
 def format_time(sched, actual, relative=False):
+    """render a nice timestamp for arrival/departure that includes delay information.
+    relative=True creates a discord relative timestamp that looks like "in 3 minutes"
+    and updates automatically, used for the embed's final destination arrival time.
+    """
     time = datetime.fromtimestamp(actual, tz=tz)
-    diff = ""
+
     if relative:
         return f"<t:{int(time.timestamp())}:R>"
 
+    diff = ""
     if actual > sched:
         diff = (actual - sched) // 60
         diff = f" +{diff}′"
@@ -69,6 +79,15 @@ def format_time(sched, actual, relative=False):
 
 
 def fetch_headsign(database, status):
+    "try to fetch a train headsign or destination name from HAFAS"
+
+    # have we already fetched the headsign? just use that.
+    cached = database.execute(
+        "SELECT headsign FROM trips WHERE journey_id = ?", (zugid(status),)
+    ).fetchone()
+    if cached and cached["headsign"]:
+        return cached["headsign"]
+
     def get_headsign_from_jid(jid):
         headsign = hafas.trip(jid).destination.name
         return replace_headsign.get(
@@ -79,13 +98,6 @@ def fetch_headsign(database, status):
             ),
             headsign,
         )
-
-    # have we already fetched the headsign? just use that.
-    cached = database.execute(
-        "SELECT headsign FROM trips WHERE journey_id = ?", (zugid(status),)
-    ).fetchone()
-    if cached and cached["headsign"]:
-        return cached["headsign"]
 
     headsign = "?"
     # first let's try to get the train directly using its hafas jid
@@ -102,7 +114,7 @@ def fetch_headsign(database, status):
             )
             return headsign
 
-    except Exception as e:
+    except:  # pylint: disable=bare-except
         print("error fetching headsign from hafas jid:")
         traceback.print_exc()
 
@@ -139,9 +151,9 @@ def fetch_headsign(database, status):
                 headsign = get_headsign_from_jid(candidates[0].legs[0].id)
             else:
                 # yeah i give up
-                print(origin, destination, departure, candidates)
-    except Exception as e:
-        print(f"error fetching headsign from journey:")
+                print(status["fromStation"], status["toStation"], departure, candidates)
+    except:  # pylint: disable=bare-except
+        print("error fetching headsign from journey:")
         traceback.print_exc()
 
     database.execute(
@@ -154,7 +166,8 @@ def fetch_headsign(database, status):
     return headsign
 
 
-class LineEmoji:
+class LineEmoji: # pylint: disable=too-few-public-methods
+    "namespace for our line-painting emoji stolen from wikipedia"
     START = "<:A1:1146748019245588561>"
     END = "<:A2:1146748021586010182>"
     CHANGE_SAME_STOP = "<:B0:1152624963677868185>"

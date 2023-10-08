@@ -1,3 +1,5 @@
+"this module, or rather its function format_travelynx, renders nice embed describing the current journey"
+
 import discord
 from haversine import haversine
 
@@ -62,7 +64,7 @@ def train_presentation(data):
         or str(data["toStation"]["uic"]).startswith("81")
     ):
         train_type = "ATS"
-        
+
     # that's not a tram, that's an elevator
     if train_type == "ZahnR":
         train_type = "SB"
