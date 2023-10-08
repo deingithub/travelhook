@@ -76,7 +76,7 @@ def train_presentation(data):
     # if we don't have an hafas jid link it to a station instead to disambiguate
     else:
         link += (
-            +f"/{data['train']['type']}%20{data['train']['no']}/"
+            f"/{data['train']['type']}%20{data['train']['no']}/"
             + str(data["fromStation"]["scheduledTime"] * 1000)
             + f"/?station={data['fromStation']['uic']}"
         )
