@@ -1,27 +1,25 @@
-"this contains our bot commands and the incoming webhook handler"
+"contains our bot commands and the incoming webhook handler"
 import json
 import secrets
-import sqlite3
 import typing
+from datetime import datetime, timedelta
 
 from aiohttp import ClientSession, web
 import discord
 from discord.ext import commands
+from haversine import haversine
 
+from . import database as DB
 from .format import format_travelynx
-from .helpers import is_new_journey, is_token_valid, Privacy, train_type_color, zugid
+from .helpers import is_token_valid, train_type_color, zugid, tz
 
 config = {}
 with open("settings.json", "r", encoding="utf-8") as f:
     config = json.load(f)
 
-database = sqlite3.connect(config["database"], isolation_level=None)
-database.row_factory = sqlite3.Row
+DB.connect(config["database"])
 
-servers = [
-    discord.Object(id=row["server_id"])
-    for row in database.execute("SELECT server_id FROM servers").fetchall()
-]
+servers = [server.as_discord_obj() for server in DB.Server.find_all()]
 intents = discord.Intents.default() | discord.Intents(members=True)
 bot = commands.Bot(command_prefix=" ", intents=intents)
 
@@ -46,36 +44,31 @@ async def on_ready():
 def handle_status_update(userid, _, status):
     """update trip data in the database, also starting a new journey if the last data
     we have is too old or distant for this to be a changeover"""
-    if last_trip := database.execute(
-        "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time DESC LIMIT 1;",
-        (userid,),
-    ).fetchone():
-        last_trip = json.loads(last_trip["travelynx_status"])
-        if not zugid(status) == zugid(last_trip) and is_new_journey(
-            database, status, userid
-        ):
-            database.execute("DELETE FROM trips WHERE user_id = ?", (userid,))
-            database.execute("DELETE FROM messages WHERE user_id = ?", (userid,))
 
-    database.execute(
-        "INSERT INTO trips(journey_id, user_id, travelynx_status, from_time, from_station, from_lat, from_lon, to_time, to_station, to_lat, to_lon) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO UPDATE SET travelynx_status=excluded.travelynx_status, "
-        "from_time = excluded.from_time, from_station=excluded.from_station, from_lat=excluded.from_lat, from_lon=excluded.from_lon, "
-        "to_time = excluded.to_time, to_station=excluded.to_station, to_lat=excluded.to_lat, to_lon=excluded.to_lon ",
-        (
-            zugid(status),
-            userid,
-            json.dumps(status),
-            status["fromStation"]["realTime"],
-            status["fromStation"]["name"],
-            status["fromStation"]["latitude"],
-            status["fromStation"]["longitude"],
-            status["toStation"]["realTime"],
-            status["toStation"]["name"],
-            status["toStation"]["latitude"],
-            status["toStation"]["longitude"],
-        ),
-    )
+    def is_new_journey(old, new):
+        "determine if the user has merely changed into a new transport or if they have started another journey altogether"
+
+        if old["train"]["id"] == new["train"]["id"]:
+            return False
+
+        change_from = old["toStation"]
+        change_to = new["fromStation"]
+        change_distance = haversine(
+            (change_from["latitude"], change_from["longitude"]),
+            (change_to["latitude"], change_to["longitude"]),
+        )
+        change_duration = datetime.fromtimestamp(
+            change_to["realTime"], tz=tz
+        ) - datetime.fromtimestamp(change_from["realTime"], tz=tz)
+
+        return (change_distance > 2.0) or change_duration > timedelta(hours=2)
+
+    if (last_trip := DB.Trip.find_last_trip_for(userid)) and is_new_journey(
+        last_trip.status, status
+    ):
+        DB.User.find(discord_id=userid).break_journey()
+
+    DB.Trip.upsert(userid, status)
 
 
 async def receive(bot):
@@ -83,15 +76,14 @@ async def receive(bot):
     travelynx and runs the live feed for the users that have enabled it"""
 
     async def handler(req):
-        user = database.execute(
-            "SELECT * FROM users WHERE token_webhook = ?",
-            (req.headers["authorization"].removeprefix("Bearer "),),
-        ).fetchone()
+        user = DB.User.find(
+            token_webhook=req.headers["authorization"].removeprefix("Bearer ")
+        )
         if not user:
             print(f"unknown user {req.headers['authorization']}")
             return
 
-        userid = user["discord_id"]
+        userid = user.discord_id
         data = await req.json()
 
         if data["reason"] == "ping" and not data["status"]["checkedIn"]:
@@ -105,57 +97,34 @@ async def receive(bot):
 
         # when checkin is undone, delete its message
         if data["reason"] == "undo" and not data["status"]["checkedIn"]:
-            current_trips = database.execute(
-                "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time ASC",
-                (userid,),
-            ).fetchall()
-            current_trips = [
-                json.loads(row["travelynx_status"]) for row in current_trips
-            ]
-            database.execute(
-                "DELETE FROM trips WHERE user_id = ? AND journey_id = ?",
-                (userid, zugid(data["status"])),
+            last_trip = DB.Trip.find_last_trip_for(user.discord_id)
+            messages_to_delete = DB.Message.find_all(
+                user.discord_id, zugid(last_trip.status)
             )
-
-            messages_to_delete = database.execute(
-                "SELECT * FROM messages WHERE user_id = ? AND journey_id = ?",
-                (userid, zugid(current_trips[-1])),
-            ).fetchall()
             for message in messages_to_delete:
-                channel = bot.get_channel(message["channel_id"])
-                msg = await channel.fetch_message(message["message_id"])
-                await msg.delete()
-            database.execute(
-                "DELETE FROM messages WHERE user_id = ? AND journey_id = ?",
-                (userid, zugid(current_trips[-1])),
-            )
+                await message.delete(bot)
+            DB.Trip.find(user.discord_id, zugid(last_trip.status)).delete()
 
-            if len(current_trips) > 1:
-                messages_to_edit = database.execute(
-                    "SELECT * FROM messages WHERE user_id = ? AND journey_id = ?",
-                    (userid, zugid(current_trips[-2])),
-                ).fetchall()
-                for message in messages_to_edit:
-                    channel = bot.get_channel(message["channel_id"])
-                    msg = await channel.fetch_message(message["message_id"])
+            if current_trips := [
+                trip.status for trip in DB.Trip.find_current_trips_for(user.discord_id)
+            ]:
+                for message in DB.Message.find_all(
+                    user.discord_id, zugid(current_trips[-1])
+                ):
+                    msg = await message.fetch(bot)
                     await msg.edit(
-                        embeds=format_travelynx(
-                            bot, database, userid, current_trips[0:-1]
-                        ),
+                        embeds=format_travelynx(bot, DB.DB, userid, current_trips),
                         view=None,
                     )
 
             return web.Response(
-                text=f'Unpublished checkin to {current_trips[-1]["train"]["type"]} {current_trips[-1]["train"]["no"]} for {len(messages_to_delete)} channels'
+                text=f"Unpublished last checkin for {len(messages_to_delete)} channels"
             )
 
         # don't share completely private checkins, only unlisted and upwards
         if data["status"]["visibility"]["desc"] == "private":
             # just to make sure we don't have it lying around for some reason anyway
-            database.execute(
-                "DELETE FROM trips WHERE user_id = ? AND journey_id = ?",
-                (userid, zugid(data["status"])),
-            )
+            DB.Trip.find(user.discord_id, zugid(data["status"])).delete()
             return web.Response(
                 text=f'Not publishing private {data["reason"]} in {data["status"]["train"]["type"]} {data["status"]["train"]["no"]}'
             )
@@ -163,70 +132,50 @@ async def receive(bot):
         # update database to maintain trip data
         handle_status_update(userid, data["reason"], data["status"])
 
-        current_trips = database.execute(
-            "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time ASC",
-            (userid,),
-        ).fetchall()
-        current_trips = [json.loads(row["travelynx_status"]) for row in current_trips]
+        current_trips = [
+            trip.status for trip in DB.Trip.find_current_trips_for(user.discord_id)
+        ]
 
         # get all channels that live updates get pushed to for this user
-        channels = database.execute(
-            "SELECT servers.live_channel FROM servers JOIN privacy on servers.server_id = privacy.server_id "
-            "WHERE privacy.user_id = ? AND privacy.privacy_level = ?;",
-            (userid, Privacy.LIVE),
-        ).fetchall()
-        channels = [bot.get_channel(c["live_channel"]) for c in channels]
-
+        channels = [bot.get_channel(cid) for cid in user.find_live_channel_ids()]
         for channel in channels:
-            if (
-                not channel.guild.get_member(userid)
-                or not channel.permissions_for(
-                    channel.guild.get_member(userid)
-                ).read_messages
-            ):
+            member = channel.guild.get_member(user.discord_id)
+            # don't post if the user has left or can't see the live channel
+            if not member or not channel.permissions_for(member).read_messages:
                 continue
+
+            view = (
+                RefreshTravelynx(user.discord_id, current_trips[-1])
+                if data["reason"] != "checkout"
+                else None
+            )
+
             # check if we already have a message for this particular trip
             # edit it if it exists, otherwise create a new one and submit it into the database
-            if message := database.execute(
-                "SELECT * FROM messages WHERE journey_id = ? AND user_id = ? AND channel_id = ?",
-                (zugid(data["status"]), userid, channel.id),
-            ).fetchone():
-                message = await channel.fetch_message(message["message_id"])
-                await message.edit(
-                    embeds=format_travelynx(bot, database, userid, current_trips),
-                    view=(
-                        RefreshTravelynx(userid, current_trips[-1])
-                        if not data["reason"] == "checkout"
-                        else None
-                    ),
+            if message := DB.Message.find(zugid(data["status"]), userid, channel.id):
+                msg = await message.fetch(bot)
+
+                await msg.edit(
+                    embeds=format_travelynx(bot, DB.DB, userid, current_trips),
+                    view=view,
                 )
             else:
                 message = await channel.send(
-                    embeds=format_travelynx(bot, database, userid, current_trips),
-                    view=(
-                        RefreshTravelynx(userid, current_trips[-1])
-                        if not data["reason"] == "checkout"
-                        else None
-                    ),
+                    embeds=format_travelynx(bot, DB.DB, userid, current_trips),
+                    view=view,
                 )
-                database.execute(
-                    "INSERT INTO messages(journey_id, user_id, channel_id, message_id) VALUES(?,?,?,?)",
-                    (zugid(data["status"]), userid, channel.id, message.id),
-                )
+                DB.Message.write(user.discord_id, zugid(data["status"]), message)
                 # shrink previous message to prevent clutter
-                if len(current_trips) > 1:
-                    prev_message = database.execute(
-                        "SELECT message_id, channel_id FROM messages JOIN trips ON messages.journey_id = trips.journey_id "
-                        "WHERE messages.channel_id = ? AND messages.user_id = ? AND messages.journey_id = ?",
-                        (channel.id, userid, zugid(current_trips[-2])),
-                    ).fetchone()
-                    prev_message = await bot.get_channel(
-                        prev_message["channel_id"]
-                    ).fetch_message(prev_message["message_id"])
-                    await prev_message.edit(
+                if len(current_trips) > 1 and (
+                    prev_message := DB.Message.find(
+                        user.discord_id, zugid(current_trips[-2]), channel.id
+                    )
+                ):
+                    prev_msg = await prev_message.fetch(bot)
+                    await prev_msg.edit(
                         embeds=format_travelynx(
                             bot,
-                            database,
+                            DB.DB,
                             userid,
                             current_trips[0:-1],
                             continue_link=message.jump_url,
@@ -249,22 +198,19 @@ async def receive(bot):
 @discord.app_commands.describe(
     level="leave empty to query current level. set to ME to only allow you to use /zug, set to EVERYONE to allow everyone to use /zug and set to LIVE to activate the live feed."
 )
-async def privacy(ia, level: typing.Optional[Privacy]):
+async def privacy(ia, level: typing.Optional[DB.Privacy]):
     "Query or change your current privacy settings on this server"
 
-    def explain(level: typing.Optional[Privacy]):
+    def explain(level: typing.Optional[DB.Privacy]):
         desc = "This means that, on this server,\n"
         match level:
-            case Privacy.ME:
+            case DB.Privacy.ME:
                 desc += "- Only you can use the **/zug** command to share your current journey."
-            case Privacy.EVERYONE:
+            case DB.Privacy.EVERYONE:
                 desc += "- Everyone can use the **/zug** command to see your current journey."
-            case Privacy.LIVE:
+            case DB.Privacy.LIVE:
                 desc += "- Everyone can use the **/zug** command to see your current journey.\n"
-                if live_channel := database.execute(
-                    "SELECT live_channel FROM servers WHERE server_id = ?",
-                    (ia.guild.id,),
-                ).fetchone()["live_channel"]:
+                if live_channel := DB.Server.find(ia.guild.id).live_channel:
                     desc += f"- Live updates will posted into {bot.get_channel(live_channel).mention} with your entire journey."
                 else:
                     desc += (
@@ -275,29 +221,13 @@ async def privacy(ia, level: typing.Optional[Privacy]):
         return desc
 
     if level is None:
-        user = database.execute(
-            "SELECT * FROM users LEFT JOIN privacy ON privacy.user_id = users.discord_id AND server_id = ? WHERE users.discord_id = ?",
-            (
-                ia.guild.id,
-                ia.user.id,
-            ),
-        ).fetchone()
-        priv = Privacy(user["privacy_level"] or 0)
-
+        level = DB.User.find(discord_id=ia.user.id).find_privacy_for(ia.guild.id)
         await ia.response.send_message(
-            f"Your privacy level is set to **{priv.name}**. {explain(priv)}"
+            f"Your privacy level is set to **{level.name}**. {explain(level)}"
         )
 
     else:
-        database.execute(
-            "INSERT INTO privacy(user_id, server_id, privacy_level) VALUES(?,?,?) "
-            "ON CONFLICT DO UPDATE SET privacy_level=excluded.privacy_level",
-            (
-                ia.user.id,
-                ia.guild.id,
-                int(level),
-            ),
-        )
+        DB.User.find(discord_id=ia.user.id).set_privacy_for(ia.guild_id, level)
         await ia.response.send_message(
             f"Your privacy level has been set to **{level.name}**. {explain(level)}"
         )
@@ -312,18 +242,19 @@ async def zug(ia, member: typing.Optional[discord.Member]):
     if not member:
         member = ia.user
 
-    user = database.execute(
-        "SELECT * FROM users LEFT JOIN privacy ON privacy.user_id = users.discord_id AND server_id = ? WHERE users.discord_id = ?",
-        (
-            ia.guild.id,
-            member.id,
-        ),
-    ).fetchone()
+    user = DB.User.find(discord_id=member.id)
+    if not user:
+        await ia.response.send_message(
+            embed=discord.Embed(
+                title="Oops!",
+                color=train_type_color["U1"],
+                description=f"It looks like {member.mention} is not registered with the travelynx relay bot yet.\n"
+                "If you want to fix this minor oversight, use **/register** today!",
+            )
+        )
+        return
 
-    if (
-        member.id != user["discord_id"]
-        and Privacy(user["privacy_level"] or 0) == Privacy.ME
-    ):
+    if user.find_privacy_for(ia.guild.id) == DB.Privacy.ME and not member == ia.user:
         await ia.response.send_message(
             embed=discord.Embed().set_author(
                 name=f"{member.name} ist gerade nicht unterwegs",
@@ -334,7 +265,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
 
     async with ClientSession() as session:
         async with session.get(
-            f'https://travelynx.de/api/v1/status/{user["token_status"]}'
+            f"https://travelynx.de/api/v1/status/{user.token_status}"
         ) as r:
             if r.status == 200:
                 status = await r.json()
@@ -351,16 +282,12 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                     return
 
                 handle_status_update(member.id, "update", status)
-                current_trips = database.execute(
-                    "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time ASC",
-                    (member.id,),
-                ).fetchall()
                 current_trips = [
-                    json.loads(row["travelynx_status"]) for row in current_trips
+                    trip.status for trip in DB.Trip.find_current_trips_for(member.id)
                 ]
 
                 await ia.response.send_message(
-                    embeds=format_travelynx(bot, database, member.id, current_trips),
+                    embeds=format_travelynx(bot, DB.DB, member.id, current_trips),
                     view=RefreshTravelynx(member.id, current_trips[-1]),
                 )
 
@@ -388,20 +315,20 @@ async def register(ia):
 
 class RegisterTravelynxStepZero(discord.ui.View):
     """view attached to the /register initial response, is persistent over restarts.
-    first we check that we aren't already registered, then offer to proceed to step 1 with token modal"""
+    first we check that we aren't already registered, then offer to proceed to step 1 with token modal
+    """
+
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(
         label="Connect travelynx account",
         style=discord.ButtonStyle.green,
-        custom_id="register_button",
+        custom_id="register_button:a",
     )
     async def doit(self, ia, _):
         "button to proceed to step 1"
-        if database.execute(
-            "SELECT * FROM users WHERE discord_id = ?", (ia.user.id,)
-        ).fetchone():
+        if DB.User.find(discord_id=ia.user.id):
             await ia.response.send_message(
                 embed=discord.Embed(
                     title="Oops!",
@@ -411,6 +338,8 @@ class RegisterTravelynxStepZero(discord.ui.View):
                 ),
                 ephemeral=True,
             )
+            return
+
         await ia.response.send_message(
             embed=discord.Embed(
                 title="Step 1/3: Connect Status API",
@@ -428,7 +357,9 @@ class RegisterTravelynxStepZero(discord.ui.View):
 
 class RegisterTravelynxStepOne(discord.ui.View):
     """view attached to the step 1 ephemeral response. ask for and verify the status token,
-    register the user, then offer to proceed to step 2 to copy live feed/webhook credentials."""
+    register the user, then offer to proceed to step 2 to copy live feed/webhook credentials.
+    """
+
     @discord.ui.button(label="I have my token ready.", style=discord.ButtonStyle.green)
     async def doit(self, ia, _):
         "just send the modal when the user has the token ready"
@@ -441,11 +372,14 @@ class RegisterTravelynxStepOne(discord.ui.View):
         async def on_submit(self, ia):
             """triggered on modal submit, if everything is fine, register the user and
             edit ephemeral response to proceed to step 2, else ask them to try again"""
-            if await is_token_valid(self.token.value.strip()):
-                database.execute(
-                    "INSERT INTO users (discord_id, token_status, token_webhook) VALUES(?,?,?)",
-                    (ia.user.id, self.token.value.strip(), secrets.token_urlsafe()),
-                )
+            token = self.token.value.strip()
+            if await is_token_valid(token):
+                DB.User(
+                    discord_id=ia.user.id,
+                    token_status=token,
+                    token_webhook=secrets.token_urlsafe(),
+                    token_travel=None,
+                ).write()
                 await ia.response.edit_message(
                     embed=discord.Embed(
                         title="Step 2/3: Connect Live Feed (optional)",
@@ -475,12 +409,11 @@ class RegisterTravelynxStepOne(discord.ui.View):
 
 class RegisterTravelynxStepTwo(discord.ui.View):
     "view triggered by successful registration in step 1, show credentials for live feed if asked"
+
     @discord.ui.button(label="Connect live feed", style=discord.ButtonStyle.green)
     async def doit(self, ia, _):
         "offer the live feed webhook credentials for copying"
-        token = database.execute(
-            "SELECT token_webhook FROM users WHERE discord_id = ?", (ia.user.id,)
-        ).fetchone()["token_webhook"]
+        token = DB.User.find(ia.user.id).token_webhook
         await ia.response.edit_message(
             embed=discord.Embed(
                 title="Step 3/3: Connect live feed (optional)",
@@ -530,27 +463,22 @@ class RefreshTravelynx(discord.ui.View):
     @discord.ui.button(emoji="🔄", style=discord.ButtonStyle.grey)
     async def refresh(self, ia, _):
         "the refresh button"
-        user = database.execute(
-            "SELECT token_status FROM users WHERE discord_id = ?", (self.userid,)
-        ).fetchone()
+        user = DB.User.find(discord_id=self.userid)
         async with ClientSession() as session:
             async with session.get(
-                f'https://travelynx.de/api/v1/status/{user["token_status"]}'
+                f"https://travelynx.de/api/v1/status/{user.token_status}"
             ) as r:
                 if r.status == 200:
                     data = await r.json()
                     if data["checkedIn"] and self.zugid == zugid(data):
                         handle_status_update(self.userid, "update", data)
-                        current_trips = database.execute(
-                            "SELECT travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time ASC",
-                            (self.userid,),
-                        ).fetchall()
                         current_trips = [
-                            json.loads(row["travelynx_status"]) for row in current_trips
+                            trip.status
+                            for trip in DB.Trip.find_current_trips_for(self.userid)
                         ]
                         await ia.response.edit_message(
                             embeds=format_travelynx(
-                                bot, database, self.userid, current_trips
+                                bot, DB.DB, self.userid, current_trips
                             ),
                             view=self,
                         )

@@ -1,13 +1,10 @@
 "various helper functions that do more than just pure formatting logic. the icon library lives in here too"
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
-from enum import IntEnum
 import traceback
-import json
 
 import discord
 from aiohttp import ClientSession
-from haversine import haversine
 from pyhafas import HafasClient
 from pyhafas.profile import DBProfile
 
@@ -18,47 +15,9 @@ def zugid(data):
     return str(data["fromStation"]["scheduledTime"]) + data["train"]["id"]
 
 
-class Privacy(IntEnum):
-    "users' per-server privacy setting for /zug. LIVE enables the webhook for that server."
-    ME = 0
-    EVERYONE = 5
-    LIVE = 10
-
-
 # globally used timezone
 tz = ZoneInfo("Europe/Berlin")
 hafas = HafasClient(DBProfile())
-
-
-def is_new_journey(database, status, userid):
-    "determine if the user has merely changed into a new transport or if they have started another journey altogether"
-
-    if last_journey := database.execute(
-        "SELECT to_lat, to_lon, to_time, travelynx_status FROM trips WHERE user_id = ? ORDER BY from_time DESC LIMIT 1;",
-        (userid,),
-    ).fetchone():
-        if (
-            status["train"]["id"]
-            == json.loads(last_journey["travelynx_status"])["train"]["id"]
-        ):
-            return False
-
-        next_journey = status["fromStation"]
-
-        change_distance = haversine(
-            (last_journey["to_lat"] or 0.0, last_journey["to_lon"] or 0.0),
-            (
-                next_journey["latitude"] or 90.0,
-                next_journey["longitude"] or 90.0,
-            ),
-        )
-        change_duration = datetime.fromtimestamp(
-            next_journey["realTime"], tz=tz
-        ) - datetime.fromtimestamp(last_journey["to_time"], tz=tz)
-
-        return (change_distance > 2.0) or change_duration > timedelta(hours=2)
-
-    return True
 
 
 async def is_token_valid(token):
@@ -71,7 +30,7 @@ async def is_token_valid(token):
                     return True
                 print(f"token {token} invalid: {r.status} {data}")
                 return False
-            except: # pylint: disable=bare-except
+            except:  # pylint: disable=bare-except
                 print(f"error verifying token {token}:")
                 traceback.print_exc()
 
