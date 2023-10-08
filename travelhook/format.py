@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import discord
 from haversine import haversine
 
@@ -9,7 +7,6 @@ from .helpers import (
     train_type_emoji,
     LineEmoji,
     train_type_color,
-    tz,
 )
 
 
@@ -26,24 +23,20 @@ def shortened_name(previous_station, this_station):
     this_name = this_station["name"].split(", ")
     if not (len(previous_name) > 1 and len(this_name) > 1):
         return this_station["name"]
-    elif previous_name[-1] == this_name[-1]:
+    if previous_name[-1] == this_name[-1]:
         return ", ".join(this_name[0:-1])
-    else:
-        return this_station["name"]
+    return this_station["name"]
 
 
 def train_presentation(data):
+    "do some cosmetic fixes to train type/line and generate a bahn.expert link for it"
     is_hafas = "|" in data["train"]["id"]
 
     # account for "ME RE2" instead of "RE  "
     train_type = data["train"]["type"]
     train_line = data["train"]["line"]
-    if train_type not in train_type_emoji.keys():
-        if (
-            train_line
-            and len(train_line) > 2
-            and train_line[0:2] in train_type_emoji.keys()
-        ):
+    if train_type not in train_type_emoji:
+        if train_line and len(train_line) > 2 and train_line[0:2] in train_type_emoji:
             train_type = train_line[0:2]
             train_line = train_line[2:]
 
@@ -51,9 +44,9 @@ def train_presentation(data):
         train_line = data["train"]["no"]
 
     # special treatment for üstra because i love you
-    is_in_hannover = lambda lat, lon: (lat > 52.2047 and lat < 52.4543) and (
-        lon > 9.5684 and lon < 9.9996
-    )
+    def is_in_hannover(lat, lon):
+        return (52.2047 < lat < 52.4543) and (9.5684 < lon < 9.9996)
+
     if train_type == "STR" and is_in_hannover(
         data["fromStation"]["latitude"], data["fromStation"]["longitude"]
     ):
@@ -69,6 +62,10 @@ def train_presentation(data):
         or str(data["toStation"]["uic"]).startswith("81")
     ):
         train_type = "ATS"
+        
+    # that's not a tram, that's an elevator
+    if train_type == "ZahnR":
+        train_type = "SB"
 
     link = "https://bahn.expert/details"
     # if HAFAS, add journeyid to link to make sure it gets the right one
@@ -86,23 +83,24 @@ def train_presentation(data):
 
 
 def format_travelynx(bot, database, userid, statuses, continue_link=None):
+    """the actual formatting function called by message sends and edits
+    to render an embed describing the current journey"""
     user = bot.get_user(userid)
 
     desc = ""
     color = None
 
-    # in the format loop, get the train after the current one or None if we're at the last
-    _next = (
-        lambda statuses, current_index: statuses[current_index + 1]
-        if (current_index + 1) < len(statuses)
-        else None
-    )
-    # in the format loop, get the train before the current one or None if we're at the first
-    _prev = (
-        lambda statuses, current_index: statuses[current_index - 1]
-        if (current_index - 1) >= 0
-        else None
-    )
+    def _next(statuses, current_index):
+        "in the format loop, get the train after the current one or None if we're at the last"
+        if (current_index + 1) < len(statuses):
+            return statuses[current_index + 1]
+        return None
+
+    def _prev(statuses, current_index):
+        "in the format loop, get the train before the current one or None if we're at the first"
+        if (current_index - 1) >= 0:
+            return statuses[current_index - 1]
+        return None
 
     for i, train in enumerate(statuses):
         departure = format_time(
@@ -229,6 +227,7 @@ def format_travelynx(bot, database, userid, statuses, continue_link=None):
 
 
 def sillies(status, embed):
+    "do funny things with the embed once it's done"
     if "Durlacher Tor" in (status["fromStation"]["name"] + status["toStation"]["name"]):
         return embed.set_image(url="https://i.imgur.com/6WhzdSp.png")
     if "Ziegelstein" in (status["fromStation"]["name"] + status["toStation"]["name"]):
