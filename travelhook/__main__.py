@@ -221,16 +221,25 @@ async def privacy(ia, level: typing.Optional[DB.Privacy]):
         desc += "\n- Note: If your checkin is set to **private visibility** on travelynx, this bot will not post it anywhere."
         return desc
 
-    if level is None:
-        level = DB.User.find(discord_id=ia.user.id).find_privacy_for(ia.guild.id)
-        await ia.response.send_message(
-            f"Your privacy level is set to **{level.name}**. {explain(level)}"
-        )
-
+    if user := DB.User.find(discord_id=ia.user.id):
+        if level is None:
+            level = user.find_privacy_for(ia.guild.id)
+            await ia.response.send_message(
+                f"Your privacy level is set to **{level.name}**. {explain(level)}"
+            )
+        else:
+            user.set_privacy_for(ia.guild_id, level)
+            await ia.response.send_message(
+                f"Your privacy level has been set to **{level.name}**. {explain(level)}"
+            )
     else:
-        DB.User.find(discord_id=ia.user.id).set_privacy_for(ia.guild_id, level)
         await ia.response.send_message(
-            f"Your privacy level has been set to **{level.name}**. {explain(level)}"
+            embed=discord.Embed(
+                title="Oops!",
+                color=train_type_color["U1"],
+                description=f"It looks like {member.mention} is not registered with the travelynx relay bot yet.\n"
+                "If you want to fix this minor oversight, use **/register** today!",
+            )
         )
 
 
