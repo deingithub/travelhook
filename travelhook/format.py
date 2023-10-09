@@ -40,10 +40,13 @@ def train_presentation(data):
     # account for "ME RE2" instead of "RE  "
     train_type = data["train"]["type"]
     train_line = data["train"]["line"]
-    if train_type not in train_type_emoji:
-        if train_line and len(train_line) > 2 and train_line[0:2] in train_type_emoji:
+    if train_line and train_type not in train_type_emoji:
+        if len(train_line) > 2 and train_line[0:2] in train_type_emoji:
             train_type = train_line[0:2]
             train_line = train_line[2:]
+        if train_line[0] in train_type_emoji:
+            train_type = train_line[0]
+            train_line = train_line[1:]
 
     if not train_line:
         train_line = data["train"]["no"]

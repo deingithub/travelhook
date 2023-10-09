@@ -440,9 +440,12 @@ class RegisterTravelynxStepTwo(discord.ui.View):
                 "«travelynx relay bot successfully connected!» in the server response. If that doesn't happen, "
                 "bother the bot operator about it.\nIf you changed your mind and don't want to connect right now, "
                 "bother the bot operator about it once you've decided otherwise again. Until you copy in the settings, "
-                "no live connection will be made.",
+                "no live connection will be made.\n\n"
+                "**Note:** Once you've set up the live feed with this, you also **need to enable it** for every server. "
+                "To do this, run **/privacy LIVE** on the server you want to enable it for. To enable it on this server, "
+                "you can also click the button below now.",
             ).set_image(url="https://i.imgur.com/LhsH8Nt.png"),
-            view=None,
+            view=RegisterTravelynxEnableLiveFeed(),
         )
 
     @discord.ui.button(label="No, I don't want that.", style=discord.ButtonStyle.grey)
@@ -456,6 +459,16 @@ class RegisterTravelynxStepTwo(discord.ui.View):
             ),
             view=None,
         )
+
+
+class RegisterTravelynxEnableLiveFeed(discord.ui.View):
+    "after registration, offer to change the privacy settings for the current server"
+
+    @discord.ui.button(
+        label="Enable live feed for this server", style=discord.ButtonStyle.red
+    )
+    async def doit(self, ia, _):
+        await privacy.callback(ia, DB.Privacy.LIVE)
 
 
 class RefreshTravelynx(discord.ui.View):
