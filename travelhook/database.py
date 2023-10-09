@@ -212,9 +212,8 @@ class Message:
             return cls(**row)
         return None
 
-    @classmethod
-    def write(cls, user_id, journey_id, message):
+    def write(self):
         DB.execute(
             "INSERT INTO messages(journey_id, user_id, channel_id, message_id) VALUES(?,?,?,?)",
-            (journey_id, user_id, message.channel.id, message.id),
+            (self.journey_id, self.user_id, self.channel_id, self.message_id),
         )

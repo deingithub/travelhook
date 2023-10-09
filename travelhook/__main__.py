@@ -152,7 +152,7 @@ async def receive(bot):
 
             # check if we already have a message for this particular trip
             # edit it if it exists, otherwise create a new one and submit it into the database
-            if message := DB.Message.find(zugid(data["status"]), userid, channel.id):
+            if message := DB.Message.find(userid, zugid(data["status"]), channel.id):
                 msg = await message.fetch(bot)
 
                 await msg.edit(
@@ -164,7 +164,9 @@ async def receive(bot):
                     embeds=format_travelynx(bot, userid, current_trips),
                     view=view,
                 )
-                DB.Message.write(user.discord_id, zugid(data["status"]), message)
+                DB.Message(
+                    zugid(data["status"]), user.discord_id, channel.id, message.id
+                ).write()
                 # shrink previous message to prevent clutter
                 if len(current_trips) > 1 and (
                     prev_message := DB.Message.find(
