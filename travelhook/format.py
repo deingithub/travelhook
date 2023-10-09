@@ -1,5 +1,7 @@
 "this module, or rather its function format_travelynx, renders nice embed describing the current journey"
 
+from itertools import groupby
+
 import discord
 from haversine import haversine
 
@@ -7,6 +9,7 @@ from .helpers import (
     fetch_headsign,
     format_time,
     train_type_emoji,
+    get_train_emoji,
     LineEmoji,
     train_type_color,
 )
@@ -57,6 +60,7 @@ def train_presentation(data):
     # special treatment for wien U6 (and the others too i guess)
     if train_type == "U" and data["fromStation"]["name"].startswith("Wien "):
         train_type = data["fromStation"]["name"][-3:-1]
+        train_line = ""
 
     # special treatment for austrian s-bahn
     if train_type == "S" and (
@@ -116,7 +120,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
 
             # draw only train type and line number in one line
             train_type, train_line, _ = train_presentation(train)
-            desc += f"{train_type_emoji.get(train_type, train_type)} **{train_line}**"
+            desc += f"{get_train_emoji(train_type)} **{train_line}**"
             # draw an arrow to the next trip in the compact section until the last one in the section
             if _next(statuses, i + 1):
                 desc += " → "
@@ -147,9 +151,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         desc += (
             LineEmoji.RAIL
             + LineEmoji.SPACER
-            + train_type_emoji.get(
-                train_type, f"<:sbbzug:1160275971266576494> {train_type}"
-            )
+            + get_train_emoji(train_type)
             + f" [**{train_line} » {fetch_headsign(train)}**]({route_link})"
             + (f"{LineEmoji.SPACER}💬" if train["comment"] else "")
             + "\n"
