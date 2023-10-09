@@ -237,7 +237,7 @@ async def privacy(ia, level: typing.Optional[DB.Privacy]):
             embed=discord.Embed(
                 title="Oops!",
                 color=train_type_color["U1"],
-                description=f"It looks like {member.mention} is not registered with the travelynx relay bot yet.\n"
+                description=f"It looks like {ia.user.mention} is not registered with the travelynx relay bot yet.\n"
                 "If you want to fix this minor oversight, use **/register** today!",
             )
         )

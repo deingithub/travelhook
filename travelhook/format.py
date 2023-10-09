@@ -225,19 +225,36 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             icon_url=user.avatar.url,
         )
     ]
-    embeds[0] = sillies(statuses[-1], embeds[0])
+    embeds[0] = sillies(statuses, embeds[0])
 
     return embeds
 
 
-def sillies(status, embed):
+def sillies(statuses, embed):
     "do funny things with the embed once it's done"
+
+    sortkey = lambda tup: tup[0] + tup[1]
+    train_lines = sorted([train_presentation(train) for train in statuses], key=sortkey)
+    grouped = []
+    for _, group in groupby(train_lines, key=sortkey):
+        grouped.append(list(group))
+    grouped = sorted(grouped, key=len, reverse=True)
+    if len(grouped[0]) >= 3:
+        train_type, train_line, _ = grouped[0][0]
+        embed.description += f"\n## — {get_train_emoji(train_type)} {train_line} counter: {len(grouped[0])}× —"
+
+    status = statuses[-1]
     if "Durlacher Tor" in (status["fromStation"]["name"] + status["toStation"]["name"]):
         return embed.set_image(url="https://i.imgur.com/6WhzdSp.png")
     if "Ziegelstein" in (status["fromStation"]["name"] + status["toStation"]["name"]):
         return embed.set_thumbnail(url="https://i.imgur.com/W3mPNEn.gif")
+    if "Wien Floridsdorf" in status["toStation"]["name"]:
+        return embed.set_image(url="https://i.imgur.com/CSBTb0z.gif")
     if "Gumpendorfer Straße" in (
         status["fromStation"]["name"] + status["toStation"]["name"]
     ):
         return embed.set_image(url="https://i.imgur.com/9P15eRQ.png")
+    if status["train"]["type"] == "Schw-B":
+        return embed.set_image(url="https://i.imgur.com/8deLTcU.png")
+
     return embed
