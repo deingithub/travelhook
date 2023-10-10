@@ -45,15 +45,23 @@ def handle_status_update(userid, _, status):
     """update trip data in the database, also starting a new journey if the last data
     we have is too old or distant for this to be a changeover"""
 
+    user = DB.User.find(discord_id=userid)
+
     def is_new_journey(old, new):
         "determine if the user has merely changed into a new transport or if they have started another journey altogether"
 
         if old["train"]["id"] == new["train"]["id"]:
             return False
 
-        if new["train"]["id"].startswith("travelhookfaked") or old["train"][
-            "id"
-        ].startswith("travelhookfaked"):
+        if user.break_journey == DB.BreakMode.FORCE_BREAK:
+            user.set_break_mode(DB.BreakMode.NATURAL)
+            return True
+
+        if user.break_journey == DB.BreakMode.FORCE_GLUE:
+            user.set_break_mode(DB.BreakMode.NATURAL)
+            return False
+
+        if "travelhookfaked" in (new["train"]["id"] + old["train"]["id"]):
             return False
 
         change_from = old["toStation"]
@@ -71,7 +79,7 @@ def handle_status_update(userid, _, status):
     if (last_trip := DB.Trip.find_last_trip_for(userid)) and is_new_journey(
         last_trip.status, status
     ):
-        DB.User.find(discord_id=userid).break_journey()
+        user.do_break_journey()
 
     DB.Trip.upsert(userid, status)
 
@@ -297,37 +305,55 @@ journey = discord.app_commands.Group(
     name="journey", description="edit and fix the journeys tracked by the relay bot."
 )
 
+Choice = discord.app_commands.Choice
+
 
 @journey.command(name="break")
-async def break_journey(ia):
-    "Forcibly start a new journey instead of transferring at the next checkin."
+@discord.app_commands.choices(
+    break_mode=[
+        Choice(
+            name="Natural — Transfer between nearby stops with less than two hours of waiting.",
+            value=int(DB.BreakMode.NATURAL),
+        ),
+        Choice(
+            name="Force Break — Never transfer. New checkins start a new journey.",
+            value=int(DB.BreakMode.FORCE_BREAK),
+        ),
+        Choice(
+            name="Force Glue — Always transfer. New checkins never start a new journey.",
+            value=int(DB.BreakMode.FORCE_GLUE),
+        ),
+    ]
+)
+async def _break(ia, break_mode: Choice[int]):
+    "Control whether your next checkin should start a new journey or if it's just a transfer."
     user = DB.User.find(discord_id=ia.user.id)
     if not user:
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
 
-    last_trip = DB.Trip.find_last_trip_for(user.discord_id)
-    if not last_trip:
-        await ia.response.send_message(
-            "Your next checkin will start a new journey.",
-            ephemeral=True,
-        )
-        return
-
-    if datetime.fromtimestamp(
-        last_trip.status["toStation"]["realTime"], tz=tz
-    ) > datetime.now(tz=tz):
-        await ia.response.send_message(
-            "You're still checked in. Please this command once you're checked out.",
-            ephemeral=True,
-        )
-        return
-
-    user.break_journey()
-    await ia.response.send_message(
-        "Broke your last journey. Your next checkin will start a new journey.",
-        ephemeral=True,
-    )
+    break_mode = DB.BreakMode(break_mode.value)
+    user.set_break_mode(break_mode)
+    match break_mode:
+        case DB.BreakMode.NATURAL:
+            await ia.response.send_message(
+                "Your next checkin will start a new journey if its and your last checkin's stations are more than "
+                "two kilometers apart. It will also start a new journey if you wait more than two hours after "
+                "your last checkin.",
+                ephemeral=True,
+            )
+        case DB.BreakMode.FORCE_BREAK:
+            await ia.response.send_message(
+                "Your next checkin will start a new journey. "
+                "After your next checkin, this setting will revert to *Natural*.",
+                ephemeral=True,
+            )
+        case DB.BreakMode.FORCE_GLUE:
+            await ia.response.send_message(
+                "Your next checkin will **not** start a new journey. "
+                "After your next checkin, this setting will revert to *Natural*.",
+                ephemeral=True,
+            )
 
 
 @journey.command()
@@ -409,6 +435,9 @@ async def manualtrip(
             await ia.response.send_message(
                 f"{r.status} {await r.text()}", ephemeral=True
             )
+
+
+# TODO /journey edit
 
 
 bot.tree.add_command(journey, guilds=servers)

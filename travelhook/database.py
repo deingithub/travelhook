@@ -48,6 +48,13 @@ class Privacy(IntEnum):
     LIVE = 10
 
 
+class BreakMode(IntEnum):
+    "users' setting how to handle the next checkin in this journey"
+    NATURAL = 0
+    FORCE_BREAK = -10
+    FORCE_GLUE = 10
+
+
 @dataclass
 class User:
     "users that have registered for the bot"
@@ -55,6 +62,7 @@ class User:
     token_status: str
     token_webhook: Optional[str]
     token_travel: Optional[str]
+    break_journey: BreakMode
 
     @classmethod
     def find(cls, discord_id=None, token_webhook=None):
@@ -96,7 +104,13 @@ class User:
             (self.discord_id, server_id, int(level)),
         )
 
-    def break_journey(self):
+    def set_break_mode(self, break_mode: BreakMode):
+        DB.execute(
+            "UPDATE users SET break_journey = ? WHERE discord_id = ?",
+            (break_mode, self.discord_id),
+        )
+
+    def do_break_journey(self):
         "Break a journey, deleting stored trips and messages up to this point."
         DB.execute("DELETE FROM trips WHERE user_id = ?", (self.discord_id,))
         DB.execute("DELETE FROM messages WHERE user_id = ?", (self.discord_id,))
