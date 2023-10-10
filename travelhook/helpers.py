@@ -118,11 +118,14 @@ def fetch_headsign(status):
         if len(candidates) == 1:
             headsign = get_headsign_from_jid(candidates[0].legs[0].id)
         else:
+            # FIXME this is so fucked up
             candidates = [
                 c
                 for c in candidates
-                if c.legs[0].name.removeprefix(status["train"]["type"]).strip()
-                == (status["train"]["line"] or status["train"]["no"])
+                if c.legs[0]
+                .name.removeprefix(status["train"]["type"])
+                .strip()
+                .endswith(status["train"]["line"] or status["train"]["no"])
             ]
             if len(candidates) == 1:
                 headsign = get_headsign_from_jid(candidates[0].legs[0].id)
@@ -201,6 +204,7 @@ train_type_emoji = {
 
 
 def get_train_emoji(train_type):
+    "return a train emoji or placeholder"
     return train_type_emoji.get(
         train_type, f"<:sbbzug:1160275971266576494> {train_type}"
     )
@@ -252,7 +256,7 @@ train_type_color = {
 not_registered_embed = discord.Embed(
     title="Oops!",
     color=train_type_color["U1"],
-    description=f"It looks like you're not registered with the travelynx relay bot yet.\n"
+    description="It looks like you're not registered with the travelynx relay bot yet.\n"
     "If you want to fix this minor oversight, use **/register** today!",
 )
 

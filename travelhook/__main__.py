@@ -51,7 +51,9 @@ def handle_status_update(userid, _, status):
         if old["train"]["id"] == new["train"]["id"]:
             return False
 
-        if "travelhookfaked" in new["train"]["id"]:
+        if new["train"]["id"].startswith("travelhookfaked") or old["train"][
+            "id"
+        ].startswith("travelhookfaked"):
             return False
 
         change_from = old["toStation"]
@@ -294,6 +296,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
 journey = discord.app_commands.Group(
     name="journey", description="edit and fix the journeys tracked by the relay bot."
 )
+
 
 @journey.command(name="break")
 async def break_journey(ia):
