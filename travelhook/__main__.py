@@ -415,6 +415,34 @@ bot.tree.add_command(journey, guilds=servers)
 
 
 @bot.tree.command(guilds=servers)
+@discord.app_commands.rename(from_station="from", to_station="to")
+async def walk(
+    ia,
+    from_station: str,
+    to_station: str,
+    departure: str,
+    arrival: str,
+    name: typing.Optional[str],
+    actually_bike_instead: typing.Optional[bool],
+):
+    "do a manual trip walking, see /journey manualtrip"
+    train = f"walk {name or 'walking…'}"
+    if actually_bike_instead:
+        train = f"bike {name or 'cycling…'}"
+    await manualtrip.callback(
+        ia,
+        from_station,
+        departure,
+        0,
+        to_station,
+        arrival,
+        0,
+        train,
+        None,
+    )
+
+
+@bot.tree.command(guilds=servers)
 async def register(ia):
     "Register with the travelynx relay bot and share your journeys today!"
     await ia.response.send_message(

@@ -269,5 +269,7 @@ def sillies(statuses, embed):
         return embed.set_image(url="https://i.imgur.com/9P15eRQ.png")
     if status["train"]["type"] == "Schw-B":
         return embed.set_image(url="https://i.imgur.com/8deLTcU.png")
+    if status["train"]["line"] == "4" and "uniwuni" in embed.author.name:
+        return embed.set_image(url="https://i.imgur.com/zKzgXLp.png")
 
     return embed
