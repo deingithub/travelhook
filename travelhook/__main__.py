@@ -558,6 +558,7 @@ class RegisterTravelynxStepOne(discord.ui.View):
                     token_status=token,
                     token_webhook=secrets.token_urlsafe(),
                     token_travel=None,
+                    break_journey=DB.BreakMode.NATURAL,
                 ).write()
                 await ia.response.edit_message(
                     embed=discord.Embed(
