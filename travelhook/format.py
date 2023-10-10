@@ -88,6 +88,9 @@ def train_presentation(data):
             + f"/?station={data['fromStation']['uic']}"
         )
 
+    if "travelhookfaked" in data["train"]["id"]:
+        link = None
+
     return (train_type, train_line, link)
 
 
@@ -155,7 +158,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             LineEmoji.RAIL
             + LineEmoji.SPACER
             + get_train_emoji(train_type)
-            + f" [**{train_line} » {fetch_headsign(train)}**]({route_link})"
+            + (
+                f" [**{train_line} » {fetch_headsign(train)}**]({route_link})"
+                if route_link
+                else f" **{train_line}** (manual checkin)"
+            )
             + (f"{LineEmoji.SPACER}💬" if train["comment"] else "")
             + "\n"
             # add more spacing for current journey if not compact
@@ -196,7 +203,10 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 change_meters = haversine(
                     train_end_location, next_train_start_location, unit="m"
                 )
-                if change_meters > 200.0:
+                if (
+                    change_meters > 200.0
+                    and not "travelhookfaked" in next_train["train"]["id"]
+                ):
                     desc += f"{LineEmoji.CHANGE_WALK}{LineEmoji.SPACER}*— {int(change_meters)} m —*\n"
 
         # overwrite last set embed color with the current color

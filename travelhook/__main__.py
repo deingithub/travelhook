@@ -11,7 +11,7 @@ from haversine import haversine
 
 from . import database as DB
 from .format import format_travelynx
-from .helpers import is_token_valid, train_type_color, zugid, tz
+from .helpers import is_token_valid, not_registered_embed, train_type_color, zugid, tz
 
 config = {}
 with open("settings.json", "r", encoding="utf-8") as f:
@@ -49,6 +49,9 @@ def handle_status_update(userid, _, status):
         "determine if the user has merely changed into a new transport or if they have started another journey altogether"
 
         if old["train"]["id"] == new["train"]["id"]:
+            return False
+
+        if "travelhookfaked" in new["train"]["id"]:
             return False
 
         change_from = old["toStation"]
@@ -200,7 +203,7 @@ async def receive(bot):
     level="leave empty to query current level. set to ME to only allow you to use /zug, set to EVERYONE to allow everyone to use /zug and set to LIVE to activate the live feed."
 )
 async def privacy(ia, level: typing.Optional[DB.Privacy]):
-    "Query or change your current privacy settings on this server"
+    "Query or change your current privacy settings on this server."
 
     def explain(level: typing.Optional[DB.Privacy]):
         desc = "This means that, on this server,\n"
@@ -233,14 +236,7 @@ async def privacy(ia, level: typing.Optional[DB.Privacy]):
                 f"Your privacy level has been set to **{level.name}**. {explain(level)}"
             )
     else:
-        await ia.response.send_message(
-            embed=discord.Embed(
-                title="Oops!",
-                color=train_type_color["U1"],
-                description=f"It looks like {ia.user.mention} is not registered with the travelynx relay bot yet.\n"
-                "If you want to fix this minor oversight, use **/register** today!",
-            )
-        )
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
 
 
 @bot.tree.command(guilds=servers)
@@ -248,20 +244,13 @@ async def privacy(ia, level: typing.Optional[DB.Privacy]):
     member="the member whose status to query, defaults to current user"
 )
 async def zug(ia, member: typing.Optional[discord.Member]):
-    "Get current travelynx status"
+    "Get current travelynx status for yourself and others."
     if not member:
         member = ia.user
 
     user = DB.User.find(discord_id=member.id)
     if not user:
-        await ia.response.send_message(
-            embed=discord.Embed(
-                title="Oops!",
-                color=train_type_color["U1"],
-                description=f"It looks like {member.mention} is not registered with the travelynx relay bot yet.\n"
-                "If you want to fix this minor oversight, use **/register** today!",
-            )
-        )
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
 
     if user.find_privacy_for(ia.guild.id) == DB.Privacy.ME and not member == ia.user:
@@ -300,6 +289,126 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                     embeds=format_travelynx(bot, member.id, current_trips),
                     view=RefreshTravelynx(member.id, current_trips[-1]),
                 )
+
+
+journey = discord.app_commands.Group(
+    name="journey", description="edit and fix the journeys tracked by the relay bot."
+)
+
+@journey.command(name="break")
+async def break_journey(ia):
+    "Forcibly start a new journey instead of transferring at the next checkin."
+    user = DB.User.find(discord_id=ia.user.id)
+    if not user:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+        return
+
+    last_trip = DB.Trip.find_last_trip_for(user.discord_id)
+    if not last_trip:
+        await ia.response.send_message(
+            "Your next checkin will start a new journey.",
+            ephemeral=True,
+        )
+        return
+
+    if datetime.fromtimestamp(
+        last_trip.status["toStation"]["realTime"], tz=tz
+    ) > datetime.now(tz=tz):
+        await ia.response.send_message(
+            "You're still checked in. Please this command once you're checked out.",
+            ephemeral=True,
+        )
+        return
+
+    user.break_journey()
+    await ia.response.send_message(
+        "Broke your last journey. Your next checkin will start a new journey.",
+        ephemeral=True,
+    )
+
+
+@journey.command()
+@discord.app_commands.describe(
+    from_station="the name of the station you're departing from",
+    departure="HH:MM departure according to the timetable",
+    departure_delay="minutes of delay",
+    to_station="the name of the station you will arrive at",
+    arrival="HH:MM arrival according to the timetable",
+    arrival_delay="minutes of delay",
+    train="train type and line/number like 'S 42'. also try 'walk 1km', 'bike 3km', 'car 3km', 'plane LH3999'",
+)
+async def manualtrip(
+    ia,
+    from_station: str,
+    departure: str,
+    departure_delay: int,
+    to_station: str,
+    arrival: str,
+    arrival_delay: int,
+    train: str,
+    comment: typing.Optional[str],
+):
+    "Manually add a check-in not available on HAFAS/IRIS to your journey."
+    user = DB.User.find(discord_id=ia.user.id)
+    if not user:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+        return
+
+    departure = departure.split(":")
+    departure = datetime.now(tz=tz).replace(
+        hour=int(departure[0]), minute=int(departure[1])
+    )
+    arrival = arrival.split(":")
+    arrival = datetime.now(tz=tz).replace(
+        hour=int(arrival[0]),
+        minute=int(arrival[1]),
+    )
+    if arrival < departure:
+        arrival += timedelta(days=1)
+    status = {
+        "checkedIn": False,
+        "comment": comment or "",
+        "fromStation": {
+            "uic": 42,
+            "ds100": None,
+            "name": from_station,
+            "latitude": 0.0,
+            "longitude": 0.0,
+            "scheduledTime": int(departure.timestamp()),
+            "realTime": int(departure.timestamp()) + (departure_delay * 60),
+        },
+        "toStation": {
+            "uic": 69,
+            "ds100": None,
+            "name": to_station,
+            "latitude": 0.0,
+            "longitude": 0.0,
+            "scheduledTime": int(arrival.timestamp()),
+            "realTime": int(arrival.timestamp()) + (arrival_delay * 60),
+        },
+        "intermediateStops": [],
+        "train": {
+            "type": train.split(" ")[0],
+            "line": train.split(" ")[1],
+            "no": "0",
+            "id": "travelhookfaked" + secrets.token_urlsafe(),
+            "hafasId": None,
+        },
+        "visibility": {"desc": "public", "level": 100},
+    }
+    webhook = {"reason": "checkout", "status": status}
+    async with ClientSession() as session:
+        async with session.post(
+            "http://localhost:6005/travelynx",
+            json=webhook,
+            headers={"Authorization": f"Bearer {user.token_webhook}"},
+        ) as r:
+            await ia.response.send_message(
+                f"{r.status} {await r.text()}", ephemeral=True
+            )
+
+
+bot.tree.add_command(journey, guilds=servers)
 
 
 @bot.tree.command(guilds=servers)

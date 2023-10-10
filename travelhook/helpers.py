@@ -158,8 +158,11 @@ class LineEmoji:  # pylint: disable=too-few-public-methods
 
 
 train_type_emoji = {
+    "AST": "<:ast:1161314515355439126>",
     "ATS": "<:SBahn:1152254307660484650>",
+    "bike": "<:sbbvelo:1161317270065262683>",
     "Bus": "<:Bus:1160288158374707241>",
+    "car": "<:sbbauto:1161317276277031002>",
     "CJX": "<:cjx:1160298616812994570>",
     "EC": "<:EC:1160298680365105232>",
     "Fähre": "<:Faehre:1143105659827658783>",
@@ -168,6 +171,7 @@ train_type_emoji = {
     "IR": "<:IR:1160298677156446229>",
     "IRE": "<:IRE:1160280941118374102>",
     "O-Bus": "<:Bus:1160288158374707241>",
+    "plane": "<:sbbflug:1161317272397287435>",
     "R": "<:R_:1160502334539956274>",
     "RB": "<:RB:1160502337404674048>",
     "RE": "<:RE:1160280940057215087>",
@@ -175,6 +179,7 @@ train_type_emoji = {
     "RJ": "<:rj:1160298686316818542>",
     "RJX": "<:rjx:1160298687491227740>",
     "RS": "<:RS:1160502338499391570>",
+    "RUF": "<:ruf:1161314243698761898>",
     "S": "<:SBahn:1102206882527060038>",
     "SB": "<:SB:1160502333143261234>",
     "Schw-B": "<:Schwebebahn:1143108575770726510>",
@@ -190,6 +195,7 @@ train_type_emoji = {
     "U5": "<:u5:1160998515967799306>",
     "U6": "<:u6:1160998518744424488>",
     "Ü": "<:UE:1160288194730930196>",
+    "walk": "<:sbbwalk:1161321193001992273>",
     "WB": "***west***",
 }
 
@@ -203,6 +209,7 @@ def get_train_emoji(train_type):
 train_type_color = {
     k: discord.Color.from_str(v)
     for (k, v) in {
+        "AST": "#ffd700",
         "ATS": "#0096d8",
         "Bus": "#a3167e",
         "EC": "#ff0404",
@@ -222,6 +229,7 @@ train_type_color = {
         "RJ": "#c63131",
         "RJX": "#c63131",
         "RS": "#008d4f",
+        "RUF": "#ffd700",
         "S": "#008d4f",
         "SB": "#2e2e7d",
         "Schw-B": "#4896d2",
@@ -240,6 +248,13 @@ train_type_color = {
         "WB": "#2e86ce",
     }.items()
 }
+
+not_registered_embed = discord.Embed(
+    title="Oops!",
+    color=train_type_color["U1"],
+    description=f"It looks like you're not registered with the travelynx relay bot yet.\n"
+    "If you want to fix this minor oversight, use **/register** today!",
+)
 
 replace_headsign = {
     # Vienna
