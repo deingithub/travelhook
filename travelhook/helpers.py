@@ -160,42 +160,31 @@ def fetch_headsign(status):
         traceback.print_exc()
 
     # ok that didn't work out somehow, let's do a wild guess which train we're on instead
+    # we most likely have an iris checkin, so we'll (again, most likely) have a train number
     try:
-        departure = datetime.fromtimestamp(
-            status["fromStation"]["scheduledTime"], tz=tz
-        )
+        departure = datetime.fromtimestamp(status["fromStation"]["realTime"], tz=tz)
         arrival = datetime.fromtimestamp(status["toStation"]["scheduledTime"], tz=tz)
 
-        # get suggested trips for our journey
-        candidates = hafas.journeys(
-            origin=status["fromStation"]["uic"],
-            destination=status["toStation"]["uic"],
-            date=departure,
-            max_changes=0,
+        candidates = hafas.departures(
+            station=status["fromStation"]["uic"], date=departure, duration=5
         )
-        # filter out all that aren't at the time our trip is
-        candidates = [
-            c
-            for c in candidates
-            if c.legs[0].departure == departure and c.legs[0].arrival == arrival
-        ]
         if len(candidates) == 1:
-            headsign = get_headsign_from_jid(candidates[0].legs[0].id)
+            headsign = get_headsign_from_jid(candidates[0].id)
         else:
-            # FIXME this is so fucked up
             candidates = [
-                c
-                for c in candidates
-                if c.legs[0]
-                .name.removeprefix(status["train"]["type"])
-                .strip()
-                .endswith(status["train"]["line"] or status["train"]["no"])
+                c for c in candidates if c.name.endswith(status["train"]["no"])
             ]
             if len(candidates) == 1:
-                headsign = get_headsign_from_jid(candidates[0].legs[0].id)
+                headsign = get_headsign_from_jid(candidates[0].id)
             else:
-                # yeah i give up
-                print(status["fromStation"], status["toStation"], departure, candidates)
+                print(
+                    "can't decide!",
+                    status["fromStation"],
+                    status["toStation"],
+                    departure,
+                    candidates,
+                )
+
     except:  # pylint: disable=bare-except
         print("error fetching headsign from journey:")
         traceback.print_exc()
