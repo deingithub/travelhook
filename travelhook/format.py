@@ -103,7 +103,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 if route_link
                 else f" **{train_line} » {fetch_headsign(train)}** ✱"
             )
-            + (f"{LineEmoji.SPACER}💬" if train["comment"] else "")
+            + (" ●" if train["comment"] else "")
             + "\n"
             # add more spacing for current journey if not compact
             + (
