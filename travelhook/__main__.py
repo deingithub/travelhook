@@ -61,9 +61,6 @@ def handle_status_update(userid, _, status):
             user.set_break_mode(DB.BreakMode.NATURAL)
             return False
 
-        if "travelhookfaked" in (new["train"]["id"] + old["train"]["id"]):
-            return False
-
         change_from = old["toStation"]
         change_to = new["fromStation"]
         change_distance = haversine(
@@ -74,7 +71,10 @@ def handle_status_update(userid, _, status):
             change_to["realTime"], tz=tz
         ) - datetime.fromtimestamp(change_from["realTime"], tz=tz)
 
-        return (change_distance > 2.0) or change_duration > timedelta(hours=2)
+        return (
+            change_distance > 2.0
+            and not "travelhookfaked" in (new["train"]["id"] + old["train"]["id"])
+        ) or change_duration > timedelta(hours=2)
 
     if (last_trip := DB.Trip.find_last_trip_for(userid)) and is_new_journey(
         last_trip.status, status

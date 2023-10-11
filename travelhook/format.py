@@ -203,9 +203,8 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 change_meters = haversine(
                     train_end_location, next_train_start_location, unit="m"
                 )
-                if (
-                    change_meters > 200.0
-                    and not "travelhookfaked" in next_train["train"]["id"]
+                if change_meters > 200.0 and not "travelhookfaked" in (
+                    train["train"]["id"] + next_train["train"]["id"]
                 ):
                     desc += f"{LineEmoji.CHANGE_WALK}{LineEmoji.SPACER}*— {int(change_meters)} m —*\n"
 
