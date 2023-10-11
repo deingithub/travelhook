@@ -59,7 +59,7 @@ def handle_status_update(userid, reason, status):
 
         # don't drop the journey in case we receive a checkout after the new checkin
         if reason == "checkout" and status["train"]["id"] in [
-            trip["train"]["id"]
+            trip.status["train"]["id"]
             for trip in DB.Trip.find_current_trips_for(user.discord_id)
         ]:
             return False
