@@ -12,6 +12,7 @@ from .helpers import (
     get_train_emoji,
     LineEmoji,
     train_type_color,
+    train_presentation,
 )
 
 
@@ -31,67 +32,6 @@ def shortened_name(previous_station, this_station):
     if previous_name[-1] == this_name[-1]:
         return ", ".join(this_name[0:-1])
     return this_station["name"]
-
-
-def train_presentation(data):
-    "do some cosmetic fixes to train type/line and generate a bahn.expert link for it"
-    is_hafas = "|" in data["train"]["id"]
-
-    # account for "ME RE2" instead of "RE  "
-    train_type = data["train"]["type"]
-    train_line = data["train"]["line"]
-    if train_line and train_type not in train_type_emoji:
-        if len(train_line) > 2 and train_line[0:2] in train_type_emoji:
-            train_type = train_line[0:2]
-            train_line = train_line[2:]
-        if train_line[0] in train_type_emoji:
-            train_type = train_line[0]
-            train_line = train_line[1:]
-
-    if not train_line:
-        train_line = data["train"]["no"]
-
-    # special treatment for üstra because i love you
-    def is_in_hannover(lat, lon):
-        return (52.2047 < lat < 52.4543) and (9.5684 < lon < 9.9996)
-
-    if train_type == "STR" and is_in_hannover(
-        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
-    ):
-        train_type = "Ü"
-
-    # special treatment for wien U6 (and the others too i guess)
-    if train_type == "U" and data["fromStation"]["name"].startswith("Wien "):
-        train_type = data["fromStation"]["name"][-3:-1]
-        train_line = ""
-
-    # special treatment for austrian s-bahn
-    if train_type == "S" and (
-        str(data["fromStation"]["uic"]).startswith("81")
-        or str(data["toStation"]["uic"]).startswith("81")
-    ):
-        train_type = "ATS"
-
-    # that's not a tram, that's an elevator
-    if train_type == "ZahnR":
-        train_type = "SB"
-
-    link = "https://bahn.expert/details"
-    # if HAFAS, add journeyid to link to make sure it gets the right one
-    if jid := data["train"]["hafasId"] or (data["train"]["id"] if is_hafas else None):
-        link += f"/{data['fromStation']['scheduledTime'] * 1000}/?jid={jid}"
-    # if we don't have an hafas jid link it to a station instead to disambiguate
-    else:
-        link += (
-            f"/{data['train']['type']}%20{data['train']['no']}/"
-            + str(data["fromStation"]["scheduledTime"] * 1000)
-            + f"/?station={data['fromStation']['uic']}"
-        )
-
-    if "travelhookfaked" in data["train"]["id"]:
-        link = None
-
-    return (train_type, train_line, link)
 
 
 def format_travelynx(bot, userid, statuses, continue_link=None):

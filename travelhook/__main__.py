@@ -11,7 +11,14 @@ from haversine import haversine
 
 from . import database as DB
 from .format import format_travelynx
-from .helpers import is_token_valid, not_registered_embed, train_type_color, zugid, tz
+from .helpers import (
+    is_token_valid,
+    not_registered_embed,
+    train_type_color,
+    zugid,
+    tz,
+    train_presentation,
+)
 
 config = {}
 with open("settings.json", "r", encoding="utf-8") as f:
@@ -41,7 +48,7 @@ async def on_ready():
     print(f"logged in as {bot.user}")
 
 
-def handle_status_update(userid, _, status):
+def handle_status_update(userid, reason, status):
     """update trip data in the database, also starting a new journey if the last data
     we have is too old or distant for this to be a changeover"""
 
@@ -49,6 +56,13 @@ def handle_status_update(userid, _, status):
 
     def is_new_journey(old, new):
         "determine if the user has merely changed into a new transport or if they have started another journey altogether"
+
+        # don't drop the journey in case we receive a checkout after the new checkin
+        if reason == "checkout" and status["train"]["id"] in [
+            trip["train"]["id"]
+            for trip in DB.Trip.find_current_trips_for(user.discord_id)
+        ]:
+            return False
 
         if old["train"]["id"] == new["train"]["id"]:
             return False
@@ -96,109 +110,116 @@ async def receive(bot):
             print(f"unknown user {req.headers['authorization']}")
             return
 
-        userid = user.discord_id
-        data = await req.json()
+        async with user.get_lock():
+            userid = user.discord_id
+            data = await req.json()
 
-        if data["reason"] == "ping" and not data["status"]["checkedIn"]:
-            return web.Response(text="travelynx relay bot successfully connected!")
+            if data["reason"] == "ping" and not data["status"]["checkedIn"]:
+                return web.Response(text="travelynx relay bot successfully connected!")
 
-        if (
-            not data["reason"] in ("update", "checkin", "ping", "checkout", "undo")
-            or not data["status"]["toStation"]["name"]
-        ):
-            raise web.HTTPNoContent()
+            if (
+                not data["reason"] in ("update", "checkin", "ping", "checkout", "undo")
+                or not data["status"]["toStation"]["name"]
+            ):
+                raise web.HTTPNoContent()
 
-        # when checkin is undone, delete its message
-        if data["reason"] == "undo" and not data["status"]["checkedIn"]:
-            last_trip = DB.Trip.find_last_trip_for(user.discord_id)
-            messages_to_delete = DB.Message.find_all(
-                user.discord_id, zugid(last_trip.status)
-            )
-            for message in messages_to_delete:
-                await message.delete(bot)
-            DB.Trip.find(user.discord_id, zugid(last_trip.status)).delete()
+            # hopefully debug this mess eventually
+            print(userid, data["reason"], train_presentation(data["status"]))
 
-            if current_trips := [
+            # when checkin is undone, delete its message
+            if data["reason"] == "undo" and not data["status"]["checkedIn"]:
+                last_trip = DB.Trip.find_last_trip_for(user.discord_id)
+                messages_to_delete = DB.Message.find_all(
+                    user.discord_id, zugid(last_trip.status)
+                )
+                for message in messages_to_delete:
+                    await message.delete(bot)
+                DB.Trip.find(user.discord_id, zugid(last_trip.status)).delete()
+
+                if current_trips := [
+                    trip.status
+                    for trip in DB.Trip.find_current_trips_for(user.discord_id)
+                ]:
+                    for message in DB.Message.find_all(
+                        user.discord_id, zugid(current_trips[-1])
+                    ):
+                        msg = await message.fetch(bot)
+                        await msg.edit(
+                            embeds=format_travelynx(bot, userid, current_trips),
+                            view=None,
+                        )
+
+                return web.Response(
+                    text=f"Unpublished last checkin for {len(messages_to_delete)} channels"
+                )
+
+            # don't share completely private checkins, only unlisted and upwards
+            if data["status"]["visibility"]["desc"] == "private":
+                # just to make sure we don't have it lying around for some reason anyway
+                DB.Trip.find(user.discord_id, zugid(data["status"])).delete()
+                return web.Response(
+                    text=f'Not publishing private {data["reason"]} in {data["status"]["train"]["type"]} {data["status"]["train"]["no"]}'
+                )
+
+            # update database to maintain trip data
+            handle_status_update(userid, data["reason"], data["status"])
+
+            current_trips = [
                 trip.status for trip in DB.Trip.find_current_trips_for(user.discord_id)
-            ]:
-                for message in DB.Message.find_all(
-                    user.discord_id, zugid(current_trips[-1])
+            ]
+
+            # get all channels that live updates get pushed to for this user
+            channels = [bot.get_channel(cid) for cid in user.find_live_channel_ids()]
+            for channel in channels:
+                member = channel.guild.get_member(user.discord_id)
+                # don't post if the user has left or can't see the live channel
+                if not member or not channel.permissions_for(member).read_messages:
+                    continue
+
+                view = (
+                    RefreshTravelynx(user.discord_id, current_trips[-1])
+                    if data["reason"] != "checkout"
+                    else None
+                )
+
+                # check if we already have a message for this particular trip
+                # edit it if it exists, otherwise create a new one and submit it into the database
+                if message := DB.Message.find(
+                    userid, zugid(data["status"]), channel.id
                 ):
                     msg = await message.fetch(bot)
+
                     await msg.edit(
                         embeds=format_travelynx(bot, userid, current_trips),
-                        view=None,
+                        view=view,
                     )
-
+                else:
+                    message = await channel.send(
+                        embeds=format_travelynx(bot, userid, current_trips),
+                        view=view,
+                    )
+                    DB.Message(
+                        zugid(data["status"]), user.discord_id, channel.id, message.id
+                    ).write()
+                    # shrink previous message to prevent clutter
+                    if len(current_trips) > 1 and (
+                        prev_message := DB.Message.find(
+                            user.discord_id, zugid(current_trips[-2]), channel.id
+                        )
+                    ):
+                        prev_msg = await prev_message.fetch(bot)
+                        await prev_msg.edit(
+                            embeds=format_travelynx(
+                                bot,
+                                userid,
+                                current_trips[0:-1],
+                                continue_link=message.jump_url,
+                            ),
+                            view=None,
+                        )
             return web.Response(
-                text=f"Unpublished last checkin for {len(messages_to_delete)} channels"
+                text=f'Successfully published {data["status"]["train"]["type"]} {data["status"]["train"]["no"]} {data["reason"]} to {len(channels)} channels'
             )
-
-        # don't share completely private checkins, only unlisted and upwards
-        if data["status"]["visibility"]["desc"] == "private":
-            # just to make sure we don't have it lying around for some reason anyway
-            DB.Trip.find(user.discord_id, zugid(data["status"])).delete()
-            return web.Response(
-                text=f'Not publishing private {data["reason"]} in {data["status"]["train"]["type"]} {data["status"]["train"]["no"]}'
-            )
-
-        # update database to maintain trip data
-        handle_status_update(userid, data["reason"], data["status"])
-
-        current_trips = [
-            trip.status for trip in DB.Trip.find_current_trips_for(user.discord_id)
-        ]
-
-        # get all channels that live updates get pushed to for this user
-        channels = [bot.get_channel(cid) for cid in user.find_live_channel_ids()]
-        for channel in channels:
-            member = channel.guild.get_member(user.discord_id)
-            # don't post if the user has left or can't see the live channel
-            if not member or not channel.permissions_for(member).read_messages:
-                continue
-
-            view = (
-                RefreshTravelynx(user.discord_id, current_trips[-1])
-                if data["reason"] != "checkout"
-                else None
-            )
-
-            # check if we already have a message for this particular trip
-            # edit it if it exists, otherwise create a new one and submit it into the database
-            if message := DB.Message.find(userid, zugid(data["status"]), channel.id):
-                msg = await message.fetch(bot)
-
-                await msg.edit(
-                    embeds=format_travelynx(bot, userid, current_trips),
-                    view=view,
-                )
-            else:
-                message = await channel.send(
-                    embeds=format_travelynx(bot, userid, current_trips),
-                    view=view,
-                )
-                DB.Message(
-                    zugid(data["status"]), user.discord_id, channel.id, message.id
-                ).write()
-                # shrink previous message to prevent clutter
-                if len(current_trips) > 1 and (
-                    prev_message := DB.Message.find(
-                        user.discord_id, zugid(current_trips[-2]), channel.id
-                    )
-                ):
-                    prev_msg = await prev_message.fetch(bot)
-                    await prev_msg.edit(
-                        embeds=format_travelynx(
-                            bot,
-                            userid,
-                            current_trips[0:-1],
-                            continue_link=message.jump_url,
-                        ),
-                        view=None,
-                    )
-        return web.Response(
-            text=f'Successfully published {data["status"]["train"]["type"]} {data["status"]["train"]["no"]} {data["reason"]} to {len(channels)} channels'
-        )
 
     app = web.Application()
     app.router.add_post("/travelynx", handler)

@@ -1,5 +1,7 @@
 # pylint: disable=missing-function-docstring
 "contains and encapsulates database accesses"
+import asyncio
+import collections
 import json
 import sqlite3
 from dataclasses import dataclass, astuple
@@ -64,6 +66,8 @@ class User:
     token_travel: Optional[str]
     break_journey: BreakMode
 
+    Locks = collections.defaultdict(asyncio.Lock)
+
     @classmethod
     def find(cls, discord_id=None, token_webhook=None):
         row = None
@@ -122,6 +126,9 @@ class User:
             (self.discord_id, Privacy.LIVE),
         ).fetchall()
         return [row["live_channel"] for row in rows]
+
+    def get_lock(self):
+        return self.Locks[self.discord_id]
 
 
 @dataclass
