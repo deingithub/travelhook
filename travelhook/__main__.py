@@ -375,6 +375,7 @@ async def manualtrip(
     arrival: str,
     arrival_delay: int,
     train: str,
+    headsign: str,
     comment: typing.Optional[str],
 ):
     "Manually add a check-in not available on HAFAS/IRIS to your journey."
@@ -417,8 +418,9 @@ async def manualtrip(
         },
         "intermediateStops": [],
         "train": {
+            "fakeheadsign": headsign,
             "type": train.split(" ")[0],
-            "line": train.split(" ")[1],
+            "line": " ".join(train.split(" ")[1:]),
             "no": "0",
             "id": "travelhookfaked" + secrets.token_urlsafe(),
             "hafasId": None,
@@ -467,6 +469,7 @@ async def walk(
         arrival,
         0,
         train,
+        to_station,
         None,
     )
 

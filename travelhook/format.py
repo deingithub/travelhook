@@ -161,7 +161,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             + (
                 f" [**{train_line} » {fetch_headsign(train)}**]({route_link})"
                 if route_link
-                else f" **{train_line}** (manual checkin)"
+                else f" **{train_line} » {fetch_headsign(train)}** ✱"
             )
             + (f"{LineEmoji.SPACER}💬" if train["comment"] else "")
             + "\n"

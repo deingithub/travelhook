@@ -65,6 +65,9 @@ def fetch_headsign(status):
     if cached and cached["headsign"]:
         return cached["headsign"]
 
+    if fhs := status["train"].get("fakeheadsign"):
+        return fhs
+
     def get_headsign_from_jid(jid):
         headsign = hafas.trip(jid).destination.name
         return replace_headsign.get(
