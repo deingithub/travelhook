@@ -196,10 +196,23 @@ async def receive(bot):
                 if message := DB.Message.find(
                     userid, zugid(data["status"]), channel.id
                 ):
-                    msg = await message.fetch(bot)
+                    # if we get a checkout after another checkin has already been posted (manually)
+                    # stop pretending we're at the end of the journey and link to the new ones
+                    continue_link = None
+                    if newer_message := DB.Message.find_newer_than(
+                        userid, channel.id, message.message_id
+                    ):
+                        continue_link = (await newer_message.fetch(bot)).jump_url
+                        current_trip_index = [
+                            zugid(trip) for trip in current_trips
+                        ].index(zugid(data["status"]))
+                        current_trips = current_trips[0 : current_trip_index + 1]
 
+                    msg = await message.fetch(bot)
                     await msg.edit(
-                        embeds=format_travelynx(bot, userid, current_trips),
+                        embeds=format_travelynx(
+                            bot, userid, current_trips, continue_link=continue_link
+                        ),
                         view=view,
                     )
                 else:

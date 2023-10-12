@@ -233,6 +233,15 @@ class Message:
             return cls(**row)
         return None
 
+    @classmethod
+    def find_newer_than(cls, user_id, channel_id, message_id):
+        if row := DB.execute(
+            "SELECT * FROM messages WHERE message_id > ? AND user_id = ? AND channel_id = ? ORDER BY message_id LIMIT 1;",
+            (message_id, user_id, channel_id),
+        ).fetchone():
+            return cls(**row)
+        return None
+
     def write(self):
         DB.execute(
             "INSERT INTO messages(journey_id, user_id, channel_id, message_id) VALUES(?,?,?,?)",
