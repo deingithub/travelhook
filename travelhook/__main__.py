@@ -15,6 +15,7 @@ from .helpers import (
     is_token_valid,
     not_registered_embed,
     train_type_color,
+    train_type_emoji,
     zugid,
     tz,
     train_presentation,
@@ -476,6 +477,7 @@ async def walk(
     arrival: str,
     name: typing.Optional[str],
     actually_bike_instead: typing.Optional[bool],
+    comment: typing.Optional[str],
 ):
     "do a manual trip walking, see /journey manualtrip"
     train = f"walk {name or 'walking…'}"
@@ -491,7 +493,23 @@ async def walk(
         0,
         train,
         to_station,
-        None,
+        comment,
+    )
+
+
+@bot.tree.command(guilds=servers)
+async def emojis(ia):
+    items = list(train_type_emoji.items())
+    third = len(items)//3
+
+    await ia.response.send_message(
+        embed=discord.Embed(title=f"{len(items)} emoji").add_field(
+            name="A", value="\n".join([f"{v} `{k:6}`" for k, v in items[0:1*third]])
+        ).add_field(
+            name="B", value="\n".join([f"{v} `{k:6}`" for k, v in items[1*third:2*third]])
+        ).add_field(
+            name="C", value="\n".join([f"{v} `{k:6}`" for k, v in items[2*third:]])
+        )
     )
 
 

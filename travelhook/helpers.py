@@ -98,6 +98,9 @@ def train_presentation(data):
     if train_type == "ZahnR":
         train_type = "SB"
 
+    if train_type == "U" and train_line.casefold().startswith("m"):
+        train_type = "M"
+
     link = "https://bahn.expert/details"
     # if HAFAS, add journeyid to link to make sure it gets the right one
     if jid := data["train"]["hafasId"] or (data["train"]["id"] if is_hafas else None):
@@ -228,6 +231,7 @@ train_type_emoji = {
     "ICE": "<:ICE:1160298682793611407>",
     "IR": "<:IR:1160298677156446229>",
     "IRE": "<:IRE:1160280941118374102>",
+    "M": "<:metro:1162032437065416764>",
     "NJ": "<:nj:1161753745911197787>",
     "O-Bus": "<:Bus:1160288158374707241>",
     "plane": "<:sbbflug:1161317272397287435>",
@@ -243,9 +247,10 @@ train_type_emoji = {
     "SB": "<:SB:1160502333143261234>",
     "Schw-B": "<:Schwebebahn:1143108575770726510>",
     "STB": "<:U_:1160288163214921889>",
+    "steam": "<:sbbsteam:1162032435459006494>",
     "STR": "<:Tram:1160290093400064060>",
     "TER": "<:TER:1152248180407275591>",
-    "TGV": "<:tgv:1161752335849115658>",
+    "TGV": "***TGV***",
     "Tram": "<:Tram:1160290093400064060>",
     "U": "<:U_:1160288163214921889>",
     "U1": "<:u1:1160998507533058098>",
@@ -286,6 +291,7 @@ train_type_color = {
         "ICE": long_distance_color,
         "IR": long_distance_color,
         "IRE": regional_express_color,
+        "M": "#014e8d",
         "NJ": "#282559",
         "O-Bus": "#a3167e",
         "R": regional_color,
