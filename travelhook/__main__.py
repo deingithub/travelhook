@@ -521,21 +521,28 @@ async def walk(
 @bot.tree.command(guilds=servers)
 async def pleasegivemetraintypes(ia):
     "print all the train types the bot knows about"
-    items = list(train_type_emoji.items())
-    third = len(items) // 3
+    fv = ["D", "EC", "ECE", "EN", "IC", "ICE", "IR", "NJ", "RJ", "RJX", "TGV", "WB"]
+    regio = ["CJX", "IRE", "R", "RB", "RE", "REX", "TER"]
+    sbahn = ["ATS", "L", "RER", "RS", "S"]
+    transit = ["AST", "Bus", "Fähre", "M", "O-Bus", "RUF", "STB", "STR", "Tram", "U"]
+    special = ["SB", "Schw-B", "U1", "U2", "U3", "U4", "U5", "U6", "Ü"]
+    manual = ["bike", "car", "plane", "steam", "walk"]
+    # uncomment me when the assertion fails to find out what you did wrong
+    # print(sorted(fv+regio+sbahn+transit+special+manual),sorted([k for k,v in items]), sep="\n")
+    assert sorted(train_type_emoji.keys()) == sorted(
+        fv + regio + sbahn + transit + special + manual
+    )
+
+    render_emoji = lambda es: "\n".join([f"`{e:>6}` {train_type_emoji[e]}" for e in es])
 
     await ia.response.send_message(
-        embed=discord.Embed(title=f"{len(items)} emoji")
-        .add_field(
-            name="A", value="\n".join([f"{v} `{k:6}`" for k, v in items[0 : 1 * third]])
-        )
-        .add_field(
-            name="B",
-            value="\n".join([f"{v} `{k:6}`" for k, v in items[1 * third : 2 * third]]),
-        )
-        .add_field(
-            name="C", value="\n".join([f"{v} `{k:6}`" for k, v in items[2 * third :]])
-        )
+        embed=discord.Embed(title=f"{len(train_type_emoji)} emoji")
+        .add_field(name="fv", value=render_emoji(fv))
+        .add_field(name="regio", value=render_emoji(regio))
+        .add_field(name="sbahn", value=render_emoji(sbahn))
+        .add_field(name="city transit", value=render_emoji(transit))
+        .add_field(name="specials", value=render_emoji(special))
+        .add_field(name="manual", value=render_emoji(manual))
     )
 
 
