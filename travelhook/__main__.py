@@ -130,6 +130,14 @@ async def receive(bot):
             # when checkin is undone, delete its message
             if data["reason"] == "undo" and not data["status"]["checkedIn"]:
                 last_trip = DB.Trip.find_last_trip_for(user.discord_id)
+                if not last_trip.status["checkedIn"]:
+                    print("sussy")
+                    return web.Response(
+                        text="Not unpublishing last checkin — you already have checked out. "
+                        "In case this is intentional and you want to force deletion, undo your checkout, "
+                        "save the journey comment once, and then finally undo your checkin. Sorry for the hassle."
+                    )
+
                 messages_to_delete = DB.Message.find_all(
                     user.discord_id, zugid(last_trip.status)
                 )
@@ -498,7 +506,8 @@ async def walk(
 
 
 @bot.tree.command(guilds=servers)
-async def emojis(ia):
+async def pleasegivemetraintypes(ia):
+    "print all the train types the bot knows about"
     items = list(train_type_emoji.items())
     third = len(items) // 3
 

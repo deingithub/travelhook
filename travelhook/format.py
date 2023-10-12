@@ -8,7 +8,6 @@ from haversine import haversine
 from .helpers import (
     fetch_headsign,
     format_time,
-    train_type_emoji,
     get_train_emoji,
     LineEmoji,
     train_type_color,
@@ -94,7 +93,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 pass
 
         train_type, train_line, route_link = train_presentation(train)
-        headsign = shortened_name(train["fromStation"], fetch_headsign(train))
+        headsign = shortened_name(train["fromStation"], {"name": fetch_headsign(train)})
         desc += (
             LineEmoji.RAIL
             + LineEmoji.SPACER
@@ -117,14 +116,17 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
         )
-        # if we're on the last trip of the journey, draw an end icon
         station_name = shortened_name(train["fromStation"], train["toStation"])
+        # if we're on the last trip of the journey, draw an end icon
         if not _next(statuses, i):
             desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
-        # if we don't leave the station to change, draw a single change line
+        # draw a transfer instead
         elif next_train := _next(statuses, i):
+            # if we don't leave the station to change, draw a single change line
             if is_one_line_change(next_train["fromStation"], train["toStation"]):
-            station_name = shortened_name(next_train["fromStation"], train["toStation"])
+                station_name = shortened_name(
+                    next_train["fromStation"], train["toStation"]
+                )
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
                     next_train["fromStation"]["realTime"],

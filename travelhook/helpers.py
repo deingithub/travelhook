@@ -101,7 +101,7 @@ def train_presentation(data):
     # special treatment for jura
     if train_type == "U" and train_line.casefold().startswith("m"):
         train_type = "M"
-    if train_type == "S" and train.line.startswith("L"):
+    if train_type == "S" and train_line.startswith("L"):
         train_type = "L"
 
     link = "https://bahn.expert/details"
