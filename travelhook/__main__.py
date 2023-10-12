@@ -500,15 +500,19 @@ async def walk(
 @bot.tree.command(guilds=servers)
 async def emojis(ia):
     items = list(train_type_emoji.items())
-    third = len(items)//3
+    third = len(items) // 3
 
     await ia.response.send_message(
-        embed=discord.Embed(title=f"{len(items)} emoji").add_field(
-            name="A", value="\n".join([f"{v} `{k:6}`" for k, v in items[0:1*third]])
-        ).add_field(
-            name="B", value="\n".join([f"{v} `{k:6}`" for k, v in items[1*third:2*third]])
-        ).add_field(
-            name="C", value="\n".join([f"{v} `{k:6}`" for k, v in items[2*third:]])
+        embed=discord.Embed(title=f"{len(items)} emoji")
+        .add_field(
+            name="A", value="\n".join([f"{v} `{k:6}`" for k, v in items[0 : 1 * third]])
+        )
+        .add_field(
+            name="B",
+            value="\n".join([f"{v} `{k:6}`" for k, v in items[1 * third : 2 * third]]),
+        )
+        .add_field(
+            name="C", value="\n".join([f"{v} `{k:6}`" for k, v in items[2 * third :]])
         )
     )
 

@@ -94,14 +94,15 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 pass
 
         train_type, train_line, route_link = train_presentation(train)
+        headsign = shortened_name(train["fromStation"], fetch_headsign(train))
         desc += (
             LineEmoji.RAIL
             + LineEmoji.SPACER
             + get_train_emoji(train_type)
             + (
-                f" [**{train_line} » {fetch_headsign(train)}**]({route_link})"
+                f" [**{train_line} » {headsign}**]({route_link})"
                 if route_link
-                else f" **{train_line} » {fetch_headsign(train)}** ✱"
+                else f" **{train_line} » {headsign}** ✱"
             )
             + (" ●" if train["comment"] else "")
             + "\n"
@@ -117,13 +118,13 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
         )
         # if we're on the last trip of the journey, draw an end icon
+        station_name = shortened_name(train["fromStation"], train["toStation"])
         if not _next(statuses, i):
-            station_name = shortened_name(train["fromStation"], train["toStation"])
             desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
         # if we don't leave the station to change, draw a single change line
         elif next_train := _next(statuses, i):
-            station_name = shortened_name(next_train["fromStation"], train["toStation"])
             if is_one_line_change(next_train["fromStation"], train["toStation"]):
+            station_name = shortened_name(next_train["fromStation"], train["toStation"])
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
                     next_train["fromStation"]["realTime"],
