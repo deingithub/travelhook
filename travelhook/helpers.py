@@ -98,8 +98,11 @@ def train_presentation(data):
     if train_type == "ZahnR":
         train_type = "SB"
 
+    # special treatment for jura
     if train_type == "U" and train_line.casefold().startswith("m"):
         train_type = "M"
+    if train_type == "S" and train.line.startswith("L"):
+        train_type = "L"
 
     link = "https://bahn.expert/details"
     # if HAFAS, add journeyid to link to make sure it gets the right one
@@ -224,13 +227,15 @@ train_type_emoji = {
     "car": "<:sbbauto:1161317276277031002>",
     "CJX": "<:cjx:1160298616812994570>",
     "D": "<:D_:1161751115067555870>",
-    "EC": "<:EC:1160298680365105232>",
+    "EC": "<:EC:1162070840020566108>",
+    "ECE": "<:ece:1162070835587190834>",
     "EN": "<:en:1161753743545610271>",
     "Fähre": "<:Faehre:1143105659827658783>",
     "IC": "<:IC:1160298681887625287>",
     "ICE": "<:ICE:1160298682793611407>",
     "IR": "<:IR:1160298677156446229>",
     "IRE": "<:IRE:1160280941118374102>",
+    "L": "<:lex:1162070841702494208>",
     "M": "<:metro:1162032437065416764>",
     "NJ": "<:nj:1161753745911197787>",
     "O-Bus": "<:Bus:1160288158374707241>",
@@ -238,15 +243,16 @@ train_type_emoji = {
     "R": "<:R_:1160502334539956274>",
     "RB": "<:RB:1160502337404674048>",
     "RE": "<:RE:1160280940057215087>",
+    "RER": "<:rer:1162070845749997619>",
     "REX": "<:REX:1160298595833102358>",
     "RJ": "<:rj:1160298686316818542>",
     "RJX": "<:rjx:1160298687491227740>",
-    "RS": "<:RS:1160502338499391570>",
+    "RS": "<:rs:1162070847645831249>",
     "RUF": "<:ruf:1161314243698761898>",
     "S": "<:SBahn:1102206882527060038>",
     "SB": "<:SB:1160502333143261234>",
     "Schw-B": "<:Schwebebahn:1143108575770726510>",
-    "STB": "<:U_:1160288163214921889>",
+    "STB": "<:stb:1162051109318295674>",
     "steam": "<:sbbsteam:1162032435459006494>",
     "STR": "<:Tram:1160290093400064060>",
     "TER": "<:TER:1152248180407275591>",
@@ -275,6 +281,7 @@ def get_train_emoji(train_type):
 long_distance_color = "#ff0404"
 regional_express_color = "#e73f0f"
 regional_color = "#1d4491"
+s_bahn_color = "#008d4f"
 
 train_type_color = {
     k: discord.Color.from_str(v)
@@ -284,6 +291,7 @@ train_type_color = {
         "Bus": "#a3167e",
         "D": long_distance_color,
         "EC": long_distance_color,
+        "ECE": long_distance_color,
         "EN": "#282559",
         "CJX": regional_express_color,
         "Fähre": "#00a4db",
@@ -291,21 +299,23 @@ train_type_color = {
         "ICE": long_distance_color,
         "IR": long_distance_color,
         "IRE": regional_express_color,
+        "L": s_bahn_color,
         "M": "#014e8d",
         "NJ": "#282559",
         "O-Bus": "#a3167e",
         "R": regional_color,
         "RB": regional_color,
         "RE": regional_express_color,
+        "RER": s_bahn_color,
         "REX": regional_express_color,
         "RJ": "#c63131",
         "RJX": "#c63131",
-        "RS": "#008d4f",
+        "RS": s_bahn_color,
         "RUF": "#ffd700",
-        "S": "#008d4f",
+        "S": s_bahn_color,
         "SB": "#2e2e7d",
         "Schw-B": "#4896d2",
-        "STB": "#014e8d",
+        "STB": "#c5161c",
         "STR": "#c5161c",
         "TER": regional_color,
         "TGV": long_distance_color,
