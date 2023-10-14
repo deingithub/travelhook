@@ -146,50 +146,37 @@ def fetch_headsign(status):
             headsign,
         )
 
+    def check_same_train(hafas_name, train):
+        hafas_name = hafas_name.replace(" ", "")
+        train_line = train["type"] + (train["line"] or "")
+        train_no = train["type"] + train["no"]
+        return (hafas_name == train_line) or (hafas_name == train_no)
+
     headsign = "?"
-    # first let's try to get the train directly using its hafas jid
     try:
-        jid = status["train"]["hafasId"] or status["train"]["id"]
-        if "|" in jid:
-            headsign = get_headsign_from_jid(jid)
-            DB.DB.execute(
-                "UPDATE trips SET headsign = ? WHERE journey_id = ?",
-                (
-                    headsign,
-                    zugid(status),
-                ),
-            )
-            return headsign
-
-    except:  # pylint: disable=bare-except
-        print("error fetching headsign from hafas jid:")
-        traceback.print_exc()
-
-    # ok that didn't work out somehow, let's do a wild guess which train we're on instead
-    # we most likely have an iris checkin, so we'll (again, most likely) have a train number
-    try:
-        departure = datetime.fromtimestamp(status["fromStation"]["realTime"], tz=tz)
-        arrival = datetime.fromtimestamp(status["toStation"]["scheduledTime"], tz=tz)
-
-        candidates = hafas.departures(
-            station=status["fromStation"]["uic"], date=departure, duration=5
+        departure = datetime.fromtimestamp(
+            status["fromStation"]["scheduledTime"], tz=tz
         )
-        if len(candidates) == 1:
-            headsign = get_headsign_from_jid(candidates[0].id)
+        candidates = hafas.departures(
+            station=status["fromStation"]["uic"], date=departure, duration=10
+        )
+        candidates2 = [
+            c
+            for c in candidates
+            if check_same_train(c.name, status["train"]) and c.dateTime == departure
+        ]
+        if len(candidates) > 1:
+            headsign = get_headsign_from_jid(candidates2[0].id)
         else:
-            candidates = [
-                c for c in candidates if c.name.endswith(status["train"]["no"])
-            ]
-            if len(candidates) == 1:
-                headsign = get_headsign_from_jid(candidates[0].id)
-            else:
-                print(
-                    "can't decide!",
-                    status["fromStation"],
-                    status["toStation"],
-                    departure,
-                    candidates,
-                )
+            print(
+                "can't decide!",
+                status["fromStation"],
+                status["toStation"],
+                departure,
+                candidates,
+                candidates2,
+                sep="\n",
+            )
 
     except:  # pylint: disable=bare-except
         print("error fetching headsign from journey:")
@@ -257,6 +244,7 @@ train_type_emoji = {
     "STB": "<:stb:1162051109318295674>",
     "steam": "<:sbbsteam:1162032435459006494>",
     "STR": "<:Tram:1160290093400064060>",
+    "SVG": "<:sbbsteam:1162032435459006494> SVG",
     "TER": "<:ta:1162760151384731710><:tb:1162760154769543248>",
     "TGV": "<:Ta:1162760156514357402><:Tb:1162760158854783027>",
     "Tram": "<:Tram:1160290093400064060>",

@@ -200,16 +200,17 @@ def sillies(statuses, embed, continue_link):
         embed.description += f"\n{headline_level} — {get_train_emoji(train_type)} {train_line} counter: {len(grouped[0])}× —"
 
     status = statuses[-1]
-    if "Durlacher Tor" in (status["fromStation"]["name"] + status["toStation"]["name"]):
+    stations = status["fromStation"]["name"] + status["toStation"]["name"]
+    if "Durlacher Tor" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/6WhzdSp.png")
-    if "Ziegelstein" in (status["fromStation"]["name"] + status["toStation"]["name"]):
-        return embed.set_thumbnail(url="https://i.imgur.com/W3mPNEn.gif")
     if "Wien Floridsdorf" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/CSBTb0z.gif")
-    if "Gumpendorfer Straße" in (
-        status["fromStation"]["name"] + status["toStation"]["name"]
-    ):
+    if "Wien Mitte" in status["toStation"]["name"]:
+        return embed.set_image(url="https://i.imgur.com/f7dwfpt.gif")
+    if "Gumpendorfer Straße" in stations:
         return embed.set_image(url="https://i.imgur.com/9P15eRQ.png")
+    if "Ziegelstein" in stations:
+        return embed.set_thumbnail(url="https://i.imgur.com/W3mPNEn.gif")
     if status["train"]["type"] == "Schw-B":
         return embed.set_image(url="https://i.imgur.com/8deLTcU.png")
     if status["train"]["line"] == "4" and "uniwuni" in embed.author.name:
