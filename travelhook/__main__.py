@@ -521,7 +521,7 @@ async def walk(
 @bot.tree.command(guilds=servers)
 async def pleasegivemetraintypes(ia):
     "print all the train types the bot knows about"
-    fv = ["D", "EC", "ECE", "EN", "IC", "ICE", "IR", "NJ", "RJ", "RJX", "TGV", "WB"]
+    fv = ["D", "EC", "ECE", "EN", "FLX", "IC", "ICE", "IR", "NJ", "RJ", "RJX", "TGV", "WB"]
     regio = ["CJX", "IRE", "MEX", "R", "RB", "RE", "REX", "TER"]
     sbahn = ["ATS", "L", "RER", "RS", "S"]
     transit = ["AST", "Bus", "Fähre", "M", "O-Bus", "RUF", "STB", "STR", "Tram", "U"]
