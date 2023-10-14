@@ -180,12 +180,12 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             icon_url=user.avatar.url,
         )
     ]
-    embeds[0] = sillies(statuses, embeds[0])
+    embeds[0] = sillies(statuses, embeds[0], continue_link)
 
     return embeds
 
 
-def sillies(statuses, embed):
+def sillies(statuses, embed, continue_link):
     "do funny things with the embed once it's done"
 
     sortkey = lambda tup: tup[0] + tup[1]
@@ -196,7 +196,8 @@ def sillies(statuses, embed):
     grouped = sorted(grouped, key=len, reverse=True)
     if len(grouped[0]) >= 3:
         train_type, train_line, _ = grouped[0][0]
-        embed.description += f"\n## — {get_train_emoji(train_type)} {train_line} counter: {len(grouped[0])}× —"
+        headline_level = "###" if continue_link else "##"
+        embed.description += f"\n{headline_level} — {get_train_emoji(train_type)} {train_line} counter: {len(grouped[0])}× —"
 
     status = statuses[-1]
     if "Durlacher Tor" in (status["fromStation"]["name"] + status["toStation"]["name"]):
