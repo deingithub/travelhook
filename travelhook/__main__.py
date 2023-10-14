@@ -539,7 +539,7 @@ async def pleasegivemetraintypes(ia):
     regio = ["CJX", "IRE", "MEX", "R", "RB", "RE", "REX", "TER"]
     sbahn = ["ATS", "L", "RER", "RS", "S"]
     transit = ["AST", "Bus", "Fähre", "M", "O-Bus", "RUF", "STB", "STR", "Tram", "U"]
-    special = ["SB", "Schw-B", "U1", "U2", "U3", "U4", "U5", "U6", "Ü"]
+    special = ["SB", "SVG", "Schw-B", "U1", "U2", "U3", "U4", "U5", "U6", "Ü"]
     manual = ["bike", "car", "plane", "steam", "walk"]
     # uncomment me when the assertion fails to find out what you did wrong
     # print(sorted(fv+regio+sbahn+transit+special+manual),sorted([k for k,v in items]), sep="\n")
