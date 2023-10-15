@@ -526,6 +526,7 @@ async def pleasegivemetraintypes(ia):
         "EC",
         "ECE",
         "EN",
+        "EST",
         "FLX",
         "IC",
         "ICE",
@@ -534,12 +535,26 @@ async def pleasegivemetraintypes(ia):
         "RJ",
         "RJX",
         "TGV",
+        "THA",
         "WB",
     ]
     regio = ["CJX", "IRE", "MEX", "R", "RB", "RE", "REX", "TER"]
     sbahn = ["ATS", "L", "RER", "RS", "S"]
     transit = ["AST", "Bus", "Fähre", "M", "O-Bus", "RUF", "STB", "STR", "Tram", "U"]
-    special = ["SB", "SVG", "Schw-B", "U1", "U2", "U3", "U4", "U5", "U6", "Ü"]
+    special = [
+        "RT",
+        "SB",
+        "SEV",
+        "SVG",
+        "Schw-B",
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5",
+        "U6",
+        "Ü",
+    ]
     manual = ["bike", "car", "plane", "steam", "walk"]
     # uncomment me when the assertion fails to find out what you did wrong
     # print(sorted(fv+regio+sbahn+transit+special+manual),sorted([k for k,v in items]), sep="\n")
@@ -568,9 +583,10 @@ async def register(ia):
             title="Registering with the travelynx relay bot",
             color=train_type_color["SB"],
             description="Thanks for your interest! Using this bot, you can share your public transport journeys "
-            "in and around Germany with your friends and enemies on Discord.\nTo use it, you first need to sign up for "
-            "**[travelynx](https://travelynx.de)** to be able to check in into trains, trams, buses and so on. Then you "
-            "can connect this bot to your travelynx account.\nFinally, for every server you can decide if *only you* want to share "
+            "in and around Germany (or in fact, any journey around the world, using the bot's manual checkin feature) "
+            "with your friends and enemies on Discord.\nTo use it, you first need to sign up for **[travelynx](https://travelynx.de)**"
+            " to be able to check in into trains, trams, buses and so on. Then you can connect this bot to "
+            "your travelynx account.\nFinally, for every server you can decide if *only you* want to share "
             "some of our journeys using the **/zug** command (this is the default), or if you want to let *everyone* "
             "use the command for you. You can even enable a **live feed** for a specific channel, keeping everyone "
             "up to date as you check in into new transports. This is fully optional.",

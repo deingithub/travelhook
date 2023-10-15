@@ -12,6 +12,7 @@ from .helpers import (
     LineEmoji,
     train_type_color,
     train_presentation,
+    replace_city_suffix_with_prefix,
 )
 
 
@@ -60,7 +61,13 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         # compact layout for completed trips
         if continue_link and _next(statuses, i):
             if not _prev(statuses, i):
-                desc += f"{LineEmoji.COMPACT_JOURNEY_START}{departure} {train['fromStation']['name']}\n"
+                name = train["fromStation"]["name"]
+                prefix_to_add = replace_city_suffix_with_prefix.get(
+                    name.split(", ")[-1]
+                )
+                if prefix_to_add:
+                    name = f"{prefix_to_add} {', '.join(name.split(', ')[0:-1])}"
+                desc += f"{LineEmoji.COMPACT_JOURNEY_START}{departure} {name}\n"
                 desc += f"{LineEmoji.COMPACT_JOURNEY}{LineEmoji.SPACER}"
 
             # draw only train type and line number in one line
@@ -77,7 +84,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         # regular layout for full journey display
         # if we're the first trip of the journey, draw a journey start icon
         if not _prev(statuses, i):
-            desc += f"{LineEmoji.START}{departure} **{train['fromStation']['name']}**\n"
+            name = train["fromStation"]["name"]
+            prefix_to_add = replace_city_suffix_with_prefix.get(name.split(", ")[-1])
+            if prefix_to_add:
+                name = f"{prefix_to_add} {', '.join(name.split(', ')[0:-1])}"
+            desc += f"{LineEmoji.START}{departure} **{name}**\n"
         elif prev_train := _prev(statuses, i):
             # if we've just drawn the last compact mode entry, draw a station
             if continue_link and not _next(statuses, i):

@@ -99,11 +99,21 @@ def train_presentation(data):
     if train_type == "ZahnR":
         train_type = "SB"
 
+    # special treatment for mannheim or well, not-special treatment
+    if train_type == "RNV":
+        train_type = "STR"
+
     # special treatment for jura
     if train_type == "U" and train_line.casefold().startswith("m"):
         train_type = "M"
     if train_type == "S" and train_line.startswith("L"):
         train_type = "L"
+
+    if train_type == "EV" or (
+        train_type == "Bus"
+        and (train_line.startswith("EV") or train_line.startswith("SEV"))
+    ):
+        train_type = "SEV"
 
     link = "https://bahn.expert/details"
     # if HAFAS, add journeyid to link to make sure it gets the right one
@@ -255,8 +265,9 @@ train_type_emoji = {
     "EC": "<:eca:1162767426337919086><:ecb:1162767427604578305>",
     "ECE": "<:eca:1162767426337919086><:ece:1162767431513681993>",
     "EN": "<:na:1162760037748441158><:nb:1162760039094812773>",
+    "EST": "<:Ta:1163140573486645288><:Tb:1163140572123496649>",
     "Fähre": "<:Faehre:1143105659827658783>",
-    "FLX": "<:fa:1162799739163656334><:fb:1162799736445739128>",
+    "FLX": "<:La:1163141817022283836><:Lb:1163141815575253062>",
     "IC": "<:ca:1162760063384039524><:cb:1162760064298393641>",
     "ICE": "<:ca:1162760063384039524><:Cb:1162760068857597952>",
     "IR": "<:Ia:1162760071269335272><:db:1162760035760361582>",
@@ -275,16 +286,19 @@ train_type_emoji = {
     "RJ": "<:2a:1162760135731589233><:2b:1162760137090551929>",
     "RJX": "<:1a:1162760138277519501><:1b:1162760140458573895>",
     "RS": "<:rs:1162070847645831249>",
+    "RT": "<:rt:1163135018328133752>",
     "RUF": "<:ruf:1161314243698761898>",
     "S": "<:SBahn:1102206882527060038>",
     "SB": "<:SB:1160502333143261234>",
     "Schw-B": "<:Schwebebahn:1143108575770726510>",
+    "SEV": "<:Sa:1163143892540067880><:Sb:1163143891264999494>",
     "STB": "<:stb:1162051109318295674>",
     "steam": "<:sbbsteam:1162032435459006494>",
     "STR": "<:Tram:1160290093400064060>",
     "SVG": "<:sbbsteam:1162032435459006494> SVG",
     "TER": "<:ta:1162760151384731710><:tb:1162760154769543248>",
     "TGV": "<:Ta:1162760156514357402><:Tb:1162760158854783027>",
+    "THA": "<:Ta:1163140578020687973><:Tb:1163140576267489450>",
     "Tram": "<:Tram:1160290093400064060>",
     "U": "<:U_:1160288163214921889>",
     "U1": "<:u1:1160998507533058098>",
@@ -322,6 +336,7 @@ train_type_color = {
         "EC": long_distance_color,
         "ECE": long_distance_color,
         "EN": night_train_color,
+        "EST": long_distance_color,
         "CJX": regional_express_color,
         "Fähre": "#00a4db",
         "FLX": "#72d800",
@@ -342,6 +357,7 @@ train_type_color = {
         "RJ": "#c63131",
         "RJX": "#c63131",
         "RS": s_bahn_color,
+        "RT": "#c5161c",
         "RUF": "#ffd700",
         "S": s_bahn_color,
         "SB": "#2e2e7d",
@@ -350,6 +366,7 @@ train_type_color = {
         "STR": "#c5161c",
         "TER": regional_color,
         "TGV": long_distance_color,
+        "THA": long_distance_color,
         "Tram": "#c5161c",
         "U": "#014e8d",
         "U1": "#ed1d26",
@@ -369,6 +386,12 @@ not_registered_embed = discord.Embed(
     description="It looks like you're not registered with the travelynx relay bot yet.\n"
     "If you want to fix this minor oversight, use **/register** today!",
 )
+
+# this is specifically because Knielinger Allee/Städt. Klinikum, Karlsruhe is very long and doesn't fit in one line
+# but look how maintainable this is, you could add any city you like
+# you could even abbreviate Berlin to B
+# no idea why you would but it's possible now
+replace_city_suffix_with_prefix = {"Karlsruhe": "KA"}
 
 replace_headsign = {
     # Vienna
