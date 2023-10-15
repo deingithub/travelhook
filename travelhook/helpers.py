@@ -182,7 +182,6 @@ def fetch_headsign(status):
         ]
         if len(candidates2) == 1:
             headsign = get_headsign_from_stationboard(candidates2[0])
-            headsign = get_headsign_from_jid(candidates2[0].id)
         else:
             for candidate in candidates2:
                 trip = hafas.trip(candidate.id)
