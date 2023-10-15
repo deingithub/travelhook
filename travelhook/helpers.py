@@ -65,6 +65,15 @@ def format_delta(delta):
     return f"{m}′"
 
 
+blanket_replace_train_type = {
+    "ZahnR": "SB",
+    "RNV": "STR",
+    "O-Bus": "Bus",
+    "Tram": "STR",
+    "EV": "SEV",
+}
+
+
 def train_presentation(data):
     "do some cosmetic fixes to train type/line and generate a bahn.expert link for it"
     is_hafas = "|" in data["train"]["id"]
@@ -104,13 +113,7 @@ def train_presentation(data):
     ):
         train_type = "ATS"
 
-    # that's not a tram, that's an elevator
-    if train_type == "ZahnR":
-        train_type = "SB"
-
-    # special treatment for mannheim or well, not-special treatment
-    if train_type == "RNV":
-        train_type = "STR"
+    train_type = blanket_replace_train_type.get(train_type, train_type)
 
     # special treatment for jura
     if train_type == "U" and train_line.casefold().startswith("m"):
@@ -118,9 +121,8 @@ def train_presentation(data):
     if train_type == "S" and train_line.startswith("L"):
         train_type = "L"
 
-    if train_type == "EV" or (
-        train_type == "Bus"
-        and (train_line.startswith("EV") or train_line.startswith("SEV"))
+    if train_type == "Bus" and (
+        train_line.startswith("EV") or train_line.startswith("SEV")
     ):
         train_type = "SEV"
 
@@ -285,7 +287,6 @@ train_type_emoji = {
     "M": "<:metro:1162032437065416764>",
     "MEX": "<:ma:1162772943596699729><:mb:1162772944951455838>",
     "NJ": "<:Na:1162760106321117258><:Nb:1162760108221153300>",
-    "O-Bus": "<:Bus:1160288158374707241>",
     "plane": "<:sbbflug:1161317272397287435>",
     "R": "<:Ra:1162760110536405097><:Rb:1162760111975043072>",
     "RB": "<:Ba:1162760114328043680><:Bb:1162760116261617757>",
@@ -308,7 +309,6 @@ train_type_emoji = {
     "TER": "<:ta:1162760151384731710><:tb:1162760154769543248>",
     "TGV": "<:Ta:1162760156514357402><:Tb:1162760158854783027>",
     "THA": "<:Ta:1163140578020687973><:Tb:1163140576267489450>",
-    "Tram": "<:Tram:1160290093400064060>",
     "U": "<:U_:1160288163214921889>",
     "U1": "<:u1:1160998507533058098>",
     "U2": "<:u2:1160998509059776622>",
@@ -357,7 +357,6 @@ train_type_color = {
         "M": "#014e8d",
         "MEX": regional_color,
         "NJ": night_train_color,
-        "O-Bus": "#a3167e",
         "R": regional_color,
         "RB": regional_color,
         "RE": regional_express_color,
@@ -376,7 +375,6 @@ train_type_color = {
         "TER": regional_color,
         "TGV": long_distance_color,
         "THA": long_distance_color,
-        "Tram": "#c5161c",
         "U": "#014e8d",
         "U1": "#ed1d26",
         "U2": "#9e50af",
@@ -395,6 +393,7 @@ not_registered_embed = discord.Embed(
     description="It looks like you're not registered with the travelynx relay bot yet.\n"
     "If you want to fix this minor oversight, use **/register** today!",
 )
+
 
 # this is specifically because Knielinger Allee/Städt. Klinikum, Karlsruhe is very long and doesn't fit in one line
 # but look how maintainable this is, you could add any city you like
