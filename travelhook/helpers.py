@@ -61,7 +61,7 @@ def format_delta(delta):
     h, m = divmod(delta, timedelta(hours=1))
     m = int(m.total_seconds() // 60)
     if h > 0:
-        return f"{h}:{m}h"
+        return f"{h}:{m:02}h"
     return f"{m}′"
 
 
