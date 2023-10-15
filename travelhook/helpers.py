@@ -7,6 +7,7 @@ import discord
 from aiohttp import ClientSession
 from pyhafas import HafasClient
 from pyhafas.profile import DBProfile
+from pyhafas.types.fptf import Stopover
 
 from . import database as DB
 
@@ -146,6 +147,20 @@ def fetch_headsign(status):
             headsign,
         )
 
+    def get_headsign_from_stationboard(leg):
+        headsign = leg.direction
+        train_key = (
+            (
+                status["train"]["type"]
+                + (status["train"]["line"] or status["train"]["no"])
+            ),
+            headsign,
+        )
+        return replace_headsign.get(
+            train_key,
+            headsign,
+        )
+
     def check_same_train(hafas_name, train):
         hafas_name = hafas_name.replace(" ", "")
         train_line = train["type"] + (train["line"] or "")
@@ -166,17 +181,41 @@ def fetch_headsign(status):
             if check_same_train(c.name, status["train"]) and c.dateTime == departure
         ]
         if len(candidates2) == 1:
+            headsign = get_headsign_from_stationboard(candidates2[0])
             headsign = get_headsign_from_jid(candidates2[0].id)
         else:
-            print(
-                "can't decide!",
-                status["fromStation"],
-                status["toStation"],
-                departure,
-                candidates,
-                candidates2,
-                sep="\n",
-            )
+            for candidate in candidates2:
+                trip = hafas.trip(candidate.id)
+                stops = [
+                    Stopover(
+                        stop=trip.destination,
+                        arrival=trip.arrival,
+                        arrival_delay=trip.arrivalDelay,
+                    )
+                ]
+                if trip.stopovers:
+                    stops += trip.stopovers
+                if any(
+                    stop.stop.id == str(status["toStation"]["uic"])
+                    and (
+                        stop.arrival
+                        and int(stop.arrival.timestamp())
+                        == status["toStation"]["scheduledTime"]
+                    )
+                    for stop in stops
+                ):
+                    headsign = get_headsign_from_stationboard(candidate)
+                    break
+            else:
+                print(
+                    "can't decide!",
+                    status["fromStation"],
+                    status["toStation"],
+                    departure,
+                    candidates,
+                    candidates2,
+                    sep="\n",
+                )
 
     except:  # pylint: disable=bare-except
         print("error fetching headsign from journey:")
