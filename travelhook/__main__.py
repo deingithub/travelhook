@@ -12,6 +12,8 @@ from haversine import haversine
 from . import database as DB
 from .format import format_travelynx
 from .helpers import (
+    format_time,
+    get_train_emoji,
     is_token_valid,
     not_registered_embed,
     train_type_color,
@@ -498,19 +500,52 @@ async def undo(ia):
         )
         return
 
-    trip.status["checkedIn"] = True
-    DB.Trip.upsert(user.discord_id, trip.status)
+    train_type, train_line, link = train_presentation(trip.status)
+    departure = format_time(
+        trip.status["fromStation"]["scheduledTime"],
+        trip.status["fromStation"]["realTime"],
+    )
+    arrival = format_time(
+        trip.status["toStation"]["scheduledTime"], trip.status["toStation"]["realTime"]
+    )
+    await ia.response.send_message(
+        embed=discord.Embed(
+            description=f"### You are about to undo the following checkin from {format_time(None, trip.from_time, True)}\n"
+            f"{get_train_emoji(train_type)} **{train_line} {trip.from_station}** {departure} → **{trip.to_station}** {arrival}\n\n"
+            "The checkin will only be deleted from the bot's database. Please confirm deletion by clicking below.",
+            color=train_type_color["SB"],
+        ),
+        ephemeral=True,
+        view=UndoView(user, trip),
+    )
+    return
 
-    trip.status["checkedIn"] = False
-    async with ClientSession() as session:
-        async with session.post(
-            "http://localhost:6005/travelynx",
-            json={"reason": "undo", "status": trip.status},
-            headers={"Authorization": f"Bearer {user.token_webhook}"},
-        ) as r:
-            await ia.response.send_message(
-                f"{r.status} {await r.text()}", ephemeral=True
-            )
+
+class UndoView(discord.ui.View):
+    """fetches the current trip rendered in the embed this view's attached to
+    and updates the message accordingly"""
+
+    def __init__(self, user, trip):
+        """we store the primary key of the trips table (user id and user-trip zugid)
+        in the view to fetch the correct trip again"""
+        super().__init__()
+        self.user = user
+        self.trip = trip
+
+    @discord.ui.button(label="Yes, undo this trip.", style=discord.ButtonStyle.danger)
+    async def doit(self, ia, _):
+        self.trip.status["checkedIn"] = True
+        DB.Trip.upsert(self.user.discord_id, self.trip.status)
+        self.trip.status["checkedIn"] = False
+        async with ClientSession() as session:
+            async with session.post(
+                "http://localhost:6005/travelynx",
+                json={"reason": "undo", "status": self.trip.status},
+                headers={"Authorization": f"Bearer {self.user.token_webhook}"},
+            ) as r:
+                await ia.response.send_message(
+                    f"{r.status} {await r.text()}", ephemeral=True
+                )
 
 
 # TODO /journey edit
