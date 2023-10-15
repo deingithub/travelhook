@@ -1,5 +1,5 @@
 "various helper functions that do more than just pure formatting logic. the icon library lives in here too"
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import traceback
 
@@ -54,6 +54,15 @@ def format_time(sched, actual, relative=False):
         diff = f" +{diff}′"
 
     return f"**{time:%H:%M}{diff}**"
+
+
+def format_delta(delta):
+    "turn a timedelta into  representation like 1h37m"
+    h, m = divmod(delta, timedelta(hours=1))
+    m = int(m.total_seconds() // 60)
+    if h > 0:
+        return f"{h}:{m}h"
+    return f"{m}′"
 
 
 def train_presentation(data):

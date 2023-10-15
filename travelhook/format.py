@@ -1,12 +1,14 @@
 "this module, or rather its function format_travelynx, renders nice embed describing the current journey"
 
 from itertools import groupby
+from datetime import timedelta
 
 import discord
 from haversine import haversine
 
 from .helpers import (
     fetch_headsign,
+    format_delta,
     format_time,
     get_train_emoji,
     LineEmoji,
@@ -114,15 +116,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 if route_link
                 else f" **{train_line} » {headsign}** ✱"
             )
-            + (" ●" if train["comment"] else "")
-            + "\n"
-            # add more spacing for current journey if not compact
-            + (
-                f"{LineEmoji.RAIL}\n"
-                if not _next(statuses, i) and not continue_link
-                else ""
-            )
+            + (" ●\n" if train["comment"] else "\n")
         )
+        # add extra spacing at last trip in the journey
+        if not continue_link and not _next(statuses, i):
+            desc += f"{LineEmoji.RAIL}\n"
 
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
@@ -173,14 +171,32 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         desc += f"> {comment}\n"
 
     if continue_link:
-        desc += f"**Weiterfahrt ➤** {continue_link}"
+        desc += f"**Weiterfahrt ➤** {continue_link}\n"
     else:
         to_time = format_time(
             statuses[-1]["toStation"]["scheduledTime"],
             statuses[-1]["toStation"]["realTime"],
             True,
         )
-        desc += f'### ➤ {statuses[-1]["toStation"]["name"]} {to_time}'
+        desc += f"### ➤ {statuses[-1]['toStation']['name']} {to_time}\n"
+
+    trip_time = timedelta(
+        seconds=statuses[-1]["toStation"]["realTime"]
+        - statuses[-1]["fromStation"]["realTime"]
+    )
+    total_time = timedelta(
+        seconds=statuses[-1]["toStation"]["realTime"]
+        - statuses[0]["fromStation"]["realTime"]
+    )
+    journey_time = timedelta(
+        seconds=sum(
+            [
+                train["toStation"]["realTime"] - train["fromStation"]["realTime"]
+                for train in statuses
+            ]
+        )
+    )
+    desc += f"*trip {format_delta(trip_time)} · journey {format_delta(total_time)} ({format_delta(journey_time)})*"
 
     embeds = [
         discord.Embed(
@@ -191,6 +207,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             icon_url=user.avatar.url,
         )
     ]
+
     embeds[0] = sillies(statuses, embeds[0], continue_link)
 
     return embeds
