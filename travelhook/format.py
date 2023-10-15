@@ -225,7 +225,7 @@ def sillies(statuses, embed, continue_link):
     if len(grouped[0]) >= 3:
         train_type, train_line, _ = grouped[0][0]
         headline_level = "###" if continue_link else "##"
-        embed.description += f"\n{headline_level} — {get_train_emoji(train_type)} {train_line} counter: {len(grouped[0])}× —"
+        embed.description += f"\n{headline_level} COMBO! {len(grouped[0])}× {get_train_emoji(train_type)} {train_line}"
 
     status = statuses[-1]
     stations = status["fromStation"]["name"] + status["toStation"]["name"]

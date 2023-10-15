@@ -482,6 +482,37 @@ async def manualtrip(
             )
 
 
+@journey.command()
+async def undo(ia):
+    "undo your last checkin in the bot's database. you must be checked out to do this."
+    user = DB.User.find(discord_id=ia.user.id)
+    if not user:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+        return
+
+    trip = DB.Trip.find_last_trip_for(user.discord_id)
+    if trip.status["checkedIn"]:
+        await ia.response.send_message(
+            "You're still checked in. Please undo this checkin on travelynx to avoid inconsistent data.",
+            ephemeral=True,
+        )
+        return
+
+    trip.status["checkedIn"] = True
+    DB.Trip.upsert(user.discord_id, trip.status)
+
+    trip.status["checkedIn"] = False
+    async with ClientSession() as session:
+        async with session.post(
+            "http://localhost:6005/travelynx",
+            json={"reason": "undo", "status": trip.status},
+            headers={"Authorization": f"Bearer {user.token_webhook}"},
+        ) as r:
+            await ia.response.send_message(
+                f"{r.status} {await r.text()}", ephemeral=True
+            )
+
+
 # TODO /journey edit
 
 
