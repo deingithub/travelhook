@@ -591,6 +591,7 @@ async def pleasegivemetraintypes(ia):
         "D",
         "EC",
         "ECE",
+        "EIC",
         "EN",
         "EST",
         "FLX",
@@ -601,9 +602,10 @@ async def pleasegivemetraintypes(ia):
         "RJ",
         "RJX",
         "TGV",
+        "TLK",
         "WB",
     ]
-    regio = ["CJX", "IRE", "MEX", "R", "RB", "RE", "REX", "TER"]
+    regio = ["CJX", "IRE", "KM", "KML", "KS", "MEX", "R", "RB", "RE", "REX", "TER"]
     sbahn = ["ATS", "L", "RER", "RS", "S"]
     transit = ["AST", "Bus", "Fähre", "M", "RUF", "Schw-B", "STB", "STR", "U"]
     special = [

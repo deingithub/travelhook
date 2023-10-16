@@ -71,6 +71,7 @@ blanket_replace_train_type = {
     "O-Bus": "Bus",
     "Tram": "STR",
     "EV": "SEV",
+    "SKW": "S",
 }
 
 
@@ -121,9 +122,7 @@ def train_presentation(data):
     if train_type == "S" and train_line.startswith("L"):
         train_type = "L"
 
-    if train_type == "Bus" and (
-        train_line.startswith("EV") or train_line.startswith("SEV")
-    ):
+    if "SEV" in train_line or "EV" in train_line:
         train_type = "SEV"
 
     link = "https://bahn.expert/details"
@@ -184,7 +183,7 @@ def fetch_headsign(status):
 
     def check_same_train(hafas_name, train):
         hafas_name = hafas_name.replace(" ", "")
-        train_line = train["type"] + (train["line"] or "")
+        train_line = train["type"] + (train["line"] or "").replace(" ", "")
         train_no = train["type"] + train["no"]
         return (
             (hafas_name == train_line)
@@ -231,13 +230,15 @@ def fetch_headsign(status):
                     headsign = get_headsign_from_stationboard(candidate)
                     break
             else:
+                print_leg = lambda c: f"{c.id} {c.name} {c.direction} {c.dateTime}"
                 print(
-                    "can't decide!",
+                    f"can't decide! {status['train']['type']} {status['train']['line']} {status['train']['no']} {departure}",
                     status["fromStation"],
                     status["toStation"],
-                    departure,
-                    candidates,
-                    candidates2,
+                    "cand",
+                    "\n".join([print_leg(c) for c in candidates]),
+                    "cand2",
+                    "\n".join([print_leg(c) for c in candidates2]),
                     sep="\n",
                 )
 
@@ -279,6 +280,7 @@ train_type_emoji = {
     "D": "<:da:1162760033684168724><:db:1162760035760361582>",
     "EC": "<:eca:1162767426337919086><:ecb:1162767427604578305>",
     "ECE": "<:eca:1162767426337919086><:ece:1162767431513681993>",
+    "EIC": "<:ia:1163536538391556126><:ib:1163536535732355183>",
     "EN": "<:na:1162760037748441158><:nb:1162760039094812773>",
     "EST": "<:Ta:1163140573486645288><:Tb:1163140572123496649>",
     "Fähre": "<:Faehre:1143105659827658783>",
@@ -287,6 +289,9 @@ train_type_emoji = {
     "ICE": "<:ca:1162760063384039524><:Cb:1162760068857597952>",
     "IR": "<:Ia:1162760071269335272><:db:1162760035760361582>",
     "IRE": "<:ia:1162760103032795187><:ib:1162760104345620480>",
+    "KM": "<:ka:1163537951846842480><:kb:1163537770011185172>",
+    "KML": "<:La:1163536524948807710><:Lb:1163536521979248730>",
+    "KS": "<:sa:1163536518690906222><:sb:1163536516866392165>",
     "L": "<:lex:1162070841702494208>",
     "M": "<:metro:1162032437065416764>",
     "MEX": "<:ma:1162772943596699729><:mb:1162772944951455838>",
@@ -312,6 +317,7 @@ train_type_emoji = {
     "SVG": "<:sbbsteam:1162032435459006494> SVG",
     "TER": "<:ta:1162760151384731710><:tb:1162760154769543248>",
     "TGV": "<:Ta:1162760156514357402><:Tb:1162760158854783027>",
+    "TLK": "<:ta:1163536529273147473><:tb:1163536526815273000>",
     "U": "<:U_:1160288163214921889>",
     "U1": "<:u1:1160998507533058098>",
     "U2": "<:u2:1160998509059776622>",
@@ -347,6 +353,7 @@ train_type_color = {
         "D": long_distance_color,
         "EC": long_distance_color,
         "ECE": long_distance_color,
+        "EIC": long_distance_color,
         "EN": night_train_color,
         "EST": long_distance_color,
         "CJX": regional_express_color,
@@ -356,6 +363,9 @@ train_type_color = {
         "ICE": long_distance_color,
         "IR": long_distance_color,
         "IRE": regional_express_color,
+        "KM": regional_color,
+        "KML": regional_color,
+        "KS": regional_color,
         "L": s_bahn_color,
         "M": "#014e8d",
         "MEX": regional_color,
@@ -376,6 +386,7 @@ train_type_color = {
         "STB": "#c5161c",
         "STR": "#c5161c",
         "TER": regional_color,
+        "TLK": long_distance_color,
         "TGV": long_distance_color,
         "U": "#014e8d",
         "U1": "#ed1d26",
