@@ -186,7 +186,11 @@ def fetch_headsign(status):
         hafas_name = hafas_name.replace(" ", "")
         train_line = train["type"] + (train["line"] or "")
         train_no = train["type"] + train["no"]
-        return (hafas_name == train_line) or (hafas_name == train_no)
+        return (
+            (hafas_name == train_line)
+            or (hafas_name == train_no)
+            or (hafas_name == train["type"] == "ZahnR")
+        )
 
     headsign = "?"
     try:
@@ -308,7 +312,6 @@ train_type_emoji = {
     "SVG": "<:sbbsteam:1162032435459006494> SVG",
     "TER": "<:ta:1162760151384731710><:tb:1162760154769543248>",
     "TGV": "<:Ta:1162760156514357402><:Tb:1162760158854783027>",
-    "THA": "<:Ta:1163140578020687973><:Tb:1163140576267489450>",
     "U": "<:U_:1160288163214921889>",
     "U1": "<:u1:1160998507533058098>",
     "U2": "<:u2:1160998509059776622>",
@@ -374,7 +377,6 @@ train_type_color = {
         "STR": "#c5161c",
         "TER": regional_color,
         "TGV": long_distance_color,
-        "THA": long_distance_color,
         "U": "#014e8d",
         "U1": "#ed1d26",
         "U2": "#9e50af",
