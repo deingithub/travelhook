@@ -442,6 +442,7 @@ async def manualtrip(
     status = {
         "checkedIn": False,
         "comment": comment or "",
+        "actionTime": int(datetime.now(tz=tz).timestamp()),
         "fromStation": {
             "uic": 42,
             "ds100": None,
