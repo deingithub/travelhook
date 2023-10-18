@@ -23,6 +23,15 @@ tz = ZoneInfo("Europe/Berlin")
 hafas = HafasClient(DBProfile())
 
 
+def parse_manual_time(time):
+    time = time.split(":")
+    return datetime.now(tz=tz).replace(
+        hour=int(time[0]),
+        minute=int(time[1]),
+        second=0,
+    )
+
+
 async def is_token_valid(token):
     "check if a status api token actually works"
     async with ClientSession() as session:
@@ -146,15 +155,15 @@ def train_presentation(data):
 def fetch_headsign(status):
     "try to fetch a train headsign or destination name from HAFAS"
 
+    if fhs := status["train"].get("fakeheadsign"):
+        return fhs
+
     # have we already fetched the headsign? just use that.
     cached = DB.DB.execute(
         "SELECT headsign FROM trips WHERE journey_id = ?", (zugid(status),)
     ).fetchone()
     if cached and cached["headsign"]:
         return cached["headsign"]
-
-    if fhs := status["train"].get("fakeheadsign"):
-        return fhs
 
     def get_headsign_from_jid(jid):
         headsign = hafas.trip(jid).destination.name
@@ -343,6 +352,7 @@ regional_express_color = "#ff4f00"
 regional_color = "#204a87"
 s_bahn_color = "#008d4f"
 night_train_color = "#282559"
+tram_color = "#c5161c"
 
 train_type_color = {
     k: discord.Color.from_str(v)
@@ -378,13 +388,13 @@ train_type_color = {
         "RJ": "#c63131",
         "RJX": "#c63131",
         "RS": s_bahn_color,
-        "RT": "#c5161c",
+        "RT": tram_color,
         "RUF": "#ffd700",
         "S": s_bahn_color,
         "SB": "#2e2e7d",
         "Schw-B": "#4896d2",
-        "STB": "#c5161c",
-        "STR": "#c5161c",
+        "STB": tram_color,
+        "STR": tram_color,
         "TER": regional_color,
         "TLK": long_distance_color,
         "TGV": long_distance_color,

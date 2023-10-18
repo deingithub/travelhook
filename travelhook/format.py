@@ -190,30 +190,26 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
     )
     journey_time = timedelta(
         seconds=sum(
-            [
-                train["toStation"]["realTime"] - train["fromStation"]["realTime"]
-                for train in statuses
-            ]
+            train["toStation"]["realTime"] - train["fromStation"]["realTime"]
+            for train in statuses
         )
     )
     desc += f"*trip {format_delta(trip_time)} · journey {format_delta(total_time)} ({format_delta(journey_time)})*"
 
-    embeds = [
-        discord.Embed(
-            description=desc,
-            color=color,
-        ).set_author(
-            name=f"{user.name} {'war' if not statuses[-1]['checkedIn'] else 'ist'} unterwegs",
-            icon_url=user.avatar.url,
-        )
-    ]
+    embed = discord.Embed(
+        description=desc,
+        color=color,
+    ).set_author(
+        name=f"{user.name} {'war' if not statuses[-1]['checkedIn'] else 'ist'} unterwegs",
+        icon_url=user.avatar.url,
+    )
 
-    embeds[0] = sillies(statuses, embeds[0], continue_link)
+    embed = sillies(statuses, embed)
 
-    return embeds
+    return embed
 
 
-def sillies(statuses, embed, continue_link):
+def sillies(statuses, embed):
     "do funny things with the embed once it's done"
 
     sortkey = lambda tup: tup[0] + tup[1]

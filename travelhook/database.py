@@ -134,7 +134,7 @@ class User:
 @dataclass
 class Trip:
     "user-trips the bot knows about"
-    journey_id: int
+    journey_id: str
     user_id: int
     travelynx_status: str
     from_time: int
@@ -146,14 +146,18 @@ class Trip:
     to_lat: float
     to_lon: float
     headsign: str
+    status_patch: str
 
     def __post_init__(self):
         self.status = json.loads(self.travelynx_status)
+        self.status_patch = json.loads(self.status_patch)
 
     @classmethod
     def find(cls, user_id, journey_id):
         row = DB.execute(
-            "SELECT * FROM trips WHERE user_id = ? AND journey_id = ?",
+            "SELECT journey_id, user_id, json_patch(travelynx_status, status_patch) as travelynx_status, "
+            "from_time, from_station, from_lat, from_lon, to_time, to_station, to_lat, to_lon, headsign, status_patch "
+            "FROM trips WHERE user_id = ? AND journey_id = ?",
             (user_id, journey_id),
         ).fetchone()
         return cls(**row)
@@ -161,7 +165,10 @@ class Trip:
     @classmethod
     def find_current_trips_for(cls, user_id):
         rows = DB.execute(
-            "SELECT * FROM trips WHERE user_id = ? ORDER BY from_time ASC", (user_id,)
+            "SELECT journey_id, user_id, json_patch(travelynx_status, status_patch) as travelynx_status, "
+            "from_time, from_station, from_lat, from_lon, to_time, to_station, to_lat, to_lon, headsign, status_patch "
+            "FROM trips WHERE user_id = ? ORDER BY travelynx_status ->> '$.actionTime' ASC",
+            (user_id,),
         ).fetchall()
         return [cls(**row) for row in rows]
 
@@ -177,7 +184,7 @@ class Trip:
             "INSERT INTO trips(journey_id, user_id, travelynx_status, from_time, from_station, from_lat, from_lon, to_time, to_station, to_lat, to_lon) "
             "VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO UPDATE SET travelynx_status=excluded.travelynx_status, "
             "from_time = excluded.from_time, from_station=excluded.from_station, from_lat=excluded.from_lat, from_lon=excluded.from_lon, "
-            "to_time = excluded.to_time, to_station=excluded.to_station, to_lat=excluded.to_lat, to_lon=excluded.to_lon ",
+            "to_time = excluded.to_time, to_station=excluded.to_station, to_lat=excluded.to_lat, to_lon=excluded.to_lon",
             (
                 zugid(status),
                 userid,
@@ -197,6 +204,23 @@ class Trip:
         DB.execute(
             "DELETE FROM trips WHERE user_id = ? AND journey_id = ?",
             (self.user_id, zugid(self.status)),
+        )
+
+    def write_patch(self, status_patch):
+        "write the status patch field to the database"
+        DB.execute(
+            "UPDATE trips SET status_patch=? WHERE user_id = ? AND journey_id = ?",
+            (json.dumps(status_patch), self.user_id, self.journey_id),
+        )
+
+    def get_unpatched_status(self):
+        """get the unpatched status, for mocking webhooks. this way we don't
+        accidentally destructively commit the user's edits as the actual status."""
+        return json.loads(
+            DB.execute(
+                "SELECT travelynx_status FROM trips WHERE user_id = ? AND journey_id = ?",
+                (self.user_id, self.journey_id),
+            ).fetchone()["travelynx_status"]
         )
 
 

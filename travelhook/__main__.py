@@ -8,6 +8,8 @@ from aiohttp import ClientSession, web
 import discord
 from discord.ext import commands
 from haversine import haversine
+import tomli
+import tomli_w
 
 from . import database as DB
 from .format import format_travelynx
@@ -21,6 +23,8 @@ from .helpers import (
     zugid,
     tz,
     train_presentation,
+    parse_manual_time,
+    fetch_headsign,
 )
 
 config = {}
@@ -141,22 +145,21 @@ async def receive(bot):
                     )
 
                 messages_to_delete = DB.Message.find_all(
-                    user.discord_id, zugid(last_trip.status)
+                    user.discord_id, last_trip.journey_id
                 )
                 for message in messages_to_delete:
                     await message.delete(bot)
-                DB.Trip.find(user.discord_id, zugid(last_trip.status)).delete()
+                last_trip.delete()
 
-                if current_trips := [
-                    trip.status
-                    for trip in DB.Trip.find_current_trips_for(user.discord_id)
-                ]:
+                if current_trips := DB.Trip.find_current_trips_for(user.discord_id):
                     for message in DB.Message.find_all(
-                        user.discord_id, zugid(current_trips[-1])
+                        user.discord_id, current_trips[-1].journey_id
                     ):
                         msg = await message.fetch(bot)
                         await msg.edit(
-                            embeds=format_travelynx(bot, userid, current_trips),
+                            embed=format_travelynx(
+                                bot, userid, [trip.status for trip in current_trips]
+                            ),
                             view=None,
                         )
 
@@ -175,9 +178,7 @@ async def receive(bot):
             # update database to maintain trip data
             handle_status_update(userid, data["reason"], data["status"])
 
-            current_trips = [
-                trip.status for trip in DB.Trip.find_current_trips_for(user.discord_id)
-            ]
+            current_trips = DB.Trip.find_current_trips_for(user.discord_id)
 
             # get all channels that live updates get pushed to for this user
             channels = [bot.get_channel(cid) for cid in user.find_live_channel_ids()]
@@ -188,7 +189,7 @@ async def receive(bot):
                     continue
 
                 view = (
-                    RefreshTravelynx(user.discord_id, current_trips[-1])
+                    RefreshTravelynx(current_trips[-1])
                     if data["reason"] != "checkout"
                     else None
                 )
@@ -206,20 +207,25 @@ async def receive(bot):
                     ):
                         continue_link = (await newer_message.fetch(bot)).jump_url
                         current_trip_index = [
-                            zugid(trip) for trip in current_trips
+                            trip.journey_id for trip in current_trips
                         ].index(zugid(data["status"]))
                         current_trips = current_trips[0 : current_trip_index + 1]
 
                     msg = await message.fetch(bot)
                     await msg.edit(
-                        embeds=format_travelynx(
-                            bot, userid, current_trips, continue_link=continue_link
+                        embed=format_travelynx(
+                            bot,
+                            userid,
+                            [trip.status for trip in current_trips],
+                            continue_link=continue_link,
                         ),
                         view=view,
                     )
                 else:
                     message = await channel.send(
-                        embeds=format_travelynx(bot, userid, current_trips),
+                        embed=format_travelynx(
+                            bot, userid, [trip.status for trip in current_trips]
+                        ),
                         view=view,
                     )
                     DB.Message(
@@ -228,15 +234,15 @@ async def receive(bot):
                     # shrink previous message to prevent clutter
                     if len(current_trips) > 1 and (
                         prev_message := DB.Message.find(
-                            user.discord_id, zugid(current_trips[-2]), channel.id
+                            user.discord_id, current_trips[-2].journey_id, channel.id
                         )
                     ):
                         prev_msg = await prev_message.fetch(bot)
                         await prev_msg.edit(
-                            embeds=format_travelynx(
+                            embed=format_travelynx(
                                 bot,
                                 userid,
-                                current_trips[0:-1],
+                                [trip.status for trip in current_trips[0:-1]],
                                 continue_link=message.jump_url,
                             ),
                             view=None,
@@ -336,13 +342,13 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                     return
 
                 handle_status_update(member.id, "update", status)
-                current_trips = [
-                    trip.status for trip in DB.Trip.find_current_trips_for(member.id)
-                ]
+                current_trips = DB.Trip.find_current_trips_for(member.id)
 
                 await ia.response.send_message(
-                    embeds=format_travelynx(bot, member.id, current_trips),
-                    view=RefreshTravelynx(member.id, current_trips[-1]),
+                    embed=format_travelynx(
+                        bot, member.id, [trip.status for trip in current_trips]
+                    ),
+                    view=RefreshTravelynx(current_trips[-1]),
                 )
 
 
@@ -429,15 +435,8 @@ async def manualtrip(
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
 
-    departure = departure.split(":")
-    departure = datetime.now(tz=tz).replace(
-        hour=int(departure[0]), minute=int(departure[1])
-    )
-    arrival = arrival.split(":")
-    arrival = datetime.now(tz=tz).replace(
-        hour=int(arrival[0]),
-        minute=int(arrival[1]),
-    )
+    departure = parse_manual_time(departure)
+    arrival = parse_manual_time(arrival)
     if arrival < departure:
         arrival += timedelta(days=1)
     status = {
@@ -484,9 +483,29 @@ async def manualtrip(
             )
 
 
+def render_patched_train(trip, patch):
+    "helper method to render a preview of how a train will look with a different patch applied"
+    status = json.loads(
+        DB.DB.execute(
+            "SELECT json_patch(?,?) as status",
+            (json.dumps(trip.get_unpatched_status()), json.dumps(patch)),
+        ).fetchone()["status"]
+    )
+    train_type, train_line, link = train_presentation(status)
+    departure = format_time(
+        status["fromStation"]["scheduledTime"],
+        status["fromStation"]["realTime"],
+    )
+    arrival = format_time(
+        status["toStation"]["scheduledTime"], status["toStation"]["realTime"]
+    )
+    headsign = fetch_headsign(status)
+    return f"{get_train_emoji(train_type)} **{train_line}** [» {headsign}]({link})\n{status['fromStation']['name']} {departure} → {status['toStation']['name']} {arrival}\n"
+
+
 @journey.command()
 async def undo(ia):
-    "undo your last checkin in the bot's database. you must be checked out to do this."
+    "undo your last checkin in the bot's database. you must be checked out to do this. you will be asked to confirm the undo action."
     user = DB.User.find(discord_id=ia.user.id)
     if not user:
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
@@ -500,18 +519,10 @@ async def undo(ia):
         )
         return
 
-    train_type, train_line, link = train_presentation(trip.status)
-    departure = format_time(
-        trip.status["fromStation"]["scheduledTime"],
-        trip.status["fromStation"]["realTime"],
-    )
-    arrival = format_time(
-        trip.status["toStation"]["scheduledTime"], trip.status["toStation"]["realTime"]
-    )
     await ia.response.send_message(
         embed=discord.Embed(
             description=f"### You are about to undo the following checkin from {format_time(None, trip.from_time, True)}\n"
-            f"{get_train_emoji(train_type)} **{train_line} {trip.from_station}** {departure} → **{trip.to_station}** {arrival}\n\n"
+            f"{render_patched_train(trip, {})}\n"
             "The checkin will only be deleted from the bot's database. Please confirm deletion by clicking below.",
             color=train_type_color["SB"],
         ),
@@ -522,33 +533,189 @@ async def undo(ia):
 
 
 class UndoView(discord.ui.View):
-    """fetches the current trip rendered in the embed this view's attached to
-    and updates the message accordingly"""
+    "confirmation button for the journey undo command"
 
     def __init__(self, user, trip):
-        """we store the primary key of the trips table (user id and user-trip zugid)
-        in the view to fetch the correct trip again"""
+        "we store the trip and user objects relevant for our undo process"
         super().__init__()
         self.user = user
         self.trip = trip
 
     @discord.ui.button(label="Yes, undo this trip.", style=discord.ButtonStyle.danger)
     async def doit(self, ia, _):
+        "once clicked, send a mocked undo checkin request to the webhook"
         self.trip.status["checkedIn"] = True
         DB.Trip.upsert(self.user.discord_id, self.trip.status)
         self.trip.status["checkedIn"] = False
         async with ClientSession() as session:
             async with session.post(
                 "http://localhost:6005/travelynx",
-                json={"reason": "undo", "status": self.trip.status},
+                json={"reason": "undo", "status": self.trip.get_unpatched_status()},
                 headers={"Authorization": f"Bearer {self.user.token_webhook}"},
             ) as r:
-                await ia.response.send_message(
-                    f"{r.status} {await r.text()}", ephemeral=True
+                await ia.response.edit_message(
+                    f"{r.status} {await r.text()}", embed=None, view=None
                 )
 
 
-# TODO /journey edit
+@journey.command()
+async def edit(
+    ia,
+    from_station: typing.Optional[str],
+    departure: typing.Optional[str],
+    departure_delay: typing.Optional[int],
+    to_station: typing.Optional[str],
+    arrival: typing.Optional[str],
+    arrival_delay: typing.Optional[int],
+    train: typing.Optional[str],
+    headsign: typing.Optional[str],
+    comment: typing.Optional[str],
+):
+    "manually overwrite some data of your current trip. you will be asked to confirm your changes."
+    user = DB.User.find(discord_id=ia.user.id)
+    if not user:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+        return
+
+    trip = DB.Trip.find_last_trip_for(user.discord_id)
+    if not trip:
+        await ia.response.send_message(
+            "Sorry, but the bot doesn't have a trip saved for you currently.",
+            ephemeral=True,
+        )
+        return
+
+    prepare_patch = {}
+    if from_station or departure or departure_delay:
+        prepare_patch["fromStation"] = {"name": from_station}
+        if departure:
+            departure = parse_manual_time(departure)
+            prepare_patch["fromStation"]["scheduledTime"] = int(departure.timestamp())
+            prepare_patch["fromStation"]["realTime"] = int(departure.timestamp()) + (
+                (departure_delay or 0) * 60
+            )
+
+    if to_station or arrival or arrival_delay:
+        prepare_patch["toStation"] = {"name": to_station}
+        if arrival:
+            arrival = parse_manual_time(arrival)
+            prepare_patch["toStation"]["scheduledTime"] = int(arrival.timestamp())
+            prepare_patch["toStation"]["realTime"] = int(arrival.timestamp()) + (
+                (arrival_delay or 0) * 60
+            )
+
+    if train or headsign:
+        prepare_patch["train"] = {
+            "fakeheadsign": headsign,
+        }
+        if train:
+            prepare_patch["train"]["type"] = train.split(" ")[0]
+            prepare_patch["train"]["line"] = " ".join(train.split(" ")[1:])
+
+    prepare_patch["comment"] = comment
+
+    newpatch = DB.DB.execute(
+        "SELECT json_patch(?,?) AS newpatch",
+        (json.dumps(trip.status_patch), json.dumps(prepare_patch)),
+    ).fetchone()["newpatch"]
+
+    newpatched_status = DB.DB.execute(
+        "SELECT json_patch(?,?) as newpatched_status", (trip.travelynx_status, newpatch)
+    ).fetchone()["newpatched_status"]
+
+    newpatch = json.loads(newpatch)
+    newpatched_status = json.loads(newpatched_status)
+
+    await ia.response.send_message(
+        embed=discord.Embed(
+            description=f"### You are about to edit the following checkin from {format_time(None, trip.from_time, True)}\n"
+            "Current state:\n"
+            f"{render_patched_train(trip, trip.status_patch)}\n"
+            "With your changes:\n"
+            f"{render_patched_train(trip, newpatch)}\n"
+            "You can immediately apply these changes or double-check and make further edits with the manual editor "
+            "using [TOML](https://toml.io), e.g.:"
+            '```toml\nfromStation.name = "Nürnberg Ziegelstein"\ntrain = { type = "U", line = "11" }\n```\n'
+            "For available fields, see [travelynx's API documentation](https://travelynx.de/api).",
+            color=train_type_color["SB"],
+        ),
+        view=EditTripView(trip, newpatch),
+        ephemeral=True,
+    )
+
+
+class EditTripView(discord.ui.View):
+    "provide a button to edit the trip status patch"
+
+    def __init__(self, trip, newpatch):
+        self.trip = trip
+        self.newpatch = newpatch
+        self.modal = self.EnterStatusPatchModal(self, self.trip, self.newpatch)
+        super().__init__()
+
+    def attachnewmodal(self, newpatch):
+        """so for some reason we can't reuse the editor modal, so we create a new
+        one with the same data every time the editor is closed"""
+        self.newpatch = newpatch
+        self.modal = self.EnterStatusPatchModal(self, self.trip, self.newpatch)
+
+    @discord.ui.button(label="Commit my edits now.", style=discord.ButtonStyle.green)
+    async def commit(self, ia, _):
+        "write newpatch into the database and issue a mocked update webhook"
+        self.trip.write_patch(self.newpatch)
+        self.trip = DB.Trip.find(
+            self.trip.user_id, self.trip.journey_id
+        )  # update, just in case
+        reason = "update" if self.trip.status["checkedIn"] else "checkout"
+        async with ClientSession() as session:
+            async with session.post(
+                "http://localhost:6005/travelynx",
+                json={"reason": reason, "status": self.trip.get_unpatched_status()},
+                headers={
+                    "Authorization": f"Bearer {DB.User.find(self.trip.user_id).token_webhook}"
+                },
+            ) as r:
+                await ia.response.edit_message(
+                    content=f"{r.status} {await r.text()}", embed=None, view=None
+                )
+
+    @discord.ui.button(
+        label="Open the manual editor instead.", style=discord.ButtonStyle.grey
+    )
+    async def edit(self, ia, _):
+        "open the editor, reshow the changes and wait for confirmation"
+        await ia.response.send_modal(self.modal)
+
+    class EnterStatusPatchModal(
+        discord.ui.Modal, title="Dingenskirchen® Advanced Train Editor™"
+    ):
+        patch_input = discord.ui.TextInput(
+            label="Status edits (TOML)",
+            style=discord.TextStyle.paragraph,
+            required=False,
+        )
+
+        def __init__(self, parent, trip, newpatch):
+            self.parent = parent
+            self.trip = trip
+            self.newpatch = newpatch
+            self.patch_input.default = tomli_w.dumps(newpatch)  # wow much efficiency
+            super().__init__()
+
+        async def on_submit(self, ia):
+            self.newpatch = tomli.loads(self.patch_input.value)
+            self.patch_input.default = tomli_w.dumps(self.newpatch)
+            self.parent.attachnewmodal(self.newpatch)
+            await ia.response.edit_message(
+                embed=discord.Embed(
+                    description="Current state:\n"
+                    f"{render_patched_train(self.trip, self.trip.status_patch)}\n"
+                    "With your changes:\n"
+                    f"{render_patched_train(self.trip, self.newpatch)}\n"
+                    "Click commit to confirm or edit again.",
+                    color=train_type_color["SB"],
+                )
+            )
 
 
 bot.tree.add_command(journey, guilds=servers)
@@ -628,16 +795,17 @@ async def pleasegivemetraintypes(ia):
         fv + regio + sbahn + transit + special + manual
     )
 
-    render_emoji = lambda es: "\n".join([f"`{e:>6}` {train_type_emoji[e]}" for e in es])
+    def render_emojis(train_types):
+        return "\n".join([f"`{tt:>6}` {train_type_emoji[tt]}" for tt in train_types])
 
     await ia.response.send_message(
         embed=discord.Embed(title=f"{len(train_type_emoji)} emoji")
-        .add_field(name="fv", value=render_emoji(fv))
-        .add_field(name="regio", value=render_emoji(regio))
-        .add_field(name="sbahn", value=render_emoji(sbahn))
-        .add_field(name="city transit", value=render_emoji(transit))
-        .add_field(name="specials", value=render_emoji(special))
-        .add_field(name="manual", value=render_emoji(manual))
+        .add_field(name="fv", value=render_emojis(fv))
+        .add_field(name="regio", value=render_emojis(regio))
+        .add_field(name="sbahn", value=render_emojis(sbahn))
+        .add_field(name="city transit", value=render_emojis(transit))
+        .add_field(name="specials", value=render_emojis(special))
+        .add_field(name="manual", value=render_emojis(manual))
     )
 
 
@@ -816,32 +984,35 @@ class RefreshTravelynx(discord.ui.View):
     """fetches the current trip rendered in the embed this view's attached to
     and updates the message accordingly"""
 
-    def __init__(self, userid, data):
+    def __init__(self, trip):
         """we store the primary key of the trips table (user id and user-trip zugid)
         in the view to fetch the correct trip again"""
         super().__init__()
         self.timeout = None
-        self.userid = userid
-        self.zugid = zugid(data)
+        self.trip = trip
 
     @discord.ui.button(emoji="🔄", style=discord.ButtonStyle.grey)
     async def refresh(self, ia, _):
         "the refresh button"
-        user = DB.User.find(discord_id=self.userid)
+        user = DB.User.find(discord_id=self.trip.user_id)
         async with ClientSession() as session:
             async with session.get(
                 f"https://travelynx.de/api/v1/status/{user.token_status}"
             ) as r:
                 if r.status == 200:
                     data = await r.json()
-                    if data["checkedIn"] and self.zugid == zugid(data):
-                        handle_status_update(self.userid, "update", data)
-                        current_trips = [
+                    if data["checkedIn"] and self.trip.journey_id == zugid(data):
+                        handle_status_update(self.trip.user_id, "update", data)
+                        current_statuses = [
                             trip.status
-                            for trip in DB.Trip.find_current_trips_for(self.userid)
+                            for trip in DB.Trip.find_current_trips_for(
+                                self.trip.user_id
+                            )
                         ]
                         await ia.response.edit_message(
-                            embeds=format_travelynx(bot, self.userid, current_trips),
+                            embed=format_travelynx(
+                                bot, self.trip.user_id, current_statuses
+                            ),
                             view=self,
                         )
                     else:
