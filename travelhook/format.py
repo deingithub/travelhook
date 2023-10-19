@@ -132,7 +132,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         # draw a transfer instead
         elif next_train := _next(statuses, i):
             # if we don't leave the station to change, draw a single change line
-            if is_one_line_change(next_train["fromStation"], train["toStation"]):
+            if is_one_line_change(train["toStation"], next_train["fromStation"]):
                 station_name = shortened_name(
                     next_train["fromStation"], train["toStation"]
                 )
