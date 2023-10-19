@@ -103,6 +103,8 @@ def handle_status_update(userid, reason, status):
         user.do_break_journey()
 
     DB.Trip.upsert(userid, status)
+    trip = DB.Trip.find(userid, zugid(status))
+    trip.maybe_fix_circle_line()
 
 
 async def receive(bot):
@@ -139,7 +141,7 @@ async def receive(bot):
                 if not last_trip.status["checkedIn"]:
                     print("sussy")
                     return web.Response(
-                        text="Not unpublishing last checkin — you already have checked out. "
+                        text="Not unpublishing last checkin — you're already checked out. "
                         "In case this is intentional and you want to force deletion, undo your checkout, "
                         "save the journey comment once, and then finally undo your checkin. Sorry for the hassle."
                     )

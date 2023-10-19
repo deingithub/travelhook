@@ -88,11 +88,11 @@ def train_presentation(data):
     "do some cosmetic fixes to train type/line and generate a bahn.expert link for it"
     is_hafas = "|" in data["train"]["id"]
 
-    train_type = data["train"]["type"]
-    if train_type in blanket_replace_train_type:
-        train_type = blanket_replace_train_type[train_type]
-
+    train_type = blanket_replace_train_type.get(
+        data["train"]["type"], data["train"]["type"]
+    )
     train_line = data["train"]["line"]
+
     # account for "ME RE2" instead of "RE  "
     if train_line and train_type not in train_type_emoji:
         if len(train_line) > 2 and train_line[0:2] in train_type_emoji:
@@ -213,7 +213,7 @@ def fetch_headsign(status):
             c
             for c in candidates
             if (
-                c.id == (train["hafasId"] or train["id"])
+                c.id == (status["train"]["hafasId"] or status["train"]["id"])
                 or check_same_train(c.name, status["train"])
             )
             and c.dateTime == departure

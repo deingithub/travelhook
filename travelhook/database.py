@@ -5,12 +5,15 @@ import collections
 import json
 import sqlite3
 from dataclasses import dataclass, astuple
+from datetime import datetime, timedelta
 from enum import IntEnum
 from typing import Optional
+import traceback
 
 import discord
+from pyhafas.types.fptf import Stopover
 
-from .helpers import zugid
+from .helpers import zugid, hafas, tz
 
 DB = None
 
@@ -169,7 +172,7 @@ class Trip:
         rows = DB.execute(
             "SELECT journey_id, user_id, json_patch(travelynx_status, status_patch) as travelynx_status, "
             "from_time, from_station, from_lat, from_lon, to_time, to_station, to_lat, to_lon, headsign, status_patch "
-            "FROM trips WHERE user_id = ? ORDER BY travelynx_status ->> '$.actionTime' ASC",
+            "FROM trips WHERE user_id = ? ORDER BY json_patch(travelynx_status, status_patch) ->> '$.fromStation.realTime' ASC",
             (user_id,),
         ).fetchall()
         return [cls(**row) for row in rows]
@@ -224,6 +227,71 @@ class Trip:
                 (self.user_id, self.journey_id),
             ).fetchone()["travelynx_status"]
         )
+
+    def maybe_fix_circle_line(self):
+        """if we're on a line that visits the same stop more than once, we might be logged on
+        the first time the stop is visited. if we can detect this, skip to the first stop that wouldn't
+        make the journey have time skips in it."""
+
+        trip = DB.execute(
+            "SELECT json_patch(travelynx_status, status_patch) ->> '$.toStation.realTime' as arrival, "
+            "json_patch(travelynx_status, status_patch) ->> '$.actionTime' as at "
+            "FROM trips WHERE user_id = ? AND arrival > ? AND at < ? ORDER BY at DESC LIMIT 1",
+            (
+                self.user_id,
+                self.status["fromStation"]["realTime"],
+                self.status["actionTime"],
+            ),
+        ).fetchone()
+        if not trip:
+            return
+
+        print("this sure smells like a erlangen type situation", dict(trip))
+
+        try:
+            this_trip = hafas.trip(
+                self.status["train"]["hafasId"] or self.status["train"]["id"]
+            )
+            stops = [
+                Stopover(
+                    stop=this_trip.destination,
+                    arrival=this_trip.arrival,
+                    arrival_delay=this_trip.arrivalDelay,
+                )
+            ]
+            if this_trip.stopovers:
+                stops += this_trip.stopovers
+
+            stops = [
+                stop
+                for stop in stops
+                if stop.stop.id == str(self.status["fromStation"]["uic"])
+                and (stop.departure + (stop.departureDelay or timedelta()))
+                >= datetime.fromtimestamp(trip["arrival"], tz=tz)
+            ]
+            if stops:
+                print(
+                    f"found some! original {self.status['fromStation']} my best guess {stops[0]}"
+                )
+                departure_ts = int(stops[0].departure.timestamp())
+                first_station_patch = {
+                    "fromStation": {
+                        "scheduledTime": departure_ts,
+                        "realTime": int(stops[0].departure.timestamp())
+                        + int((stops[0].departureDelay or timedelta()).total_seconds()),
+                    }
+                }
+                newpatch = DB.execute(
+                    "SELECT json_patch(?,?) AS newpatch",
+                    (
+                        json.dumps(first_station_patch),
+                        json.dumps(self.status_patch),
+                    ),
+                ).fetchone()["newpatch"]
+                self.write_patch(json.loads(newpatch))
+        except:  # pylint: disable=bare-except
+            print("error while running circle line fixup:")
+            traceback.print_exc()
 
 
 @dataclass
