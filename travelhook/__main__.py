@@ -777,20 +777,8 @@ async def pleasegivemetraintypes(ia):
     regio = ["CJX", "IRE", "KM", "KML", "KS", "MEX", "R", "RB", "RE", "REX", "TER"]
     sbahn = ["ATS", "L", "RER", "RS", "S"]
     transit = ["AST", "Bus", "Fähre", "M", "RUF", "Schw-B", "STB", "STR", "U"]
-    special = [
-        "RT",
-        "SB",
-        "SEV",
-        "SVG",
-        "U1",
-        "U2",
-        "U3",
-        "U4",
-        "U5",
-        "U6",
-        "Ü",
-    ]
-    manual = ["bike", "car", "plane", "steam", "walk"]
+    special = ["RT", "SB", "SEV", "SVG", "U1", "U2", "U3", "U4", "U5", "U6", "Ü", "WLB"]
+    manual = ["bike", "boat", "car", "coach", "plane", "steam", "walk"]
     # uncomment me when the assertion fails to find out what you did wrong
     # print(        sorted(fv + regio + sbahn + transit + special + manual),        sorted(train_type_emoji.keys()),        sep="\n",    )
     assert sorted(train_type_emoji.keys()) == sorted(

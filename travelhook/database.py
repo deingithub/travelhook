@@ -160,7 +160,9 @@ class Trip:
             "FROM trips WHERE user_id = ? AND journey_id = ?",
             (user_id, journey_id),
         ).fetchone()
-        return cls(**row)
+        if row:
+            return cls(**row)
+        return None
 
     @classmethod
     def find_current_trips_for(cls, user_id):

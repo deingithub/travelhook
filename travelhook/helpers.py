@@ -88,9 +88,12 @@ def train_presentation(data):
     "do some cosmetic fixes to train type/line and generate a bahn.expert link for it"
     is_hafas = "|" in data["train"]["id"]
 
-    # account for "ME RE2" instead of "RE  "
     train_type = data["train"]["type"]
+    if train_type in blanket_replace_train_type:
+        train_type = blanket_replace_train_type[train_type]
+
     train_line = data["train"]["line"]
+    # account for "ME RE2" instead of "RE  "
     if train_line and train_type not in train_type_emoji:
         if len(train_line) > 2 and train_line[0:2] in train_type_emoji:
             train_type = train_line[0:2]
@@ -122,8 +125,6 @@ def train_presentation(data):
         or str(data["toStation"]["uic"]).startswith("81")
     ):
         train_type = "ATS"
-
-    train_type = blanket_replace_train_type.get(train_type, train_type)
 
     # special treatment for jura
     if train_type == "U" and train_line.casefold().startswith("m"):
@@ -283,8 +284,10 @@ train_type_emoji = {
     "AST": "<:ast:1161314515355439126>",
     "ATS": "<:SBahn:1152254307660484650>",
     "bike": "<:sbbvelo:1161317270065262683>",
+    "boat": "<:sbbboot:1164446951572525136>",
     "Bus": "<:Bus:1160288158374707241>",
     "car": "<:sbbauto:1161317276277031002>",
+    "coach": "<:sbbcoach:1164446947592122378>",
     "CJX": "<:Ja:1162760030068678786><:Jb:1162760030903345254>",
     "D": "<:da:1162760033684168724><:db:1162760035760361582>",
     "EC": "<:eca:1162767426337919086><:ecb:1162767427604578305>",
@@ -337,6 +340,7 @@ train_type_emoji = {
     "Ü": "<:UE:1160288194730930196>",
     "walk": "<:sbbwalk:1161321193001992273>",
     "WB": "<:wa:1162760160129855609><:wb:1162760161417515058>",
+    "WLB": "<:wlb:1164614809887719474>",
 }
 
 
@@ -407,6 +411,7 @@ train_type_color = {
         "U6": "#926131",
         "Ü": "#78b41d",
         "WB": "#2e86ce",
+        "WLB": "#175a97",
     }.items()
 }
 
