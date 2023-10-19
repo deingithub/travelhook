@@ -212,7 +212,11 @@ def fetch_headsign(status):
         candidates2 = [
             c
             for c in candidates
-            if check_same_train(c.name, status["train"]) and c.dateTime == departure
+            if (
+                c.id == (train["hafasId"] or train["id"])
+                or check_same_train(c.name, status["train"])
+            )
+            and c.dateTime == departure
         ]
         if len(candidates2) == 1:
             headsign = get_headsign_from_stationboard(candidates2[0])
