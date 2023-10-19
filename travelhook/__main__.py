@@ -170,7 +170,8 @@ async def receive(bot):
             # don't share completely private checkins, only unlisted and upwards
             if data["status"]["visibility"]["desc"] == "private":
                 # just to make sure we don't have it lying around for some reason anyway
-                DB.Trip.find(user.discord_id, zugid(data["status"])).delete()
+                if trip := DB.Trip.find(user.discord_id, zugid(data["status"])):
+                    trip.delete()
                 return web.Response(
                     text=f'Not publishing private {data["reason"]} in {data["status"]["train"]["type"]} {data["status"]["train"]["no"]}'
                 )
