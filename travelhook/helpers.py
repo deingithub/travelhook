@@ -114,6 +114,19 @@ def train_presentation(data):
     ):
         train_type = "Ü"
 
+    # bitte beachten sie das verzehrverbot auf kölner stadtgebiet
+    def is_in_köln(lat, lon):
+        return (50.62 < lat < 51.04) and (6.72 < lon < 7.26)
+
+    if (
+        train_type == "STR"
+        and is_in_köln(
+            data["fromStation"]["latitude"], data["fromStation"]["longitude"]
+        )
+        and not train_line in ("61", "62", "65")
+    ):
+        train_type = "STB"
+
     # special treatment for wien U6 (and the others too i guess)
     if train_type == "U" and data["fromStation"]["name"].startswith("Wien "):
         train_type = data["fromStation"]["name"][-3:-1]
