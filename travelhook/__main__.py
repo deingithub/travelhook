@@ -558,7 +558,7 @@ class UndoView(discord.ui.View):
                 headers={"Authorization": f"Bearer {self.user.token_webhook}"},
             ) as r:
                 await ia.response.edit_message(
-                    f"{r.status} {await r.text()}", embed=None, view=None
+                    content=f"{r.status} {await r.text()}", embed=None, view=None
                 )
 
 

@@ -116,8 +116,12 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 if route_link
                 else f" **{train_line} » {headsign}** ✱"
             )
-            + (" ●\n" if train["comment"] else "\n")
+            + (" ●" if train["comment"] else "")
         )
+        trip_time = timedelta(
+            seconds=train["toStation"]["realTime"] - train["fromStation"]["realTime"]
+        )
+        desc += f"· {format_delta(trip_time)}\n"
         # add extra spacing at last trip in the journey
         if not continue_link and not _next(statuses, i):
             desc += f"{LineEmoji.RAIL}\n"
@@ -180,10 +184,6 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         )
         desc += f"### ➤ {statuses[-1]['toStation']['name']} {to_time}\n"
 
-    trip_time = timedelta(
-        seconds=statuses[-1]["toStation"]["realTime"]
-        - statuses[-1]["fromStation"]["realTime"]
-    )
     total_time = timedelta(
         seconds=statuses[-1]["toStation"]["realTime"]
         - statuses[0]["fromStation"]["realTime"]
@@ -194,7 +194,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             for train in statuses
         )
     )
-    desc += f"*trip {format_delta(trip_time)} · journey {format_delta(total_time)} ({format_delta(journey_time)})*"
+    desc += f"*journey {format_delta(total_time)} ({format_delta(journey_time)} in transit) · {len(statuses)} trips*"
 
     embed = discord.Embed(
         description=desc,
