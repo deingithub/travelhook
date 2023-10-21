@@ -2,6 +2,7 @@
 
 from itertools import groupby
 from datetime import timedelta
+import re
 
 import discord
 from haversine import haversine
@@ -17,23 +18,61 @@ from .helpers import (
     replace_city_suffix_with_prefix,
 )
 
+re_hbf = re.compile(r"(?P<city>.+) Hbf")
+re_hauptbahnhof = re.compile(r"Hauptbahnhof(?: \(S?\+?U?\))?, (?P<city>.+)")
+re_station_city = re.compile(r"(?P<station>.+), (?P<city>.+)")
+
+
+def merge_names(from_name, to_name):
+    "if we have equivalent stations like Hauptbahnhof, X and X Hbf, draw a single line change"
+
+    def try_merge(a, b):
+        if a.removesuffix("Hbf") == b.removesuffix("Hauptbahnhof"):
+            return a
+
+        if (
+            (m := re_hbf.match(a))
+            and (m2 := re_hauptbahnhof.match(b))
+            and m["city"] == m2["city"]
+        ):
+            return f"{m['city']} Hbf"
+
+        if (
+            (m := re_station_city.match(a))
+            and m["station"] == "Bahnhof"
+            and m["city"] == b
+        ):
+            return a
+
+        if (
+            (m := re_station_city.match(a))
+            and (m2 := re_station_city.match(b))
+            and m["city"] == m2["city"]
+            and m["station"].removesuffix(" (U)") == m2["station"].removesuffix(" (U)")
+        ):
+            return f"{m['station'].removesuffix(' (U)')}, {m['city']}"
+
+    return try_merge(from_name, to_name) or try_merge(to_name, from_name)
+
 
 def is_one_line_change(from_station, to_station):
     "check if we should collapse a transfer into one line instead of two (if it's the same station)"
-    return (from_station["uic"] == to_station["uic"]) or (
-        from_station["name"] == to_station["name"]
+    return (
+        (from_station["uic"] == to_station["uic"])
+        or (from_station["name"] == to_station["name"])
+        or merge_names(from_station["name"], to_station["name"])
     )
 
 
-def shortened_name(previous_station, this_station):
+def shortened_name(previous_name, this_name):
     "if the last station follows the 'Stop , City' convention and we're still in the same city, drop that suffix"
-    previous_name = previous_station["name"].split(", ")
-    this_name = this_station["name"].split(", ")
-    if not (len(previous_name) > 1 and len(this_name) > 1):
-        return this_station["name"]
-    if previous_name[-1] == this_name[-1]:
-        return ", ".join(this_name[0:-1])
-    return this_station["name"]
+    if (
+        (m := re_station_city.match(previous_name))
+        and (m2 := re_station_city.match(this_name))
+        and m["city"] == m2["city"]
+    ):
+        return m2["station"]
+    return this_name
 
 
 def format_travelynx(bot, userid, statuses, continue_link=None):
@@ -97,8 +136,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 desc += f"{LineEmoji.CHANGE_SAME_STOP}{departure} **{train['fromStation']['name']}**\n"
             # if our trip starts on a different station than the last ended, draw a new station icon
             elif not is_one_line_change(prev_train["toStation"], train["fromStation"]):
+                station_name = merge_names(
+                    prev_train["toStation"]["name"], train["fromStation"]["name"]
+                )
                 station_name = shortened_name(
-                    prev_train["toStation"], train["fromStation"]
+                    prev_train["toStation"]["name"], station_name
                 )
                 desc += f"{LineEmoji.CHANGE_ENTER_STOP}{departure} {station_name}\n"
             # if our trip starts on the same station as the last ended, we've already drawn the change icon
@@ -106,7 +148,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 pass
 
         train_type, train_line, route_link = train_presentation(train)
-        headsign = shortened_name(train["fromStation"], {"name": fetch_headsign(train)})
+        headsign = shortened_name(train["fromStation"]["name"], fetch_headsign(train))
         desc += (
             LineEmoji.RAIL
             + LineEmoji.SPACER
@@ -121,7 +163,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         trip_time = timedelta(
             seconds=train["toStation"]["realTime"] - train["fromStation"]["realTime"]
         )
-        desc += f"· {format_delta(trip_time)}\n"
+        desc += f" *· {format_delta(trip_time)}*\n"
         # add extra spacing at last trip in the journey
         if not continue_link and not _next(statuses, i):
             desc += f"{LineEmoji.RAIL}\n"
@@ -129,7 +171,9 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
         )
-        station_name = shortened_name(train["fromStation"], train["toStation"])
+        station_name = shortened_name(
+            train["fromStation"]["name"], train["toStation"]["name"]
+        )
         # if we're on the last trip of the journey, draw an end icon
         if not _next(statuses, i):
             desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
@@ -137,8 +181,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         elif next_train := _next(statuses, i):
             # if we don't leave the station to change, draw a single change line
             if is_one_line_change(train["toStation"], next_train["fromStation"]):
+                station_name = merge_names(
+                    train["toStation"]["name"], next_train["fromStation"]["name"]
+                )
                 station_name = shortened_name(
-                    next_train["fromStation"], train["toStation"]
+                    next_train["fromStation"]["name"], station_name
                 )
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
