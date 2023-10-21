@@ -52,6 +52,11 @@ def merge_names(from_name, to_name):
         ):
             return f"{m['station'].removesuffix(' (U)')}, {m['city']}"
 
+        if (m := re_station_city.match(a)) and (
+            b == f"{m['city']} {m['station']}" or b == f"{m['city']}-{m['station']}"
+        ):
+            return b
+
     return try_merge(from_name, to_name) or try_merge(to_name, from_name)
 
 
@@ -136,8 +141,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 desc += f"{LineEmoji.CHANGE_SAME_STOP}{departure} **{train['fromStation']['name']}**\n"
             # if our trip starts on a different station than the last ended, draw a new station icon
             elif not is_one_line_change(prev_train["toStation"], train["fromStation"]):
-                station_name = merge_names(
-                    prev_train["toStation"]["name"], train["fromStation"]["name"]
+                station_name = (
+                    merge_names(
+                        prev_train["toStation"]["name"], train["fromStation"]["name"]
+                    )
+                    or train["fromStation"]["name"]
                 )
                 station_name = shortened_name(
                     prev_train["toStation"]["name"], station_name
@@ -181,8 +189,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         elif next_train := _next(statuses, i):
             # if we don't leave the station to change, draw a single change line
             if is_one_line_change(train["toStation"], next_train["fromStation"]):
-                station_name = merge_names(
-                    train["toStation"]["name"], next_train["fromStation"]["name"]
+                station_name = (
+                    merge_names(
+                        train["toStation"]["name"], next_train["fromStation"]["name"]
+                    )
+                    or train["toStation"]["name"]
                 )
                 station_name = shortened_name(
                     next_train["fromStation"]["name"], station_name
