@@ -8,6 +8,7 @@ from aiohttp import ClientSession
 from pyhafas import HafasClient
 from pyhafas.profile import DBProfile
 from pyhafas.types.fptf import Stopover
+from haversine import haversine
 
 from . import database as DB
 
@@ -107,12 +108,22 @@ def train_presentation(data):
 
     # special treatment for üstra because i love you
     def is_in_hannover(lat, lon):
-        return (52.2047 < lat < 52.4543) and (9.5684 < lon < 9.9996)
+        return (52.20 < lat < 52.45) and (9.56 < lon < 10.0)
 
     if train_type == "STR" and is_in_hannover(
         data["fromStation"]["latitude"], data["fromStation"]["longitude"]
     ):
         train_type = "Ü"
+
+    # special treatment for VAG Nürnberg U-Bahn
+    def is_in_nürnberg(lat, lon):
+        return haversine((lat, lon), (49.45, 11.05)) < 10
+
+    if train_type == "U" and is_in_nürnberg(
+        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
+    ):
+        train_type = f"U{train_line}n"
+        train_line = ""
 
     # bitte beachten sie das verzehrverbot auf kölner stadtgebiet
     def is_in_köln(lat, lon):
@@ -354,6 +365,9 @@ train_type_emoji = {
     "U4": "<:u4:1160998512742383777>",
     "U5": "<:u5:1160998515967799306>",
     "U6": "<:u6:1160998518744424488>",
+    "U1n": "<:U1n:1165737886746951800>",
+    "U2n": "<:U2n:1165737885073412247>",
+    "U3n": "<:U3n:1165737880178663534>",
     "Ü": "<:UE:1160288194730930196>",
     "walk": "<:sbbwalk:1161321193001992273>",
     "WB": "<:wa:1162760160129855609><:wb:1162760161417515058>",
@@ -426,6 +440,9 @@ train_type_color = {
         "U4": "#1ea366",
         "U5": "#0098a1",
         "U6": "#926131",
+        "U1n": "#176fc1",
+        "U2n": "#ed1c24",
+        "U3n": "#4cc3bc",
         "Ü": "#78b41d",
         "WB": "#2e86ce",
         "WLB": "#175a97",
