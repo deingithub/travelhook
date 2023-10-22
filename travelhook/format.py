@@ -294,6 +294,8 @@ def sillies(statuses, embed):
         return embed.set_image(url="https://i.imgur.com/9P15eRQ.png")
     if "Ziegelstein" in stations:
         return embed.set_thumbnail(url="https://i.imgur.com/W3mPNEn.gif")
+    if "Erlangen" in status["toStation"]["name"]:
+        return embed.set_thumbnail(url="https://i.imgur.com/pHp8Sus.png")
     if status["train"]["type"] == "Schw-B":
         return embed.set_image(url="https://i.imgur.com/8deLTcU.png")
     if status["train"]["line"] == "4" and "uniwuni" in embed.author.name:
