@@ -489,4 +489,7 @@ replace_headsign = {
     ("S2", "Hagsfeld Reitschulschlag (Schleife), Karlsruhe"): "Reitschulschlag",
     ("S2", "Mörsch Bach-West, Rheinstetten"): "Rheinstetten",
     ("S2", "Spöck Richard-Hecht-Schule, Stutensee"): "Spöck",
+    # 48 stunden ringbahn challenge
+    ("S41", "Ring S41"): "Ring ↻",
+    ("S42", "Ring S42"): "Ring ↺",
 }

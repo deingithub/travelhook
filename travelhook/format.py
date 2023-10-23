@@ -123,7 +123,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 desc += f" **{train_line}**"
             # draw an arrow to the next trip in the compact section until the last one in the section
             if _next(statuses, i + 1):
-                desc += "→ "
+                desc += " → "
             else:
                 desc += "\n"
             # ignore the rest of the format loop until we're at the last trip of the journey
