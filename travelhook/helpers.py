@@ -159,6 +159,10 @@ def train_presentation(data):
     if "SEV" in train_line or "EV" in train_line:
         train_type = "SEV"
 
+    if "X" in train_line and train_type == "Bus":
+        train_line = train_line.replace("X", "")
+        train_type = "BusX"
+
     link = "https://bahn.expert/details"
     # if HAFAS, add journeyid to link to make sure it gets the right one
     if jid := data["train"]["hafasId"] or (data["train"]["id"] if is_hafas else None):
@@ -314,6 +318,7 @@ train_type_emoji = {
     "bike": "<:sbbvelo:1161317270065262683>",
     "boat": "<:sbbboot:1164446951572525136>",
     "Bus": "<:Bus:1160288158374707241>",
+    "BusX": "<:BusX:1166774884156854283>",
     "car": "<:sbbauto:1161317276277031002>",
     "coach": "<:sbbcoach:1164446947592122378>",
     "CJX": "<:Ja:1162760030068678786><:Jb:1162760030903345254>",
@@ -329,6 +334,7 @@ train_type_emoji = {
     "ICE": "<:ca:1162760063384039524><:Cb:1162760068857597952>",
     "IR": "<:Ia:1162760071269335272><:db:1162760035760361582>",
     "IRE": "<:ia:1162760103032795187><:ib:1162760104345620480>",
+    "KAS": "<:KAS:1166775071105372270>",
     "KM": "<:ka:1163537951846842480><:kb:1163537770011185172>",
     "KML": "<:La:1163536524948807710><:Lb:1163536521979248730>",
     "KS": "<:sa:1163536518690906222><:sb:1163536516866392165>",
@@ -365,9 +371,9 @@ train_type_emoji = {
     "U4": "<:u4:1160998512742383777>",
     "U5": "<:u5:1160998515967799306>",
     "U6": "<:u6:1160998518744424488>",
-    "U1n": "<:U1n:1165737886746951800>",
-    "U2n": "<:U2n:1165737885073412247>",
-    "U3n": "<:U3n:1165737880178663534>",
+    "U1n": "<:U1:1166773948097245256>",
+    "U2n": "<:U2:1166773949804322897>",
+    "U3n": "<:U3:1166773945341595768>",
     "Ü": "<:UE:1160288194730930196>",
     "walk": "<:sbbwalk:1161321193001992273>",
     "WB": "<:wa:1162760160129855609><:wb:1162760161417515058>",
@@ -395,6 +401,7 @@ train_type_color = {
         "AST": "#ffd700",
         "ATS": "#0096d8",
         "Bus": "#a3167e",
+        "BusX": "#a3167e",
         "D": long_distance_color,
         "EC": long_distance_color,
         "ECE": long_distance_color,
@@ -408,6 +415,7 @@ train_type_color = {
         "ICE": long_distance_color,
         "IR": long_distance_color,
         "IRE": regional_express_color,
+        "KAS": tram_color,
         "KM": regional_color,
         "KML": regional_color,
         "KS": regional_color,
