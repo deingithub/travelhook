@@ -16,7 +16,7 @@ from . import database as DB
 def zugid(data):
     """identify a user-trip by its departure time + hafas/iris specific trip id.
     forms the primary key of the trips table together with user id."""
-    return str(data["fromStation"]["scheduledTime"]) + data["train"]["id"]
+    return f'{data["train"]["id"]}:{data["fromStation"]["scheduledTime"]}'
 
 
 # globally used timezone
