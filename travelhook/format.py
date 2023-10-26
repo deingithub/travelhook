@@ -19,8 +19,12 @@ from .helpers import (
 )
 
 re_hbf = re.compile(r"(?P<city>.+) Hbf")
-re_hauptbahnhof = re.compile(r"Hauptbahnhof(?: \(S?\+?U?\))?, (?P<city>.+)")
-re_station_city = re.compile(r"(?P<station>.+), (?P<city>.+)")
+re_hauptbahnhof = re.compile(
+    r"Hauptbahnhof(?: \(S?\+?U?\)| \(Tram\/Bus\))?, (?P<city>.+)"
+)
+re_station_city = re.compile(
+    r"((S-)?Bahnhof |(S-)?Bh?f\.? )?(?P<station>.+), (?P<city>.+)"
+)
 
 
 def merge_names(from_name, to_name):
