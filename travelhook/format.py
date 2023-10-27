@@ -290,6 +290,8 @@ def sillies(statuses, embed):
     stations = status["fromStation"]["name"] + status["toStation"]["name"]
     if "Durlacher Tor" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/6WhzdSp.png")
+    if "Mühlburger Tor" in status["toStation"]["name"]:
+        return embed.set_image(url="https://i.imgur.com/jGATXUv.jpg")
     if "Wien Floridsdorf" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/CSBTb0z.gif")
     if "Wien Mitte" in status["toStation"]["name"]:
