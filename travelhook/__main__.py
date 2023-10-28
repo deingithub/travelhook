@@ -264,47 +264,6 @@ async def receive(bot):
 
 @bot.tree.command(guilds=servers)
 @discord.app_commands.describe(
-    level="leave empty to query current level. set to ME to only allow you to use /zug, set to EVERYONE to allow everyone to use /zug and set to LIVE to activate the live feed."
-)
-async def privacy(ia, level: typing.Optional[DB.Privacy]):
-    "Query or change your current privacy settings on this server."
-
-    def explain(level: typing.Optional[DB.Privacy]):
-        desc = "This means that, on this server,\n"
-        match level:
-            case DB.Privacy.ME:
-                desc += "- Only you can use the **/zug** command to share your current journey."
-            case DB.Privacy.EVERYONE:
-                desc += "- Everyone can use the **/zug** command to see your current journey."
-            case DB.Privacy.LIVE:
-                desc += "- Everyone can use the **/zug** command to see your current journey.\n"
-                if live_channel := DB.Server.find(ia.guild.id).live_channel:
-                    desc += f"- Live updates will posted into {bot.get_channel(live_channel).mention} with your entire journey."
-                else:
-                    desc += (
-                        "- Live updates with your entire journey can be posted into a dedicated channel.\n"
-                        "- Note: This server has not set up a live channel. No live updates will be posted until it is set up."
-                    )
-        desc += "\n- Note: If your checkin is set to **private visibility** on travelynx, this bot will not post it anywhere."
-        return desc
-
-    if user := DB.User.find(discord_id=ia.user.id):
-        if level is None:
-            level = user.find_privacy_for(ia.guild.id)
-            await ia.response.send_message(
-                f"Your privacy level is set to **{level.name}**. {explain(level)}"
-            )
-        else:
-            user.set_privacy_for(ia.guild_id, level)
-            await ia.response.send_message(
-                f"Your privacy level has been set to **{level.name}**. {explain(level)}"
-            )
-    else:
-        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
-
-
-@bot.tree.command(guilds=servers)
-@discord.app_commands.describe(
     member="the member whose status to query, defaults to current user"
 )
 async def zug(ia, member: typing.Optional[discord.Member]):
@@ -353,6 +312,79 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                     ),
                     view=RefreshTravelynx(current_trips[-1]),
                 )
+
+
+configure = discord.app_commands.Group(
+    name="configure", description="edit your settings with the relay bot"
+)
+
+
+@configure.command()
+@discord.app_commands.describe(
+    level="leave empty to query current level. set to ME to only allow you to use /zug, set to EVERYONE to allow everyone to use /zug and set to LIVE to activate the live feed."
+)
+async def privacy(ia, level: typing.Optional[DB.Privacy]):
+    "Query or change your current privacy settings on this server."
+
+    def explain(level: typing.Optional[DB.Privacy]):
+        desc = "This means that, on this server,\n"
+        match level:
+            case DB.Privacy.ME:
+                desc += "- Only you can use the **/zug** command to share your current journey."
+            case DB.Privacy.EVERYONE:
+                desc += "- Everyone can use the **/zug** command to see your current journey."
+            case DB.Privacy.LIVE:
+                desc += "- Everyone can use the **/zug** command to see your current journey.\n"
+                if live_channel := DB.Server.find(ia.guild.id).live_channel:
+                    desc += f"- Live updates will posted into {bot.get_channel(live_channel).mention} with your entire journey."
+                else:
+                    desc += (
+                        "- Live updates with your entire journey can be posted into a dedicated channel.\n"
+                        "- Note: This server has not set up a live channel. No live updates will be posted until it is set up."
+                    )
+        desc += "\n- Note: If your checkin is set to **private visibility** on travelynx, this bot will not post it anywhere."
+        return desc
+
+    if user := DB.User.find(discord_id=ia.user.id):
+        if level is None:
+            level = user.find_privacy_for(ia.guild.id)
+            await ia.response.send_message(
+                f"Your privacy level is set to **{level.name}**. {explain(level)}"
+            )
+        else:
+            user.set_privacy_for(ia.guild_id, level)
+            await ia.response.send_message(
+                f"Your privacy level has been set to **{level.name}**. {explain(level)}"
+            )
+    else:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+
+
+@configure.command()
+async def suggestions(ia):
+    "Edit autocomplete suggestions for your manual checkins."
+
+    class EnterAutocompleteModal(
+        discord.ui.Modal, title="Manual trip station autocompletes"
+    ):
+        suggestions_input = discord.ui.TextInput(
+            label="One station per line, please",
+            style=discord.TextStyle.paragraph,
+            required=False,
+        )
+
+        def __init__(self, user):
+            self.user = DB.User.find(user.id)
+            self.suggestions_input.default = self.user.suggestions
+            super().__init__()
+
+        async def on_submit(self, ia):
+            self.user.write_suggestions(self.suggestions_input.value)
+            await ia.response.send_message(
+                "Successfully updated your autocomplete suggestions!", ephemeral=True
+            )
+
+    await ia.response.send_modal(EnterAutocompleteModal(ia.user))
 
 
 journey = discord.app_commands.Group(
@@ -410,6 +442,14 @@ async def _break(ia, break_mode: Choice[int]):
             )
 
 
+async def manual_station_autocomplete(ia, current):
+    if user := DB.User.find(ia.user.id):
+        suggestions = user.suggestions.split("\n")
+        suggestions = [s for s in suggestions if current.casefold() in s.casefold()]
+        return [Choice(name=s, value=s) for s in suggestions]
+    return []
+
+
 @journey.command()
 @discord.app_commands.describe(
     from_station="the name of the station you're departing from",
@@ -419,6 +459,11 @@ async def _break(ia, break_mode: Choice[int]):
     arrival="HH:MM arrival according to the timetable",
     arrival_delay="minutes of delay",
     train="train type and line/number like 'S 42'. also try 'walk 1km', 'bike 3km', 'car 3km', 'plane LH3999'",
+)
+@discord.app_commands.autocomplete(
+    from_station=manual_station_autocomplete,
+    to_station=manual_station_autocomplete,
+    headsign=manual_station_autocomplete,
 )
 async def manualtrip(
     ia,
@@ -722,11 +767,15 @@ class EditTripView(discord.ui.View):
             )
 
 
+bot.tree.add_command(configure, guilds=servers)
 bot.tree.add_command(journey, guilds=servers)
 
 
 @bot.tree.command(guilds=servers)
 @discord.app_commands.rename(from_station="from", to_station="to")
+@discord.app_commands.autocomplete(
+    from_station=manual_station_autocomplete, to_station=manual_station_autocomplete
+)
 async def walk(
     ia,
     from_station: str,
@@ -913,7 +962,7 @@ class RegisterTravelynxStepOne(discord.ui.View):
                         title="Step 2/3: Connect Live Feed (optional)",
                         color=train_type_color["SB"],
                         description="Great! You've successfully connected your status token to the relay bot. "
-                        "You now use **/zug** for yourself and configure if others can use it with **/privacy**.\n"
+                        "You now use **/zug** for yourself and configure if others can use it with **/configure privacy**.\n"
                         "Optionally, you can now also sign up for the live feed by connecting travelynx's webhook "
                         "to the relay bot's live feed feature. You can also skip this if you're not interested in the live "
                         "feed. Should you change your mind later, you can bother the bot operator about it.",
@@ -946,7 +995,7 @@ class RegisterTravelynxStepTwo(discord.ui.View):
             embed=discord.Embed(
                 title="Step 3/3: Connect live feed (optional)",
                 color=train_type_color["S"],
-                description="Congratulations! You can now use **/zug** and **/privacy** to share your logged "
+                description="Congratulations! You can now use **/zug** and **/configure privacy** to share your logged "
                 "journeys on Discord.\n\nWith the live feed enabled on a server, once your server admins have set up a "
                 "live channel  *that you can see yourself*, the relay bot will automatically post non-private "
                 "checkins and try to keep your journey up to date. To connect travelynx's update webhook "
@@ -960,7 +1009,7 @@ class RegisterTravelynxStepTwo(discord.ui.View):
                 "bother the bot operator about it once you've decided otherwise again. Until you copy in the settings, "
                 "no live connection will be made.\n\n"
                 "**Note:** Once you've set up the live feed with this, you also **need to enable it** for every server. "
-                "To do this, run **/privacy LIVE** on the server you want to enable it for. To enable it on this server, "
+                "To do this, run **/configure privacy LIVE** on the server you want to enable it for. To enable it on this server, "
                 "you can also click the button below now.",
             ).set_image(url="https://i.imgur.com/LhsH8Nt.png"),
             view=RegisterTravelynxEnableLiveFeed(),
@@ -973,7 +1022,7 @@ class RegisterTravelynxStepTwo(discord.ui.View):
             embed=discord.Embed(
                 title="Step 3/3: Done!",
                 color=train_type_color["S"],
-                description="Congratulations! You can now use **/zug** and **/privacy** to share your logged journeys on Discord.",
+                description="Congratulations! You can now use **/zug** and **/configure privacy** to share your logged journeys on Discord.",
             ),
             view=None,
         )

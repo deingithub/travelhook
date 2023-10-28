@@ -68,6 +68,7 @@ class User:
     token_webhook: Optional[str]
     token_travel: Optional[str]
     break_journey: BreakMode
+    suggestions: str
 
     Locks = collections.defaultdict(asyncio.Lock)
 
@@ -132,6 +133,13 @@ class User:
 
     def get_lock(self):
         return self.Locks[self.discord_id]
+
+    def write_suggestions(self, suggestions):
+        self.suggestions = suggestions
+        DB.execute(
+            "UPDATE users SET suggestions = ? WHERE discord_id = ?",
+            (self.suggestions, self.discord_id),
+        )
 
 
 @dataclass
