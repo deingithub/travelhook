@@ -320,6 +320,7 @@ train_type_emoji = {
     "Bus": "<:Bus:1160288158374707241>",
     "BusX": "<:BusX:1166774884156854283>",
     "car": "<:sbbauto:1161317276277031002>",
+    "CB": "<:cb:1167885153289388062>",
     "coach": "<:sbbcoach:1164446947592122378>",
     "CJX": "<:Ja:1162760030068678786><:Jb:1162760030903345254>",
     "D": "<:da:1162760033684168724><:db:1162760035760361582>",
@@ -402,6 +403,7 @@ train_type_color = {
         "ATS": "#0096d8",
         "Bus": "#a3167e",
         "BusX": "#a3167e",
+        "CB": "#c91432",
         "D": long_distance_color,
         "EC": long_distance_color,
         "ECE": long_distance_color,
@@ -469,7 +471,7 @@ not_registered_embed = discord.Embed(
 # but look how maintainable this is, you could add any city you like
 # you could even abbreviate Berlin to B
 # no idea why you would but it's possible now
-replace_city_suffix_with_prefix = {"Karlsruhe": "KA"}
+replace_city_suffix_with_prefix = {"Karlsruhe": "KA", "Leipzig": "L"}
 
 replace_headsign = {
     # Vienna
