@@ -329,7 +329,7 @@ class TripActionsView(discord.ui.View):
         if "travelhookfaked" in trip.journey_id:
             self.add_item(
                 discord.ui.Button(
-                    label="Update", style=discord.ButtonStyle.success, disabled=True
+                    label="Update", style=discord.ButtonStyle.secondary, disabled=True
                 )
             )
             self.add_item(self.manualcopy)
@@ -352,7 +352,7 @@ class TripActionsView(discord.ui.View):
                 )
             )
 
-    @discord.ui.button(label="Update", style=discord.ButtonStyle.success)
+    @discord.ui.button(label="Update", style=discord.ButtonStyle.secondary)
     async def refresh(self, ia, _):
         """refresh real trips from travelynx api. this button is deleted from the view
         and replaced with a disabled button for fake checkins"""
@@ -402,9 +402,9 @@ class TripActionsView(discord.ui.View):
         await manualtrip.callback(
             ia,
             self.trip.status["fromStation"]["name"],
-            f"{datetime.fromtimestamp(departure):%H:%M}",
+            f"{datetime.fromtimestamp(departure, tz=tz):%H:%M}",
             self.trip.status["toStation"]["name"],
-            f"{datetime.fromtimestamp(arrival):%H:%M}",
+            f"{datetime.fromtimestamp(arrival, tz=tz):%H:%M}",
             f"{self.trip.status['train']['type']} {self.trip.status['train']['line']}",
             self.trip.status["train"]["fakeheadsign"],
             departure_delay,
