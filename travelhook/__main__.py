@@ -2,6 +2,7 @@
 import json
 import secrets
 import typing
+import urllib
 from datetime import datetime, timedelta
 
 from aiohttp import ClientSession, web
@@ -192,8 +193,9 @@ async def receive(bot):
                     continue
 
                 view = (
-                    RefreshTravelynx(current_trips[-1])
-                    if data["reason"] != "checkout"
+                    TripActionsView(current_trips[-1])
+                    if "travelhookfaked" in data["status"]["train"]["id"]
+                    or data["reason"] != "checkout"
                     else None
                 )
 
@@ -310,8 +312,104 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                     embed=format_travelynx(
                         bot, member.id, [trip.status for trip in current_trips]
                     ),
-                    view=RefreshTravelynx(current_trips[-1]),
+                    view=TripActionsView(current_trips[-1]),
                 )
+
+
+class TripActionsView(discord.ui.View):
+    """is attached to embeds, allows users to manually update trip infos
+    (for real trips) and copy the checkin (for now only manual trips)"""
+
+    def __init__(self, trip):
+        super().__init__()
+        self.timeout = None
+        self.trip = trip
+        self.clear_items()
+
+        if "travelhookfaked" in trip.journey_id:
+            self.add_item(
+                discord.ui.Button(
+                    label="Update", style=discord.ButtonStyle.success, disabled=True
+                )
+            )
+            self.add_item(self.manualcopy)
+        else:
+            self.add_item(self.refresh)
+            url = f"/s/{trip.status['fromStation']['uic']}?"
+            if "|" in trip.status["train"]["id"]:
+                url += urllib.parse.urlencode(
+                    {"hafas": 1, "trip_id": trip.status["train"]["id"]}
+                )
+            else:
+                url += urllib.parse.urlencode(
+                    {
+                        "train": f"{trip.status['train']['type']} {trip.status['train']['no']}"
+                    }
+                )
+            self.add_item(
+                discord.ui.Button(
+                    label="Copy this checkin", url="https://travelynx.de" + url
+                )
+            )
+
+    @discord.ui.button(label="Update", style=discord.ButtonStyle.success)
+    async def refresh(self, ia, _):
+        """refresh real trips from travelynx api. this button is deleted from the view
+        and replaced with a disabled button for fake checkins"""
+        user = DB.User.find(discord_id=self.trip.user_id)
+        async with ClientSession() as session:
+            async with session.get(
+                f"https://travelynx.de/api/v1/status/{user.token_status}"
+            ) as r:
+                if r.status == 200:
+                    data = await r.json()
+                    if data["checkedIn"] and self.trip.journey_id == zugid(data):
+                        handle_status_update(self.trip.user_id, "update", data)
+                        current_statuses = [
+                            trip.status
+                            for trip in DB.Trip.find_current_trips_for(
+                                self.trip.user_id
+                            )
+                        ]
+                        await ia.response.edit_message(
+                            embed=format_travelynx(
+                                bot, self.trip.user_id, current_statuses
+                            ),
+                            view=self,
+                        )
+                    else:
+                        await ia.response.send_message(
+                            "Die Fahrt ist bereits zu Ende.", ephemeral=True
+                        )
+
+    @discord.ui.button(label="Copy this checkin", style=discord.ButtonStyle.secondary)
+    async def manualcopy(self, ia, _):
+        """copy fake trips for yourself. this button is deleted from the view
+        and replaced with a link to travelynx for real checkins."""
+        user = DB.User.find(discord_id=ia.user.id)
+        if not user:
+            await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+            return
+
+        # update, just in case we missed some edits maybe
+        self.trip = DB.Trip.find(self.trip.user_id, self.trip.journey_id)
+        departure = self.trip.status["fromStation"]["scheduledTime"]
+        departure_delay = (
+            departure - self.trip.status["fromStation"]["scheduledTime"]
+        ) // 60
+        arrival = self.trip.status["toStation"]["scheduledTime"]
+        arrival_delay = (arrival - self.trip.status["toStation"]["scheduledTime"]) // 60
+        await manualtrip.callback(
+            ia,
+            self.trip.status["fromStation"]["name"],
+            f"{datetime.fromtimestamp(departure):%H:%M}",
+            self.trip.status["toStation"]["name"],
+            f"{datetime.fromtimestamp(arrival):%H:%M}",
+            f"{self.trip.status['train']['type']} {self.trip.status['train']['line']}",
+            self.trip.status["train"]["fakeheadsign"],
+            departure_delay,
+            arrival_delay,
+        )
 
 
 configure = discord.app_commands.Group(
@@ -1045,47 +1143,6 @@ class RegisterTravelynxEnableLiveFeed(discord.ui.View):
     )
     async def doit(self, ia, _):
         await privacy.callback(ia, DB.Privacy.LIVE)
-
-
-class RefreshTravelynx(discord.ui.View):
-    """fetches the current trip rendered in the embed this view's attached to
-    and updates the message accordingly"""
-
-    def __init__(self, trip):
-        """we store the primary key of the trips table (user id and user-trip zugid)
-        in the view to fetch the correct trip again"""
-        super().__init__()
-        self.timeout = None
-        self.trip = trip
-
-    @discord.ui.button(emoji="🔄", style=discord.ButtonStyle.grey)
-    async def refresh(self, ia, _):
-        "the refresh button"
-        user = DB.User.find(discord_id=self.trip.user_id)
-        async with ClientSession() as session:
-            async with session.get(
-                f"https://travelynx.de/api/v1/status/{user.token_status}"
-            ) as r:
-                if r.status == 200:
-                    data = await r.json()
-                    if data["checkedIn"] and self.trip.journey_id == zugid(data):
-                        handle_status_update(self.trip.user_id, "update", data)
-                        current_statuses = [
-                            trip.status
-                            for trip in DB.Trip.find_current_trips_for(
-                                self.trip.user_id
-                            )
-                        ]
-                        await ia.response.edit_message(
-                            embed=format_travelynx(
-                                bot, self.trip.user_id, current_statuses
-                            ),
-                            view=self,
-                        )
-                    else:
-                        await ia.response.send_message(
-                            "Die Fahrt ist bereits zu Ende.", ephemeral=True
-                        )
 
 
 def main():
