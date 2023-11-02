@@ -443,11 +443,18 @@ async def _break(ia, break_mode: Choice[int]):
 
 
 async def manual_station_autocomplete(ia, current):
+    suggestions = []
     if user := DB.User.find(ia.user.id):
-        suggestions = user.suggestions.split("\n")
+        trips = DB.Trip.find_current_trips_for(user.discord_id)
+        for trip in trips:
+            suggestions += [
+                trip.status["toStation"]["name"],
+                trip.status["fromStation"]["name"],
+            ]
+        suggestions += user.suggestions.split("\n")
         suggestions = [s for s in suggestions if current.casefold() in s.casefold()]
-        return [Choice(name=s, value=s) for s in suggestions]
-    return []
+
+    return [Choice(name=s, value=s) for s in set(suggestions)]
 
 
 @journey.command()
@@ -469,13 +476,13 @@ async def manualtrip(
     ia,
     from_station: str,
     departure: str,
-    departure_delay: int,
     to_station: str,
     arrival: str,
-    arrival_delay: int,
     train: str,
     headsign: str,
-    comment: typing.Optional[str],
+    departure_delay: typing.Optional[int] = 0,
+    arrival_delay: typing.Optional[int] = 0,
+    comment: typing.Optional[str] = "",
 ):
     "Manually add a check-in not available on HAFAS/IRIS to your journey."
     user = DB.User.find(discord_id=ia.user.id)
@@ -549,7 +556,9 @@ def render_patched_train(trip, patch):
         status["toStation"]["scheduledTime"], status["toStation"]["realTime"]
     )
     headsign = fetch_headsign(status)
-    return f"{get_train_emoji(train_type)} **{train_line}** [» {headsign}]({link})\n{status['fromStation']['name']} {departure} → {status['toStation']['name']} {arrival}\n"
+    train_line = f"**{train_line}**" if train_line else ""
+
+    return f"{get_train_emoji(train_type)} {train_line} [» {headsign}]({link})\n{status['fromStation']['name']} {departure} → {status['toStation']['name']} {arrival}\n"
 
 
 @journey.command()
