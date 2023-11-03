@@ -192,8 +192,6 @@ async def receive(bot):
                 if not member or not channel.permissions_for(member).read_messages:
                     continue
 
-                view = TripActionsView(current_trips[-1])
-
                 # check if we already have a message for this particular trip
                 # edit it if it exists, otherwise create a new one and submit it into the database
                 if message := DB.Message.find(
@@ -1061,6 +1059,7 @@ class RegisterTravelynxStepOne(discord.ui.View):
                     token_webhook=secrets.token_urlsafe(),
                     token_travel=None,
                     break_journey=DB.BreakMode.NATURAL,
+                    suggestions="",
                 ).write()
                 await ia.response.edit_message(
                     embed=discord.Embed(

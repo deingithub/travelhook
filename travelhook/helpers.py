@@ -134,7 +134,7 @@ def train_presentation(data):
         and is_in_köln(
             data["fromStation"]["latitude"], data["fromStation"]["longitude"]
         )
-        and not train_line in ("61", "62", "65")
+        and train_line not in ("61", "62", "65")
     ):
         train_type = "STB"
 
@@ -193,17 +193,6 @@ def fetch_headsign(status):
     ).fetchone()
     if cached and cached["headsign"]:
         return cached["headsign"]
-
-    def get_headsign_from_jid(jid):
-        headsign = hafas.trip(jid).destination.name
-        return replace_headsign.get(
-            (
-                status["train"]["type"]
-                + (status["train"]["line"] or status["train"]["no"]),
-                headsign,
-            ),
-            headsign,
-        )
 
     def get_headsign_from_stationboard(leg):
         headsign = leg.direction

@@ -56,8 +56,9 @@ def merge_names(from_name, to_name):
         ):
             return f"{m['station'].removesuffix(' (U)')}, {m['city']}"
 
-        if (m := re_station_city.match(a)) and (
-            b == f"{m['city']} {m['station']}" or b == f"{m['city']}-{m['station']}"
+        if (m := re_station_city.match(a)) and b in (
+            f"{m['city']} {m['station']}",
+            f"{m['city']}-{m['station']}",
         ):
             return b
 
