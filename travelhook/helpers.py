@@ -82,6 +82,7 @@ blanket_replace_train_type = {
     "Tram": "STR",
     "EV": "SEV",
     "SKW": "S",
+    "west": "WB",
 }
 
 
@@ -137,6 +138,18 @@ def train_presentation(data):
         and train_line not in ("61", "62", "65")
     ):
         train_type = "STB"
+
+    # special treatment for stadtbahn rhein-ruhr
+    def is_in_nrw(lat, lon):
+        return (51.06 < lat < 51.68) and (6.46 < lon < 7.77)
+
+    if train_type == "U" and is_in_nrw(
+        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
+    ):
+        train_type = "STB"
+
+    if train_type == "STB":
+        train_line = train_line.removeprefix("U")
 
     # special treatment for wien U6 (and the others too i guess)
     if train_type == "U" and data["fromStation"]["name"].startswith("Wien "):

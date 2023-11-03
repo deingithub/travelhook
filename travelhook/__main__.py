@@ -26,6 +26,7 @@ from .helpers import (
     train_presentation,
     parse_manual_time,
     fetch_headsign,
+    blanket_replace_train_type,
 )
 
 config = {}
@@ -914,60 +915,68 @@ async def pleasegivemetraintypes(ia):
         "D",
         "EC",
         "ECE",
-        "EIC",
         "EN",
         "EST",
         "FLX",
         "IC",
         "ICE",
         "IR",
-        "NJ",
-        "RJ",
-        "RJX",
         "TGV",
-        "TLK",
-        "WB",
     ]
-    regio = ["CJX", "IRE", "KM", "KML", "KS", "MEX", "R", "RB", "RE", "REX", "TER"]
-    sbahn = ["ATS", "L", "RER", "RS", "S"]
+    regio = ["IRE", "MEX", "RB", "RE", "TER"]
+    sbahn = ["L", "RER", "RS", "S"]
     transit = ["AST", "Bus", "BusX", "Fähre", "M", "RUF", "Schw-B", "STB", "STR", "U"]
     special = [
+        "CB",
         "KAS",
         "RT",
         "SB",
         "SEV",
         "SVG",
-        "U1",
-        "U2",
-        "U3",
-        "U4",
-        "U5",
-        "U6",
         "U1n",
         "U2n",
         "U3n",
         "Ü",
-        "WLB",
     ]
     manual = ["bike", "boat", "car", "coach", "plane", "steam", "walk"]
-    # uncomment me when the assertion fails to find out what you did wrong
-    # print(        sorted(fv + regio + sbahn + transit + special + manual),        sorted(train_type_emoji.keys()),        sep="\n",    )
-    assert sorted(train_type_emoji.keys()) == sorted(
-        fv + regio + sbahn + transit + special + manual
-    )
+    vienna = ["U1", "U2", "U3", "U4", "U5", "U6", "WLB"]
+    austria = [
+        "ATS",
+        "CJX",
+        "NJ",
+        "R",
+        "REX",
+        "RJ",
+        "RJX",
+        "WB",
+    ]
+    poland = ["EIC", "KM", "KML", "KS", "TLK"]
 
     def render_emojis(train_types):
         return "\n".join([f"`{tt:>6}` {train_type_emoji[tt]}" for tt in train_types])
 
-    await ia.response.send_message(
-        embed=discord.Embed(title=f"{len(train_type_emoji)} emoji")
-        .add_field(name="fv", value=render_emojis(fv))
-        .add_field(name="regio", value=render_emojis(regio))
-        .add_field(name="sbahn", value=render_emojis(sbahn))
-        .add_field(name="city transit", value=render_emojis(transit))
-        .add_field(name="specials", value=render_emojis(special))
-        .add_field(name="manual", value=render_emojis(manual))
+    embed = (
+        discord.Embed(
+            description=f"**The relay bot currently knows {len(train_type_emoji)} emoji for train types.**\n"
+            f"It also automatically rewrites the following train types:\n{', '.join([f'`{k}` → `{v}`' for k,v in blanket_replace_train_type.items()])}.\n"
+        )
+        .add_field(name="Long-distance", value=render_emojis(fv))
+        .add_field(name="Regional", value=render_emojis(regio))
+        .add_field(name="S-Bahn", value=render_emojis(sbahn))
+        .add_field(name="City transit", value=render_emojis(transit))
+        .add_field(name="Specials", value=render_emojis(special))
+        .add_field(name="For manual checkins", value=render_emojis(manual))
+        .add_field(name="Vienna", value=render_emojis(vienna))
+        .add_field(name="The rest of Austria", value=render_emojis(austria))
+        .add_field(name="Poland", value=render_emojis(poland))
     )
+
+    if s := set(train_type_emoji.keys()) - set(
+        fv + regio + sbahn + transit + special + manual + austria + vienna + poland
+    ):
+        embed = embed.add_field(name="uncategorized", value=render_emojis(s))
+
+    await ia.response.send_message(embed=embed)
 
 
 @bot.tree.command(guilds=servers)
