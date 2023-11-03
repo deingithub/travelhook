@@ -192,12 +192,7 @@ async def receive(bot):
                 if not member or not channel.permissions_for(member).read_messages:
                     continue
 
-                view = (
-                    TripActionsView(current_trips[-1])
-                    if "travelhookfaked" in data["status"]["train"]["id"]
-                    or data["reason"] != "checkout"
-                    else None
-                )
+                view = TripActionsView(current_trips[-1])
 
                 # check if we already have a message for this particular trip
                 # edit it if it exists, otherwise create a new one and submit it into the database
@@ -224,14 +219,14 @@ async def receive(bot):
                             [trip.status for trip in current_trips],
                             continue_link=continue_link,
                         ),
-                        view=view,
+                        view=TripActionsView(current_trips[-1]),
                     )
                 else:
                     message = await channel.send(
                         embed=format_travelynx(
                             bot, userid, [trip.status for trip in current_trips]
                         ),
-                        view=view,
+                        view=TripActionsView(current_trips[-1]),
                     )
                     DB.Message(
                         zugid(data["status"]), user.discord_id, channel.id, message.id
@@ -320,6 +315,10 @@ class TripActionsView(discord.ui.View):
     """is attached to embeds, allows users to manually update trip infos
     (for real trips) and copy the checkin (for now only manual trips)"""
 
+    disabled_refresh_button = discord.ui.Button(
+        label="Update", style=discord.ButtonStyle.secondary, disabled=True
+    )
+
     def __init__(self, trip):
         super().__init__()
         self.timeout = None
@@ -327,24 +326,23 @@ class TripActionsView(discord.ui.View):
         self.clear_items()
 
         if "travelhookfaked" in trip.journey_id:
-            self.add_item(
-                discord.ui.Button(
-                    label="Update", style=discord.ButtonStyle.secondary, disabled=True
-                )
-            )
+            self.add_item(self.disabled_refresh_button)
             self.add_item(self.manualcopy)
         else:
-            self.add_item(self.refresh)
-            url = f"/s/{trip.status['fromStation']['uic']}?"
-            if "|" in trip.status["train"]["id"]:
+            status = trip.get_unpatched_status()
+            if status["checkedIn"]:
+                self.add_item(self.refresh)
+            else:
+                self.add_item(self.disabled_refresh_button)
+
+            url = f"/s/{status['fromStation']['uic']}?"
+            if "|" in status["train"]["id"]:
                 url += urllib.parse.urlencode(
-                    {"hafas": 1, "trip_id": trip.status["train"]["id"]}
+                    {"hafas": 1, "trip_id": status["train"]["id"]}
                 )
             else:
                 url += urllib.parse.urlencode(
-                    {
-                        "train": f"{trip.status['train']['type']} {trip.status['train']['no']}"
-                    }
+                    {"train": f"{status['train']['type']} {status['train']['no']}"}
                 )
             self.add_item(
                 discord.ui.Button(
@@ -901,12 +899,12 @@ async def walk(
         ia,
         from_station,
         departure,
-        0,
         to_station,
         arrival,
-        0,
         train,
         to_station,
+        0,
+        0,
         comment,
     )
 
