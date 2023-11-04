@@ -250,8 +250,18 @@ async def receive(bot):
                 text=f'Successfully published {data["status"]["train"]["type"]} {data["status"]["train"]["no"]} {data["reason"]} to {len(channels)} channels'
             )
 
+    async def unshortener(req):
+        link = DB.Link.find(short_id=req.match_info["randid"])
+
+        if not link:
+            raise web.HTTPNotFound()
+            return
+
+        raise web.HTTPFound(link.long_url)
+
     app = web.Application()
     app.router.add_post("/travelynx", handler)
+    app.router.add_get("/s/{randid}", unshortener)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "localhost", 6005)

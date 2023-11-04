@@ -1,6 +1,8 @@
 "various helper functions that do more than just pure formatting logic. the icon library lives in here too"
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+import random
+import string
 import traceback
 
 import discord
@@ -191,6 +193,11 @@ def train_presentation(data):
     if "travelhookfaked" in data["train"]["id"]:
         link = None
 
+    if link:
+        randid = random_id()
+        DB.Link(short_id=randid, long_url=link).write()
+        link = config["shortener_url"] + "/" + randid
+
     return (train_type, train_line, link)
 
 
@@ -298,6 +305,12 @@ def fetch_headsign(status):
         ),
     )
     return headsign
+
+
+def random_id():
+    choices = string.ascii_letters + string.digits
+    randid = "".join(random.choice(choices) for _ in range(7))
+    return randid
 
 
 class LineEmoji:  # pylint: disable=too-few-public-methods
