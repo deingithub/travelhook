@@ -167,7 +167,11 @@ def train_presentation(data):
     if train_type == "U" and train_line.casefold().startswith("m"):
         train_type = "M"
     if train_type == "S" and train_line.startswith("L"):
-        train_type = "L"
+        train_line = train_line.removeprefix("L")
+        train_type = "SL"
+
+    if train_type == "S" and train_line.startswith("N"):
+        train_type = "SN"
 
     if "SEV" in train_line or "EV" in train_line:
         train_type = "SEV"
@@ -341,7 +345,7 @@ train_type_emoji = {
     "KM": "<:ka:1163537951846842480><:kb:1163537770011185172>",
     "KML": "<:La:1163536524948807710><:Lb:1163536521979248730>",
     "KS": "<:sa:1163536518690906222><:sb:1163536516866392165>",
-    "L": "<:lex:1162070841702494208>",
+    "L": "<:l0:1170703852429910016><:Rb:1162760111975043072>",
     "M": "<:metro:1162032437065416764>",
     "MEX": "<:ma:1162772943596699729><:mb:1162772944951455838>",
     "NJ": "<:Na:1162760106321117258><:Nb:1162760108221153300>",
@@ -360,6 +364,10 @@ train_type_emoji = {
     "SB": "<:SB:1160502333143261234>",
     "Schw-B": "<:Schwebebahn:1143108575770726510>",
     "SEV": "<:Sa:1163143892540067880><:Sb:1163143891264999494>",
+    "SL": "<:lex:1162070841702494208>",
+    "SN": "<:SN:1170704004515385385>",
+    "SPR": "<:spa:1170719458424270868><:spb:1170719456398417940>",
+    "ST": "<:sta:1170719453827301527><:stb:1170719452418031738>",
     "STB": "<:stb:1162051109318295674>",
     "steam": "<:sbbsteam:1162032435459006494>",
     "STR": "<:Tram:1160290093400064060>",
