@@ -1,0 +1,7 @@
+{
+	"token": "",
+	"database": "travelynx-relay.sqlite3",
+	"register_button_id": "register",
+	"webhook_url": "https://example.org/incoming-travelynx-webhook",
+	"shortener_url": "http://example.org/yeah-this-url-is-definitely-going-to-make-this-link-shorter"
+}
