@@ -320,7 +320,7 @@ class LineEmoji:  # pylint: disable=too-few-public-methods
 
 train_type_emoji = {
     "AST": "<:ast:1161314515355439126>",
-    "ATS": "<:SBahn:1152254307660484650>",
+    "ATS": "<:ATS:1170751624612954232>",
     "bike": "<:sbbvelo:1161317270065262683>",
     "boat": "<:sbbboot:1164446951572525136>",
     "Bus": "<:Bus:1160288158374707241>",
