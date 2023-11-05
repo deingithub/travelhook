@@ -2,6 +2,8 @@
 
 a bot for [discord](https://en.wikipedia.org/wiki/Apple_of_Discord) and [travelynx](https://travelynx.de), combining the privacy nightmare powers of both to broadcast your live location to your friends and enemies on aforementioned chat programme.
 
+see [/icons/descriptions.md] for all currently supported train types (it won't break on others, it just looks fancier if the train is supported)
+
 to set up a dev environment or host it yourself:
 1. install [nix](https://nixos.org/download#download-nix)
 2. clone the source code
