@@ -924,11 +924,10 @@ async def pleasegivemetraintypes(ia):
         "TGV",
     ]
     regio = ["IRE", "L", "MEX", "RB", "RE", "SPR", "ST", "TER"]
-    sbahn = ["SL", "RER", "RS", "S", "SN"]
+    sbahn = ["KAS", "SL", "RER", "RS", "S", "SN"]
     transit = ["AST", "Bus", "BusX", "Fähre", "M", "RUF", "Schw-B", "STB", "STR", "U"]
     special = [
         "CB",
-        "KAS",
         "RT",
         "SB",
         "SEV",
