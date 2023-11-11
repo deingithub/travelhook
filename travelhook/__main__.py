@@ -755,6 +755,13 @@ async def edit(
         if departure:
             departure = parse_manual_time(departure)
             prepare_patch["fromStation"]["scheduledTime"] = int(departure.timestamp())
+            departure_delay = departure_delay or 0
+        else:
+            departure = datetime.fromtimestamp(
+                trip.status["fromStation"]["scheduledTime"], tz=tz
+            )
+
+        if departure_delay is not None:
             prepare_patch["fromStation"]["realTime"] = int(departure.timestamp()) + (
                 (departure_delay or 0) * 60
             )
@@ -764,6 +771,13 @@ async def edit(
         if arrival:
             arrival = parse_manual_time(arrival)
             prepare_patch["toStation"]["scheduledTime"] = int(arrival.timestamp())
+            arrival_delay = arrival_delay or 0
+        else:
+            arrival = datetime.fromtimestamp(
+                trip.status["toStation"]["scheduledTime"], tz=tz
+            )
+
+        if arrival_delay is not None:
             prepare_patch["toStation"]["realTime"] = int(arrival.timestamp()) + (
                 (arrival_delay or 0) * 60
             )
