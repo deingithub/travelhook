@@ -1,6 +1,7 @@
 "various helper functions that do more than just pure formatting logic. the icon library lives in here too"
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+import json
 import random
 import string
 import traceback
@@ -13,6 +14,10 @@ from pyhafas.types.fptf import Stopover
 from haversine import haversine
 
 from . import database as DB
+
+config = {}
+with open("settings.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
 
 
 def zugid(data):
