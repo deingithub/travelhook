@@ -209,7 +209,12 @@ def train_presentation(data):
         if previd:
             randid = previd.short_id
         else:
-            randid = random_id()
+            # handle potential collisions
+            while True:
+                randid = random_id()
+                if not DB.Link.find_by_short(short_id=randid):
+                    break
+
             DB.Link(short_id=randid, long_url=link).write()
 
         link = config["shortener_url"] + "/" + randid
