@@ -203,8 +203,15 @@ def train_presentation(data):
         link = None
 
     if link:
-        randid = random_id()
-        DB.Link(short_id=randid, long_url=link).write()
+        # reuse IDs of previously shortened URLs
+        previd = DB.Link.find_by_long(long_url=link)
+
+        if previd:
+            randid = previd.short_id
+        else:
+            randid = random_id()
+            DB.Link(short_id=randid, long_url=link).write()
+
         link = config["shortener_url"] + "/" + randid
 
     return (train_type, train_line, link)

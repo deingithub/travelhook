@@ -251,7 +251,7 @@ async def receive(bot):
             )
 
     async def unshortener(req):
-        link = DB.Link.find(short_id=req.match_info["randid"])
+        link = DB.Link.find_by_short(short_id=req.match_info["randid"])
 
         if not link:
             raise web.HTTPNotFound()

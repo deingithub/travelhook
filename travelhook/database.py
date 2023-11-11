@@ -358,10 +358,19 @@ class Link:
     long_url: str
 
     @classmethod
-    def find(cls, short_id):
+    def find_by_short(cls, short_id):
         if row := DB.execute(
             "SELECT * FROM links WHERE short_id = ?",
             (short_id,),
+        ).fetchone():
+            return cls(**row)
+        return None
+
+    @classmethod
+    def find_by_long(cls, long_url):
+        if row := DB.execute(
+            "SELECT * FROM links WHERE long_url = ?",
+            (long_url,),
         ).fetchone():
             return cls(**row)
         return None
