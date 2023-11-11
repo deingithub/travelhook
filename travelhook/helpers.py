@@ -1,6 +1,9 @@
 "various helper functions that do more than just pure formatting logic. the icon library lives in here too"
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+import json
+import random
+import string
 import traceback
 
 import discord
@@ -11,6 +14,10 @@ from pyhafas.types.fptf import Stopover
 from haversine import haversine
 
 from . import database as DB
+
+config = {}
+with open("settings.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
 
 
 def zugid(data):
@@ -195,6 +202,23 @@ def train_presentation(data):
     if "travelhookfaked" in data["train"]["id"]:
         link = None
 
+    if link:
+        # reuse IDs of previously shortened URLs
+        previd = DB.Link.find_by_long(long_url=link)
+
+        if previd:
+            randid = previd.short_id
+        else:
+            # handle potential collisions
+            while True:
+                randid = random_id()
+                if not DB.Link.find_by_short(short_id=randid):
+                    break
+
+            DB.Link(short_id=randid, long_url=link).write()
+
+        link = config["shortener_url"] + "/" + randid
+
     return (train_type, train_line, link)
 
 
@@ -302,6 +326,12 @@ def fetch_headsign(status):
         ),
     )
     return headsign
+
+
+def random_id():
+    choices = string.ascii_letters + string.digits
+    randid = "".join(random.choice(choices) for _ in range(7))
+    return randid
 
 
 class LineEmoji:  # pylint: disable=too-few-public-methods
