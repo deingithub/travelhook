@@ -169,7 +169,11 @@ def train_presentation(data):
     if train_type == "U" and train_line.casefold().startswith("m"):
         train_type = "M"
     if train_type == "S" and train_line.startswith("L"):
-        train_type = "L"
+        train_line = train_line.removeprefix("L")
+        train_type = "SL"
+
+    if train_type == "S" and train_line.startswith("N"):
+        train_type = "SN"
 
     if "SEV" in train_line or "EV" in train_line:
         train_type = "SEV"
@@ -329,7 +333,7 @@ class LineEmoji:  # pylint: disable=too-few-public-methods
 
 train_type_emoji = {
     "AST": "<:ast:1161314515355439126>",
-    "ATS": "<:SBahn:1152254307660484650>",
+    "ATS": "<:ATS:1170751624612954232>",
     "bike": "<:sbbvelo:1161317270065262683>",
     "boat": "<:sbbboot:1164446951572525136>",
     "Bus": "<:Bus:1160288158374707241>",
@@ -354,9 +358,9 @@ train_type_emoji = {
     "KM": "<:ka:1163537951846842480><:kb:1163537770011185172>",
     "KML": "<:La:1163536524948807710><:Lb:1163536521979248730>",
     "KS": "<:sa:1163536518690906222><:sb:1163536516866392165>",
-    "L": "<:lex:1162070841702494208>",
+    "L": "<:l0:1170703852429910016><:Rb:1162760111975043072>",
     "M": "<:metro:1162032437065416764>",
-    "MEX": "<:ma:1162772943596699729><:mb:1162772944951455838>",
+    "MEX": "<:m0:1170726078319431750><:m1:1170726076855627796>",
     "NJ": "<:Na:1162760106321117258><:Nb:1162760108221153300>",
     "plane": "<:sbbflug:1161317272397287435>",
     "R": "<:Ra:1162760110536405097><:Rb:1162760111975043072>",
@@ -370,9 +374,13 @@ train_type_emoji = {
     "RT": "<:rt:1163135018328133752>",
     "RUF": "<:ruf:1161314243698761898>",
     "S": "<:SBahn:1102206882527060038>",
-    "SB": "<:SB:1160502333143261234>",
-    "Schw-B": "<:Schwebebahn:1143108575770726510>",
+    "SB": "<:SB:1170796225927331962>",
+    "Schw-B": "<:SchwB:1170796229203079218>",
     "SEV": "<:Sa:1163143892540067880><:Sb:1163143891264999494>",
+    "SL": "<:SL:1170796230981464236>",
+    "SN": "<:SN:1170704004515385385>",
+    "SPR": "<:ns0:1170747131087306783><:ns1:1170747129728348171>",
+    "ST": "<:s0:1170747126955917452><:s1:1170747125131391102>",
     "STB": "<:stb:1162051109318295674>",
     "steam": "<:sbbsteam:1162032435459006494>",
     "STR": "<:Tram:1160290093400064060>",
@@ -408,6 +416,7 @@ long_distance_color = "#ff0404"
 regional_express_color = "#ff4f00"
 regional_color = "#204a87"
 s_bahn_color = "#008d4f"
+metro_color = "#014e8d"
 night_train_color = "#282559"
 tram_color = "#c5161c"
 
@@ -437,7 +446,7 @@ train_type_color = {
         "KML": regional_color,
         "KS": regional_color,
         "L": s_bahn_color,
-        "M": "#014e8d",
+        "M": metro_color,
         "MEX": regional_color,
         "NJ": night_train_color,
         "R": regional_color,
@@ -451,14 +460,16 @@ train_type_color = {
         "RT": tram_color,
         "RUF": "#ffd700",
         "S": s_bahn_color,
-        "SB": "#2e2e7d",
-        "Schw-B": "#4896d2",
+        "SB": metro_color,
+        "Schw-B": metro_color,
+        "SL": s_bahn_color,
+        "SN": s_bahn_color,
         "STB": tram_color,
         "STR": tram_color,
         "TER": regional_color,
         "TLK": long_distance_color,
         "TGV": long_distance_color,
-        "U": "#014e8d",
+        "U": metro_color,
         "U1": "#ed1d26",
         "U2": "#9e50af",
         "U3": "#f47114",

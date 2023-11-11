@@ -1,0 +1,7 @@
+{
+	"token": "",
+	"database": "travelynx-relay.sqlite3",
+	"register_button_id": "register",
+	"webhook_url": "http://localhost:6005/travelynx",
+	"shortener_url": "http://localhost:6005/s"
+}
