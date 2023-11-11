@@ -707,13 +707,14 @@ class UndoView(discord.ui.View):
     @discord.ui.button(label="Yes, undo this trip.", style=discord.ButtonStyle.danger)
     async def doit(self, ia, _):
         "once clicked, send a mocked undo checkin request to the webhook"
-        self.trip.status["checkedIn"] = True
-        DB.Trip.upsert(self.user.discord_id, self.trip.status)
-        self.trip.status["checkedIn"] = False
+        status = self.trip.get_unpatched_status()
+        status["checkedIn"] = True
+        DB.Trip.upsert(self.user.discord_id, status)
         async with ClientSession() as session:
+            status["checkedIn"] = False
             async with session.post(
                 "http://localhost:6005/travelynx",
-                json={"reason": "undo", "status": self.trip.get_unpatched_status()},
+                json={"reason": "undo", "status": status},
                 headers={"Authorization": f"Bearer {self.user.token_webhook}"},
             ) as r:
                 await ia.response.edit_message(
