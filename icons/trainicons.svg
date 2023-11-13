@@ -24,15 +24,15 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="0.70710678"
-     inkscape:cx="-169.70563"
-     inkscape:cy="611.64736"
+     inkscape:zoom="1.4142136"
+     inkscape:cx="191.62594"
+     inkscape:cy="254.20489"
      inkscape:window-width="1920"
      inkscape:window-height="1011"
      inkscape:window-x="1600"
      inkscape:window-y="32"
      inkscape:window-maximized="1"
-     inkscape:current-layer="g3503"><inkscape:grid
+     inkscape:current-layer="layer1"><inkscape:grid
        type="xygrid"
        id="grid132"
        units="mm"
@@ -951,8 +951,11 @@
        y="138.06">TLK</tspan></text></g><g
    id="g1806"
    inkscape:label="RS"
-   transform="translate(-165.77443,-12.334671)"><circle
-     style="fill:#008d4f;fill-opacity:1;stroke-width:0.0625;stroke-linecap:round"
+   transform="translate(-165.77443,-12.334671)"
+   inkscape:export-filename="RS.png"
+   inkscape:export-xdpi="507.99982"
+   inkscape:export-ydpi="507.99982"><circle
+     style="fill:#2c8e4e;fill-opacity:1;stroke-width:0.0625;stroke-linecap:round"
      id="path3826"
      cx="240.77443"
      cy="57.334671"
@@ -972,8 +975,11 @@
        y="59.79055">RS</tspan></text></g><g
    id="g1811"
    inkscape:label="RER"
-   transform="translate(-165.77442,-9.2744064)"><circle
-     style="fill:#008d4f;fill-opacity:1;stroke-width:0.0625;stroke-linecap:round"
+   transform="translate(-165.77442,-9.2744064)"
+   inkscape:export-filename="RER.png"
+   inkscape:export-xdpi="507.99982"
+   inkscape:export-ydpi="507.99982"><circle
+     style="fill:#2c8e4e;fill-opacity:1;stroke-width:0.0625;stroke-linecap:round"
      id="path3826-56"
      cx="240.90038"
      cy="69.274406"
@@ -1267,7 +1273,8 @@
    inkscape:label="S"><path
      d="M 500,250 C 500,112.1 387.9,0 250,0 112.1,0 0,112.1 0,250 0,387.9 112.1,500 250,500 387.9,500 500,387.9 500,250"
      fill="#008d4f"
-     id="path1788" /><path
+     id="path1788"
+     style="fill:#2c8e4e;fill-opacity:1" /><path
      d="m 414.1,316.5 c 0,60.6 -58.8,131.1 -157.8,131.1 -55.2,0 -118.9,-24.8 -153.7,-56 v -78.7 c 33,47.5 93.1,84.1 153.7,84.1 37.1,0 66.9,-21.2 66.9,-43.9 0,-85.4 -223.8,-32.6 -223.8,-179.9 0,-77.3 75.5,-118.9 143.3,-118.9 56.5,0 107.1,18.5 147.4,49.7 v 65.6 C 355.3,132 302.9,99 241.4,99 c -34.8,0 -54.7,18.5 -54.7,40.2 0,91.4 227.4,27.2 227.4,177.3"
      fill="#ffffff"
      id="path1790" /></g><g
@@ -1301,7 +1308,7 @@
    inkscape:export-filename="SL.png"
    inkscape:export-xdpi="508.00003"
    inkscape:export-ydpi="508.00003"><circle
-     style="fill:#008d4f;fill-opacity:1;stroke-width:0.0625;stroke-linecap:round"
+     style="fill:#2c8e4e;fill-opacity:1;stroke-width:0.0625;stroke-linecap:round"
      id="circle6528"
      cx="240.77443"
      cy="57.334671"
@@ -1442,4 +1449,28 @@
 </g>
 
 
-</g></g></svg>
+</g><g
+   id="g1341"
+   inkscape:label="A"
+   transform="translate(-165.64847,32.642831)"
+   inkscape:export-filename="A.png"
+   inkscape:export-xdpi="508.00003"
+   inkscape:export-ydpi="508.00003"><circle
+     style="fill:#f49100;fill-opacity:1;stroke-width:0.0625;stroke-linecap:round"
+     id="circle1335"
+     cx="240.77443"
+     cy="57.334671"
+     r="5"
+     inkscape:export-filename="rs.png"
+     inkscape:export-xdpi="300"
+     inkscape:export-ydpi="300" /><text
+     xml:space="preserve"
+     style="font-size:9.06618px;line-height:1.25;font-family:'Concourse OT';-inkscape-font-specification:'Concourse OT, Normal';font-variant-ligatures:none;fill:#ffffff;stroke-width:0.377758"
+     x="237.60127"
+     y="60.417171"
+     id="text1339"><tspan
+       sodipodi:role="line"
+       id="tspan1337"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Concourse OT';-inkscape-font-specification:'Concourse OT Bold';fill:#ffffff;fill-opacity:1;stroke-width:0.377758"
+       x="237.60127"
+       y="60.417171">A</tspan></text></g></g></svg>
