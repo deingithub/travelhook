@@ -441,7 +441,7 @@ tram_color = "#c5161c"
 train_type_color = {
     k: discord.Color.from_str(v)
     for (k, v) in {
-        "A": "f49100",
+        "A": "#f49100",
         "AST": "#ffd700",
         "ATS": "#0096d8",
         "Bus": "#a3167e",
