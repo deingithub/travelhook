@@ -93,7 +93,7 @@ class User:
     def write(self):
         "insert the manually created user object into the database as a fresh registration"
         DB.execute(
-            "INSERT INTO users (discord_id, token_status, token_webhook, token_travel, break_journey) VALUES(?,?,?,?,?)",
+            "INSERT INTO users (discord_id, token_status, token_webhook, token_travel, break_journey, suggestions) VALUES(?,?,?,?,?,?)",
             astuple(self),
         )
 
