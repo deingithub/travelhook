@@ -2,6 +2,7 @@
  
  Icon  | Full Name | Notes
 :----: | --------- | -----
+<img src="/icons/A.png" style="height: 2em;"> | AKN | Hamburg, Germany
 <img src="/icons/AST.png" style="height: 2em;"> | Anruf-Sammel-Taxi | call bus but worse
 <img src="/icons/Bus.png" style="height: 2em;"> | Bus |
 <img src="/icons/BusX.png" style="height: 2em;"> | Express Bus |

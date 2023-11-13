@@ -349,6 +349,7 @@ class LineEmoji:  # pylint: disable=too-few-public-methods
 
 
 train_type_emoji = {
+    "A": "<:A_:1173641257646559312>",
     "AST": "<:ast:1161314515355439126>",
     "ATS": "<:ATS:1170751624612954232>",
     "bike": "<:sbbvelo:1161317270065262683>",
@@ -440,6 +441,7 @@ tram_color = "#c5161c"
 train_type_color = {
     k: discord.Color.from_str(v)
     for (k, v) in {
+        "A": "f49100",
         "AST": "#ffd700",
         "ATS": "#0096d8",
         "Bus": "#a3167e",
