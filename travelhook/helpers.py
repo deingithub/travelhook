@@ -547,4 +547,8 @@ replace_headsign = {
     # 48 stunden ringbahn challenge
     ("S41", "Ring S41"): "Ring ↻",
     ("S42", "Ring S42"): "Ring ↺",
+    ("S45", "Flughafen BER - Terminal 1-2 (S-Bahn)"): "Flughafen BER T 1-2",
+    # Stuttgart my behated
+    ("STBU5", "Leinfelden Bahnhof, Leinfelden-Echterdingen"): "Leinfelden Bf",
+    ("STBU6", "Stuttgart Flughafen/Messe, Leinfelden-Echterdingen"): "Flughafen/Messe",
 }

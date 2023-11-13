@@ -169,7 +169,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             + LineEmoji.SPACER
             + get_train_emoji(train_type)
             + (
-                f" [**{train_line} » {headsign}**]({route_link})"
+                f" **{train_line} [» {headsign}]({route_link})**"
                 if route_link
                 else f" **{train_line} » {headsign}** ✱"
             )
@@ -209,7 +209,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                     next_train["fromStation"]["scheduledTime"],
                     next_train["fromStation"]["realTime"],
                 )
-                desc += f"{LineEmoji.CHANGE_SAME_STOP}{arrival} → {next_train_departure} {station_name}\n"
+                desc += f"{LineEmoji.CHANGE_SAME_STOP}{arrival} – {next_train_departure} {station_name}\n"
             else:
                 # if we leave the station, draw the upper part of a two-line change
                 desc += f"{LineEmoji.CHANGE_LEAVE_STOP}{arrival} " + f"{station_name}\n"
