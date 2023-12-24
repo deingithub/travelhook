@@ -723,6 +723,52 @@ class UndoView(discord.ui.View):
 
 
 @journey.command()
+async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[int]):
+    "quickly add a delay not reflected in HAFAS to your journey"
+    user = DB.User.find(discord_id=ia.user.id)
+    if not user:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+        return
+
+    trip = DB.Trip.find_last_trip_for(user.discord_id)
+    if not trip:
+        await ia.response.send_message(
+            "Sorry, but the bot doesn't have a trip saved for you currently.",
+            ephemeral=True,
+        )
+        return
+
+    prepare_patch = {}
+    if departure is not None:
+        prepare_patch["fromStation"] = {
+            "realTime": trip.status["fromStation"]["scheduledTime"] + departure * 60
+        }
+
+    if arrival is not None:
+        prepare_patch["toStation"] = {
+            "realTime": trip.status["toStation"]["scheduledTime"] + arrival * 60
+        }
+
+    newpatch = DB.DB.execute(
+        "SELECT json_patch(?,?) AS newpatch",
+        (json.dumps(trip.status_patch), json.dumps(prepare_patch)),
+    ).fetchone()["newpatch"]
+
+    trip.write_patch(json.loads(newpatch))
+
+    reason = "update" if trip.status["checkedIn"] else "checkout"
+    async with ClientSession() as session:
+        async with session.post(
+            "http://localhost:6005/travelynx",
+            json={"reason": reason, "status": trip.get_unpatched_status()},
+            headers={"Authorization": f"Bearer {user.token_webhook}"},
+        ) as r:
+            await ia.response.send_message(
+                content=f"{r.status} {await r.text()}", embed=None, view=None
+            )
+
+
+@journey.command()
 async def edit(
     ia,
     from_station: typing.Optional[str],
