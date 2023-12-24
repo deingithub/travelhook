@@ -25,6 +25,7 @@ re_hauptbahnhof = re.compile(
 re_station_city = re.compile(
     r"((S-)?Bahnhof |(S-)?Bh?f\.? )?(?P<station>.+), (?P<city>.+)"
 )
+re_u_number = re.compile(r"(?P<station>.+) [\(\[]U\d+[\)\]]")
 
 
 def merge_names(from_name, to_name):
@@ -60,6 +61,19 @@ def merge_names(from_name, to_name):
             f"{m['city']} {m['station']}",
             f"{m['city']}-{m['station']}",
         ):
+            return b
+
+        if (m := re_u_number.match(a)) and b == m["station"]:
+            return m["station"]
+
+        if (
+            (m := re_u_number.match(a))
+            and (m2 := re_u_number.match(b))
+            and m["station"] == m2["station"]
+        ):
+            return m["station"]
+
+        if a == b + " (S)" or a == b + " (tief)":
             return b
 
     return try_merge(from_name, to_name) or try_merge(to_name, from_name)
