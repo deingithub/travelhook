@@ -92,7 +92,7 @@ def shortened_name(previous_name, this_name):
     "if the last station follows the 'Stop , City' convention and we're still in the same city, drop that suffix"
     mprev = re_station_city.match(previous_name)
     mthis = re_station_city.match(this_name)
-    if not mprev or mthis:
+    if not mprev or not mthis:
         return this_name
 
     if mprev["city"] == mthis["city"] and not mprev["station"] == mthis["station"]:
