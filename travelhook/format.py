@@ -90,12 +90,16 @@ def is_one_line_change(from_station, to_station):
 
 def shortened_name(previous_name, this_name):
     "if the last station follows the 'Stop , City' convention and we're still in the same city, drop that suffix"
-    if (
-        (m := re_station_city.match(previous_name))
-        and (m2 := re_station_city.match(this_name))
-        and m["city"] == m2["city"]
-    ):
-        return m2["station"]
+    mprev = re_station_city.match(previous_name)
+    mthis = re_station_city.match(this_name)
+    if not mprev and mthis:
+        return this_name
+
+    if mprev["city"] == mthis["city"] and not mprev["station"] == mthis["station"]:
+        return mthis["station"]
+    elif not mprev["city"] == mthis["city"] and mprev["station"] == mthis["station"]:
+        return mthis["city"]
+
     return this_name
 
 
