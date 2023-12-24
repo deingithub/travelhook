@@ -123,6 +123,15 @@ def train_presentation(data):
     ):
         train_type = "Ü"
 
+    if (
+        train_type == "Ü"
+        and train_line
+        and train_line
+        in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "17")
+    ):
+        train_type = f"Ü{train_line}"
+        train_line = ""
+
     # special treatment for VAG Nürnberg U-Bahn
     def is_in_nürnberg(lat, lon):
         return haversine((lat, lon), (49.45, 11.05)) < 10
@@ -417,6 +426,20 @@ train_type_emoji = {
     "U2n": "<:U2:1166773949804322897>",
     "U3n": "<:U3:1166773945341595768>",
     "Ü": "<:UE:1160288194730930196>",
+    "Ü1": "<:1_:1188442681173606430>",
+    "Ü2": "<:2_:1188442698970046484>",
+    "Ü3": "<:3_:1188442713134207147>",
+    "Ü4": "<:4_:1188442727734575114>",
+    "Ü5": "<:5_:1188442741093437541>",
+    "Ü6": "<:6_:1188442756423622656>",
+    "Ü7": "<:7_:1188442777634230292>",
+    "Ü8": "<:8_:1188442795661328495>",
+    "Ü9": "<:9_:1188442809397694544>",
+    "Ü10": "<:10:1188442824094531674>",
+    "Ü11": "<:11:1188442840045473792>",
+    "Ü12": "<:12:1188442853769216021>",
+    "Ü13": "<:13:1188442869111988254>",
+    "Ü17": "<:17:1188442884249223209>",
     "walk": "<:sbbwalk:1161321193001992273>",
     "WB": "<:wa:1162760160129855609><:wb:1162760161417515058>",
     "WLB": "<:wlb:1164614809887719474>",
@@ -437,6 +460,10 @@ s_bahn_color = "#2c8e4e"
 metro_color = "#014e8d"
 night_train_color = "#282559"
 tram_color = "#c5161c"
+uestra_a_color = "#176fc1"
+uestra_b_color = "#ec1041"
+uestra_c_color = "#f9a70c"
+uestra_d_color = "#66c530"
 
 train_type_color = {
     k: discord.Color.from_str(v)
@@ -499,6 +526,20 @@ train_type_color = {
         "U2n": "#ed1c24",
         "U3n": "#4cc3bc",
         "Ü": "#78b41d",
+        "Ü1": uestra_b_color,
+        "Ü2": uestra_b_color,
+        "Ü3": uestra_a_color,
+        "Ü4": uestra_c_color,
+        "Ü5": uestra_c_color,
+        "Ü6": uestra_c_color,
+        "Ü7": uestra_a_color,
+        "Ü8": uestra_b_color,
+        "Ü9": uestra_a_color,
+        "Ü10": uestra_d_color,
+        "Ü11": uestra_c_color,
+        "Ü12": uestra_d_color,
+        "Ü13": uestra_a_color,
+        "Ü17": uestra_a_color,
         "WB": "#2e86ce",
         "WLB": "#175a97",
     }.items()
@@ -538,6 +579,7 @@ replace_headsign = {
     ("STR2", "Rethen(Leine) Nord, Laatzen"): "Rethen/Nord",
     ("STR3", "Altwarmbüchen, Isernhagen"): "Altwarmbüchen",
     ("STR9", "Empelde (Bus/Tram), Ronnenberg"): "Empelde",
+    ("STR13", "Hemmingen (Hannover)"): "Hemmingen",
     # jesus christ KVV please fix this nonsense
     ("S2", "Blankenloch Nord, Stutensee"): "Blankenloch",
     ("S2", "Daxlanden Dornröschenweg, Karlsruhe"): "Rheinstrandsiedlung",

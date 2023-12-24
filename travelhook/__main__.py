@@ -976,6 +976,22 @@ async def pleasegivemetraintypes(ia):
         "WB",
     ]
     poland = ["EIC", "KM", "KML", "KS", "TLK"]
+    uestra = [
+        "Ü1",
+        "Ü2",
+        "Ü3",
+        "Ü4",
+        "Ü5",
+        "Ü6",
+        "Ü7",
+        "Ü8",
+        "Ü9",
+        "Ü10",
+        "Ü11",
+        "Ü12",
+        "Ü13",
+        "Ü17",
+    ]
 
     def render_emojis(train_types):
         return "\n".join([f"`{tt:>6}` {train_type_emoji[tt]}" for tt in train_types])
@@ -984,6 +1000,7 @@ async def pleasegivemetraintypes(ia):
         discord.Embed(
             description=f"**The relay bot currently knows {len(train_type_emoji)} emoji for train types.**\n"
             f"It also automatically rewrites the following train types:\n{', '.join([f'`{k}` → `{v}`' for k,v in blanket_replace_train_type.items()])}.\n"
+            f"It also automatically rewrites Ü1…17 to these icons:\n{' '.join([train_type_emoji[tt] for tt in uestra])}"
         )
         .add_field(name="Long-distance", value=render_emojis(fv))
         .add_field(name="Regional", value=render_emojis(regio))
@@ -997,7 +1014,16 @@ async def pleasegivemetraintypes(ia):
     )
 
     if s := set(train_type_emoji.keys()) - set(
-        fv + regio + sbahn + transit + special + manual + austria + vienna + poland
+        fv
+        + regio
+        + sbahn
+        + transit
+        + special
+        + manual
+        + austria
+        + vienna
+        + poland
+        + uestra
     ):
         embed = embed.add_field(name="uncategorized", value=render_emojis(s))
 
