@@ -1003,14 +1003,9 @@ async def pleasegivemetraintypes(ia):
         "RT",
         "SB",
         "SEV",
-        "SVG",
-        "U1n",
-        "U2n",
-        "U3n",
         "Ü",
     ]
     manual = ["bike", "boat", "car", "coach", "plane", "steam", "walk"]
-    vienna = ["U1", "U2", "U3", "U4", "U5", "U6", "WLB"]
     austria = [
         "ATS",
         "CJX",
@@ -1022,7 +1017,9 @@ async def pleasegivemetraintypes(ia):
         "WB",
     ]
     poland = ["EIC", "KM", "KML", "KS", "TLK"]
-    uestra = [
+    nürnberg = ["U1n", "U2n", "U3n"]
+    wien = ["U1", "U2", "U3", "U4", "U5", "U6", "WLB"]
+    üstra = [
         "Ü1",
         "Ü2",
         "Ü3",
@@ -1038,15 +1035,29 @@ async def pleasegivemetraintypes(ia):
         "Ü13",
         "Ü17",
     ]
+    berlin = ["U1b", "U2b", "U3b", "U4b", "U5b", "U6b", "U7b", "U8b", "U9b", "U12b"]
+    münchen = ["U1m", "U2m", "U3m", "U4m", "U5m", "U6m", "U7m", "U8m"]
+    hamburg = ["U1h", "U2h", "U3h", "U4h"]
 
     def render_emojis(train_types):
         return "\n".join([f"`{tt:>6}` {train_type_emoji[tt]}" for tt in train_types])
+
+    transit_lines_a = f"""
+    The following cities' transit lines are automatically detected and get colored icons:
+    **Berlin** (`U1b` … `U12b`) {' '.join([train_type_emoji[tt] for tt in berlin])} 
+    **Hamburg** (`U1h` … `U4h`) {' '.join([train_type_emoji[tt] for tt in hamburg])} 
+    **Hannover** (`Ü1`…`Ü17`) {' '.join([train_type_emoji[tt] for tt in üstra])}
+    """
+    transit_lines_b = f"""
+    **München** (`U1m` … `U8m`) {' '.join([train_type_emoji[tt] for tt in münchen])}
+    **Nürnberg** (`U1n`…`U3n`) {' '.join([train_type_emoji[tt] for tt in nürnberg])}
+    **Wien** (`U1`…`U6`, `WLB`) {' '.join([train_type_emoji[tt] for tt in wien])}
+    """
 
     embed = (
         discord.Embed(
             description=f"**The relay bot currently knows {len(train_type_emoji)} emoji for train types.**\n"
             f"It also automatically rewrites the following train types:\n{', '.join([f'`{k}` → `{v}`' for k,v in blanket_replace_train_type.items()])}.\n"
-            f"It also automatically rewrites Ü1…17 to these icons:\n{' '.join([train_type_emoji[tt] for tt in uestra])}"
         )
         .add_field(name="Long-distance", value=render_emojis(fv))
         .add_field(name="Regional", value=render_emojis(regio))
@@ -1054,9 +1065,10 @@ async def pleasegivemetraintypes(ia):
         .add_field(name="City transit", value=render_emojis(transit))
         .add_field(name="Specials", value=render_emojis(special))
         .add_field(name="For manual checkins", value=render_emojis(manual))
-        .add_field(name="Vienna", value=render_emojis(vienna))
-        .add_field(name="The rest of Austria", value=render_emojis(austria))
+        .add_field(name="Austria", value=render_emojis(austria))
         .add_field(name="Poland", value=render_emojis(poland))
+        .add_field(name="Transit line numbers", inline=False, value=transit_lines_a)
+        .add_field(name="… continued", inline=False, value=transit_lines_b)
     )
 
     if s := set(train_type_emoji.keys()) - set(
@@ -1067,9 +1079,13 @@ async def pleasegivemetraintypes(ia):
         + special
         + manual
         + austria
-        + vienna
         + poland
-        + uestra
+        + üstra
+        + nürnberg
+        + wien
+        + hamburg
+        + berlin
+        + münchen
     ):
         embed = embed.add_field(name="uncategorized", value=render_emojis(s))
 
