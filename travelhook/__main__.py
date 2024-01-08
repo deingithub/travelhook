@@ -107,6 +107,7 @@ def handle_status_update(userid, reason, status):
     DB.Trip.upsert(userid, status)
     trip = DB.Trip.find(userid, zugid(status))
     trip.maybe_fix_circle_line()
+    trip.maybe_fix_1970()
 
 
 async def receive(bot):

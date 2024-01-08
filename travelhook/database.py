@@ -236,6 +236,52 @@ class Trip:
             ).fetchone()["travelynx_status"]
         )
 
+    def maybe_fix_1970(self):
+        """sometimes the toStation times wind up being unix time 0 instead of the actual time,
+        we can fix that."""
+
+        if self.status["toStation"]["realTime"] > 0:
+            return
+
+        if self.status["toStation"]["scheduledTime"] > 0:
+            self.status["toStation"]["realTime"] = self.status["toStation"][
+                "scheduledTime"
+            ]
+            self.upsert(self.user_id, self.status)
+            return
+
+        try:
+            this_trip = hafas.trip(
+                self.status["train"]["hafasId"] or self.status["train"]["id"]
+            )
+            stops = [
+                Stopover(
+                    stop=this_trip.destination,
+                    arrival=this_trip.arrival,
+                    arrival_delay=this_trip.arrivalDelay,
+                )
+            ]
+            if this_trip.stopovers:
+                stops += this_trip.stopovers
+
+            for stopover in this_trip.stopovers:
+                if stopover.stop.name == self.status["toStation"]["name"]:
+                    sched = int(stopover.arrival.timestamp())
+                    if (
+                        not sched > self.status["fromStation"]["scheduledTime"]
+                    ):  # might be a ring line too after all
+                        continue
+
+                    self.status["toStation"]["scheduledTime"] = sched
+                    self.status["toStation"]["realTime"] = sched + int(
+                        (stopover.departureDelay or timedelta()).total_seconds()
+                    )
+                    self.upsert(self.user_id, self.status)
+                    return
+        except:  # pylint: disable=bare-except
+            print("error while running 1970 fixup:")
+            traceback.print_exc()
+
     def maybe_fix_circle_line(self):
         """if we're on a line that visits the same stop more than once, we might be logged on
         the first time the stop is visited. if we can detect this, skip to the first stop that wouldn't
