@@ -626,7 +626,7 @@ async def manualtrip(
             "fakeheadsign": headsign,
             "type": train.split(" ")[0],
             "line": " ".join(train.split(" ")[1:]),
-            "no": "0",
+            "no": "",
             "id": "travelhookfaked" + secrets.token_urlsafe(),
             "hafasId": None,
         },
@@ -662,8 +662,10 @@ def render_patched_train(trip, patch):
     )
     headsign = fetch_headsign(status)
     train_line = f"**{train_line}**" if train_line else ""
-
-    return f"{get_train_emoji(train_type)} {train_line} [» {headsign}]({link})\n{status['fromStation']['name']} {departure} → {status['toStation']['name']} {arrival}\n"
+    if "travelhookfaked" in status["train"]["id"]:
+        return f"{get_train_emoji(train_type)} {train_line} » {headsign}\n{status['fromStation']['name']} {departure} → {status['toStation']['name']} {arrival}\n"
+    else:
+        return f"{get_train_emoji(train_type)} {train_line} [» {headsign}]({link})\n{status['fromStation']['name']} {departure} → {status['toStation']['name']} {arrival}\n"
 
 
 @journey.command()
