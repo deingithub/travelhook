@@ -42,7 +42,7 @@
 <img src="/icons/REX.png" style="height: 2em;width:4em;"> | Regional-Express | Austria
 <img src="/icons/RJ.png" style="height: 2em;width:4em;"> | Railjet | Austria
 <img src="/icons/RJX.png" style="height: 2em;width:4em;"> | Railjet Xpress | Austria
-<img src="/icons/RS.png" style="height: 2em;width:4em;"> | Regio-S-Bahn | Bemen, Germany
+<img src="/icons/RS.png" style="height: 2em;"> | Regio-S-Bahn | Bemen, Germany
 <img src="/icons/RT.png" style="height: 2em;"> | Regiotram | Kassel, Germany
 <img src="/icons/RUF.png" style="height: 2em;"> | Rufbus | call bus
 <img src="/icons/S.png" style="height: 2em;"> | S-Bahn |
