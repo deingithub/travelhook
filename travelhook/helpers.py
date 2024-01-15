@@ -32,12 +32,18 @@ hafas = HafasClient(DBProfile())
 
 
 def parse_manual_time(time):
-    time = time.split(":")
-    return datetime.now(tz=tz).replace(
-        hour=int(time[0]),
-        minute=int(time[1]),
-        second=0,
-    )
+    try:
+        dt = datetime.fromisoformat(time)
+        if not dt.tzinfo:
+            dt = dt.replace(tzinfo=tz)
+        return dt
+    except ValueError:
+        time = time.split(":")
+        return datetime.now(tz=tz).replace(
+            hour=int(time[0]),
+            minute=int(time[1]),
+            second=0,
+        )
 
 
 async def is_token_valid(token):
