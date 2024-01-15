@@ -394,6 +394,7 @@ train_type_emoji = {
     "bike": "<:sbbvelo:1161317270065262683>",
     "boat": "<:sbbboot:1164446951572525136>",
     "Bus": "<:Bus:1160288158374707241>",
+    "BusN": "<:BusN:1196411699859816458>",
     "BusX": "<:BusX:1166774884156854283>",
     "car": "<:sbbauto:1161317276277031002>",
     "CB": "<:cb:1167885153289388062>",
@@ -504,6 +505,7 @@ def get_train_emoji(train_type):
     )
 
 
+bus_color = "#a3167e"
 long_distance_color = "#ff0404"
 regional_express_color = "#ff4f00"
 regional_color = "#204a87"
@@ -522,8 +524,9 @@ train_type_color = {
         "A": "#f49100",
         "AST": "#ffd700",
         "ATS": "#0096d8",
-        "Bus": "#a3167e",
-        "BusX": "#a3167e",
+        "Bus": bus_color,
+        "BusN": bus_color,
+        "BusX": bus_color,
         "CB": "#c91432",
         "D": long_distance_color,
         "EC": long_distance_color,

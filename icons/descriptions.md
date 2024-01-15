@@ -5,6 +5,7 @@
 <img src="/icons/A.png" style="height: 2em;"> | AKN | Hamburg, Germany
 <img src="/icons/AST.png" style="height: 2em;"> | Anruf-Sammel-Taxi | call bus but worse
 <img src="/icons/Bus.png" style="height: 2em;"> | Bus |
+<img src="/icons/BusN.png" style="height: 2em;"> | Night Bus |
 <img src="/icons/BusX.png" style="height: 2em;"> | Express Bus |
 <img src="/icons/CB.png" style="height: 2em;"> | City-Bahn | Chemnitz, Germany
 <img src="/icons/CJX.png" style="height: 2em;width:4em;"> | CityJet Xpress | Austria

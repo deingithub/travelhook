@@ -766,9 +766,62 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
             json={"reason": reason, "status": trip.get_unpatched_status()},
             headers={"Authorization": f"Bearer {user.token_webhook}"},
         ) as r:
-            await ia.response.send_message(
-                content=f"{r.status} {await r.text()}", embed=None, view=None
-            )
+            if r.status == 200:
+                msg = await DB.Message.find(
+                    trip.user_id, trip.journey_id, ia.channel.id
+                ).fetch(bot)
+
+                train_type, train_line, link = train_presentation(trip.status)
+                headsign = fetch_headsign(trip.status)
+                train_line = f"**{train_line}**" if train_line else ""
+
+                embed = discord.Embed(
+                    description=f"{get_train_emoji(train_type)} {train_line} » {headsign} "
+                    f"is delayed by **+{departure or 0}′/+{arrival or 0}′**.\n### {msg.jump_url} ",
+                    color=train_type_color["SB"],
+                ).set_author(
+                    name=f"{ia.user.name} ist {'nicht' if max(arrival, departure) == 0 else ''} verspätet",
+                    icon_url=ia.user.avatar.url,
+                )
+
+                await ia.response.send_message(content=None, embed=embed, view=None)
+            else:
+                await ia.response.send_message(
+                    content=f"{r.status} {await r.text()}", embed=None, view=None
+                )
+
+
+@journey.command()
+async def kas(ia):
+    "turn your S into a KAS"
+    user = DB.User.find(discord_id=ia.user.id)
+    if not user:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+        return
+
+    trip = DB.Trip.find_last_trip_for(user.discord_id)
+    if not trip:
+        await ia.response.send_message(
+            "Sorry, but the bot doesn't have a trip saved for you currently.",
+            ephemeral=True,
+        )
+        return
+
+    newpatch = DB.DB.execute(
+        "SELECT json_patch(?,?) AS newpatch",
+        (json.dumps(trip.status_patch), json.dumps({"train": {"type": "KAS"}})),
+    ).fetchone()["newpatch"]
+
+    trip.write_patch(json.loads(newpatch))
+
+    reason = "update" if trip.status["checkedIn"] else "checkout"
+    async with ClientSession() as session:
+        async with session.post(
+            "http://localhost:6005/travelynx",
+            json={"reason": reason, "status": trip.get_unpatched_status()},
+            headers={"Authorization": f"Bearer {user.token_webhook}"},
+        ) as r:
+            await ia.response.send_message(content="🧇", embed=None, view=None)
 
 
 @journey.command()
