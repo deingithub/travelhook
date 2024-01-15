@@ -760,6 +760,7 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
     ).fetchone()["newpatch"]
 
     trip.write_patch(json.loads(newpatch))
+    trip = DB.Trip.find(trip.user_id, trip.journey_id)
 
     reason = "update" if trip.status["checkedIn"] else "checkout"
     async with ClientSession() as session:
@@ -772,18 +773,33 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
                 train_type, train_line, link = train_presentation(trip.status)
                 headsign = fetch_headsign(trip.status)
                 train_line = f"**{train_line}**" if train_line else ""
+                dep_delay = format_time(
+                    trip.status["fromStation"]["scheduledTime"],
+                    trip.status["fromStation"]["realTime"],
+                )[8:-2]
+                arr_delay = format_time(
+                    trip.status["toStation"]["scheduledTime"],
+                    trip.status["toStation"]["realTime"],
+                )[8:-2]
 
                 embed = discord.Embed(
-                    description=f"{get_train_emoji(train_type)} {train_line} » {headsign} "
-                    f"is delayed by **+{departure or 0}′/+{arrival or 0}′**.",
+                    description=f"{get_train_emoji(train_type)} {train_line} **» {headsign}** "
+                    f"is delayed by **{dep_delay or '+0′'}/{arr_delay or '+0′'}**.",
                     color=train_type_color["SB"],
                 ).set_author(
-                    name=f"{ia.user.name} ist {'nicht' if max(arrival or 0, departure or 0) == 0 else ''} verspätet",
+                    name=f"{ia.user.name} ist {'nicht ' if len(dep_delay+arr_delay) == 0 else ''}verspätet",
                     icon_url=ia.user.avatar.url,
                 )
 
-                if msg := DB.Message.find(trip.user_id, trip.journey_id, ia.channel.id):
-                    embed.description += f"\n### {(await msg.fetch()).jump_url}"
+                server = DB.Server.find(ia.guild.id)
+                if server.live_channel and (
+                    msg := DB.Message.find(
+                        trip.user_id, trip.journey_id, server.live_channel
+                    )
+                ):
+                    embed.description += (
+                        f"\n### current journey: {(await msg.fetch(bot)).jump_url}"
+                    )
 
                 await ia.edit_original_response(content=None, embed=embed)
             else:
