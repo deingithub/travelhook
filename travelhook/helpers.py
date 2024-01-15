@@ -197,10 +197,16 @@ def train_presentation(data):
     if train_type == "STB":
         train_line = train_line.removeprefix("U")
 
+    if train_type == "RT":
+        train_type = "STR"
+        train_line = "RT" + train_line
+
     # special treatment for wien U6 (and the others too i guess)
     if train_type == "U" and data["fromStation"]["name"].startswith("Wien "):
         train_type = data["fromStation"]["name"][-3:-1]
         train_line = ""
+    if train_type == "Bus" and data["fromStation"]["name"].startswith("Wien "):
+        train_line = train_line.replace("A", "ᴀ").replace("B", "ʙ")
 
     # special treatment for austrian s-bahn
     if train_type == "S" and (
@@ -218,6 +224,9 @@ def train_presentation(data):
 
     if train_type == "S" and train_line.startswith("N"):
         train_type = "SN"
+
+    if train_type == "Bus" and train_line.startswith("N"):
+        train_type = "BusN"
 
     if "SEV" in train_line or "EV" in train_line:
         train_type = "SEV"
@@ -429,11 +438,11 @@ train_type_emoji = {
     "RJ": "<:2a:1162760135731589233><:2b:1162760137090551929>",
     "RJX": "<:1a:1162760138277519501><:1b:1162760140458573895>",
     "RS": "<:RS:1173641264705568798>",
-    "RT": "<:rt:1163135018328133752>",
     "RUF": "<:ruf:1161314243698761898>",
     "S": "<:SBahn:1102206882527060038>",
     "SB": "<:SB:1170796225927331962>",
     "Schw-B": "<:SchwB:1170796229203079218>",
+    "SE": "<:se0:1196424800055349348><:se1:1196424803066843136>",
     "SEV": "<:Sa:1163143892540067880><:Sb:1163143891264999494>",
     "SL": "<:SL:1173641259177484358>",
     "SN": "<:SN:1170704004515385385>",
@@ -557,11 +566,11 @@ train_type_color = {
         "RJ": "#c63131",
         "RJX": "#c63131",
         "RS": s_bahn_color,
-        "RT": tram_color,
         "RUF": "#ffd700",
         "S": s_bahn_color,
         "SB": metro_color,
         "Schw-B": metro_color,
+        "SE": regional_express_color,
         "SL": s_bahn_color,
         "SN": s_bahn_color,
         "STB": tram_color,

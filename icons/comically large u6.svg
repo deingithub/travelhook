@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="10mm"
+   height="10mm"
+   viewBox="0 0 10 10"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="trainicons.svg"
+   xml:space="preserve"
+   inkscape:export-filename="stb_left.png"
+   inkscape:export-xdpi="325.12"
+   inkscape:export-ydpi="325.12"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="808.5766"
+     inkscape:cy="951.23539"
+     inkscape:window-width="1920"
+     inkscape:window-height="1011"
+     inkscape:window-x="0"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g54515"><inkscape:grid
+       type="xygrid"
+       id="grid132"
+       units="mm"
+       spacingx="20"
+       spacingy="10"
+       empspacing="0"
+       originx="0"
+       originy="0" /></sodipodi:namedview><defs
+     id="defs2" /><g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-241.59038,-240.72073)">
+
+
+
+
+
+<g
+   id="g813"
+   inkscape:label="Wien U6"
+   transform="translate(41.84736,0.67161062)"><path
+     id="rect807"
+     style="fill:#926131;stroke-width:0.255315;stroke-linecap:round"
+     d="m 201.24303,240.04912 h 7 c 0.831,0 1.5,0.669 1.5,1.5 v 7 c 0,0.831 -0.669,1.5 -1.5,1.5 h -7 c -0.831,0 -1.5,-0.669 -1.5,-1.5 v -7 c 0,-0.831 0.669,-1.5 1.5,-1.5 z" /><g
+     aria-label="U6"
+     id="text811"
+     style="font-size:6.68085px;line-height:1.25;font-family:'Concourse OT';-inkscape-font-specification:'Concourse OT, Normal';font-variant-ligatures:none;stroke-width:0.278368"><path
+       d="m 204.67623,242.76092 h -1.256 v 2.73914 c 0,0.5946 -0.33404,0.78834 -0.74825,0.78834 -0.54783,0 -0.74826,-0.36076 -0.74826,-0.78834 v -2.73914 h -1.256 v 2.8928 c 0,0.85515 0.46766,1.75039 2.00426,1.75039 1.36289,0 2.00425,-0.89524 2.00425,-1.83724 z"
+       style="font-weight:bold;-inkscape-font-specification:'Concourse OT Bold';fill:#ffffff"
+       id="path816" /><path
+       d="m 206.64708,244.63155 c 0.18038,-0.48102 0.7683,-0.90191 1.78379,-0.96204 l 0.0935,-0.9754 c -1.71698,0.0601 -3.2469,1.00213 -3.2469,2.86608 0,0.97541 0.52111,1.84392 1.83724,1.84392 0.92864,0 1.70362,-0.50775 1.70362,-1.49651 0,-0.99545 -0.78166,-1.47647 -1.40298,-1.47647 -0.33405,0 -0.56119,0.0868 -0.74826,0.22047 z m 0.90191,1.256 c 0,0.40085 -0.21378,0.57456 -0.46766,0.57456 -0.44093,0 -0.61463,-0.52111 -0.50774,-1.04222 0.14698,-0.12693 0.27391,-0.18706 0.44762,-0.18706 0.28059,0 0.52778,0.19375 0.52778,0.65472 z"
+       style="font-weight:bold;-inkscape-font-specification:'Concourse OT Bold';fill:#ffffff"
+       id="path818" /></g></g></g></svg>

@@ -44,12 +44,12 @@
 <img src="/icons/RJ.png" style="height: 2em;width:4em;"> | Railjet | Austria
 <img src="/icons/RJX.png" style="height: 2em;width:4em;"> | Railjet Xpress | Austria
 <img src="/icons/RS.png" style="height: 2em;"> | Regio-S-Bahn | Bemen, Germany
-<img src="/icons/RT.png" style="height: 2em;"> | Regiotram | Kassel, Germany
 <img src="/icons/RUF.png" style="height: 2em;"> | Rufbus | call bus
 <img src="/icons/S.png" style="height: 2em;"> | S-Bahn |
 <img src="/icons/S AT.png" style="height: 2em;"> | S-Bahn | Austria
 <img src="/icons/SB.png" style="height: 2em;"> | Standseilbahn | funicular
 <img src="/icons/Schw-B.png" style="height: 2em;"> | Schwebebahn | suspension railway
+<img src="/icons/SE.png" style="height: 2em;width:4em;"> | Stadtexpress | rarest train type - is it better than "alpha"?
 <img src="/icons/SEV.png" style="height: 2em;width:4em;"> | Schienenersatzverkehr | rail replacement service
 <img src="/icons/S KA.png" style="height: 2em;"> | Stadtbahn | Karlsruhe, Germany
 <img src="/icons/S L.png" style="height: 2em;"> | Léman Express | Switzerland, France
