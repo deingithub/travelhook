@@ -1,4 +1,4 @@
-# current icons as of relay bot version 0.9.5
+# current icons as of relay bot version 0.10.2
  
  Icon  | Full Name | Notes
 :----: | --------- | -----
@@ -19,7 +19,9 @@
 <img src="/icons/FLX.png" style="height: 2em;width:4em;"> | Flixtrain | Germany
 <img src="/icons/generic.png" style="height: 2em;"> | | generic icon for unknown train types
 <img src="/icons/IC.png" style="height: 2em;width:4em;"> | Intercity |
+<img src="/icons/ICD.png" style="height: 2em;width:4em;"> | Intercity Direct | Benelux
 <img src="/icons/ICE.png" style="height: 2em;width:4em;"> | Intercity-Express |
+<img src="/icons/ICN.png" style="height: 2em;width:4em;"> | Intercités de nuit | France (formerly also Intercity-Neigezug, Switzerland)
 <img src="/icons/IR.png" style="height: 2em;width:4em;"> | Interregio | mostly Switzerland
 <img src="/icons/IRE.png" style="height: 2em;width:4em;"> | Interregio-Express | the german state of baden-württemberg thinks it has invented a new train type
 <img src="/icons/KM.png" style="height: 2em;width:4em;"> | Koleje Mazowieckie | Polish regional train operator
