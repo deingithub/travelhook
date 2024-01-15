@@ -596,6 +596,8 @@ async def manualtrip(
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
 
+    await ia.response.defer(ephemeral=True)
+
     departure = parse_manual_time(departure)
     arrival = parse_manual_time(arrival)
     if arrival < departure:
@@ -640,9 +642,7 @@ async def manualtrip(
             json=webhook,
             headers={"Authorization": f"Bearer {user.token_webhook}"},
         ) as r:
-            await ia.response.send_message(
-                f"{r.status} {await r.text()}", ephemeral=True
-            )
+            await ia.edit_original_response(content=f"{r.status} {await r.text()}")
 
 
 def render_patched_train(trip, patch):
@@ -741,6 +741,8 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
         )
         return
 
+    await ia.response.defer()
+
     prepare_patch = {}
     if departure is not None:
         prepare_patch["fromStation"] = {
@@ -767,27 +769,26 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
             headers={"Authorization": f"Bearer {user.token_webhook}"},
         ) as r:
             if r.status == 200:
-                msg = await DB.Message.find(
-                    trip.user_id, trip.journey_id, ia.channel.id
-                ).fetch(bot)
-
                 train_type, train_line, link = train_presentation(trip.status)
                 headsign = fetch_headsign(trip.status)
                 train_line = f"**{train_line}**" if train_line else ""
 
                 embed = discord.Embed(
                     description=f"{get_train_emoji(train_type)} {train_line} » {headsign} "
-                    f"is delayed by **+{departure or 0}′/+{arrival or 0}′**.\n### {msg.jump_url} ",
+                    f"is delayed by **+{departure or 0}′/+{arrival or 0}′**.",
                     color=train_type_color["SB"],
                 ).set_author(
-                    name=f"{ia.user.name} ist {'nicht' if max(arrival, departure) == 0 else ''} verspätet",
+                    name=f"{ia.user.name} ist {'nicht' if max(arrival or 0, departure or 0) == 0 else ''} verspätet",
                     icon_url=ia.user.avatar.url,
                 )
 
-                await ia.response.send_message(content=None, embed=embed, view=None)
+                if msg := DB.Message.find(trip.user_id, trip.journey_id, ia.channel.id):
+                    embed.description += f"\n### {(await msg.fetch()).jump_url}"
+
+                await ia.edit_original_response(content=None, embed=embed)
             else:
-                await ia.response.send_message(
-                    content=f"{r.status} {await r.text()}", embed=None, view=None
+                await ia.edit_original_response(
+                    content=f"{r.status} {await r.text()}",
                 )
 
 
@@ -798,6 +799,8 @@ async def kas(ia):
     if not user:
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
+
+    await ia.response.defer()
 
     trip = DB.Trip.find_last_trip_for(user.discord_id)
     if not trip:
@@ -821,7 +824,7 @@ async def kas(ia):
             json={"reason": reason, "status": trip.get_unpatched_status()},
             headers={"Authorization": f"Bearer {user.token_webhook}"},
         ) as r:
-            await ia.response.send_message(content="🧇", embed=None, view=None)
+            await ia.edit_original_response(content="🧇")
 
 
 @journey.command()
@@ -850,6 +853,8 @@ async def edit(
             ephemeral=True,
         )
         return
+
+    await ia.response.defer(ephemeral=True)
 
     prepare_patch = {}
     if from_station or departure or departure_delay:
@@ -906,7 +911,7 @@ async def edit(
     newpatch = json.loads(newpatch)
     newpatched_status = json.loads(newpatched_status)
 
-    await ia.response.send_message(
+    await ia.edit_original_response(
         embed=discord.Embed(
             description=f"### You are about to edit the following checkin from {format_time(None, trip.from_time, True)}\n"
             "Current state:\n"
@@ -920,7 +925,6 @@ async def edit(
             color=train_type_color["SB"],
         ),
         view=EditTripView(trip, newpatch),
-        ephemeral=True,
     )
 
 
@@ -1052,11 +1056,22 @@ async def pleasegivemetraintypes(ia):
     ]
     regio = ["IRE", "L", "MEX", "RB", "RE", "SPR", "ST", "TER"]
     sbahn = ["KAS", "SL", "RER", "RS", "S", "SN"]
-    transit = ["AST", "Bus", "BusX", "Fähre", "M", "RUF", "Schw-B", "STB", "STR", "U"]
+    transit = [
+        "AST",
+        "Bus",
+        "BusN",
+        "BusX",
+        "Fähre",
+        "M",
+        "RUF",
+        "Schw-B",
+        "STB",
+        "STR",
+        "U",
+    ]
     special = [
         "A",
         "CB",
-        "RT",
         "SB",
         "SEV",
         "Ü",
