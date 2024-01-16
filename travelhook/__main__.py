@@ -1066,11 +1066,13 @@ async def pleasegivemetraintypes(ia):
         "EST",
         "FLX",
         "IC",
+        "ICD",
         "ICE",
+        "ICN",
         "IR",
         "TGV",
     ]
-    regio = ["IRE", "L", "MEX", "RB", "RE", "SPR", "ST", "TER"]
+    regio = ["IRE", "L", "MEX", "RB", "RE", "SE", "SPR", "ST", "TER"]
     sbahn = ["KAS", "SL", "RER", "RS", "S", "SN"]
     transit = [
         "AST",
