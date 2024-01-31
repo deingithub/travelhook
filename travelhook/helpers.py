@@ -178,6 +178,16 @@ def train_presentation(data):
         train_type = f"U{train_line}m"
         train_line = ""
 
+    # special treatment for Frankfurt RMV U-Bahn
+    def is_in_frankfurt(lat, lon):
+        return haversine((lat, lon), (50.11, 8.68)) < 30
+
+    if train_type == "U" and is_in_frankfurt(
+        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
+    ):
+        train_type = f"U{train_line}f"
+        train_line = ""
+
     # bitte beachten sie das verzehrverbot auf kölner stadtgebiet
     def is_in_köln(lat, lon):
         return (50.62 < lat < 51.04) and (6.72 < lon < 7.26)
@@ -479,6 +489,15 @@ train_type_emoji = {
     "U8b": "<:UBerlin8:1189300564677361744>",
     "U9b": "<:UBerlin9:1189300566246039633>",
     "U12b": "<:UBerlin12:1189300568557113354>",
+    "U1f": "<:UFrankfurt1:1201890459262402580>",
+    "U2f": "<:UFrankfurt2:1201890461024010280>",
+    "U3f": "<:UFrankfurt3:1201890464366858311>",
+    "U4f": "<:UFrankfurt4:1201890467105738772>",
+    "U5f": "<:UFrankfurt5:1201890469089640508>",
+    "U6f": "<:UFrankfurt6:1201890472008888360>",
+    "U7f": "<:UFrankfurt7:1201890473573367918>",
+    "U8f": "<:UFrankfurt8:1201890476064514118>",
+    "U9f": "<:UFrankfurt9:1201890477662539896>",
     "U1h": "<:UHH1:1189301085794484244>",
     "U2h": "<:UHH2:1189301086981472317>",
     "U3h": "<:UHH3:1189301089435136120>",
@@ -605,6 +624,15 @@ train_type_color = {
         "U8b": "#224f86",
         "U9b": "#f3791d",
         "U12b": "#7dad4c",
+        "U1f": "#c52b1e",
+        "U2f": "#00ab4f",
+        "U3f": "#345aaf",
+        "U4f": "#fc5cac",
+        "U5f": "#0c7d3e",
+        "U6f": "#0082ca",
+        "U7f": "#f19e2d",
+        "U8f": "#ca7fbe",
+        "U9f": "#ffd939",
         "U1h": "#0073c0",
         "U2h": "#ff2e17",
         "U3h": "#ffd939",

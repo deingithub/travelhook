@@ -1127,18 +1127,20 @@ async def pleasegivemetraintypes(ia):
     berlin = ["U1b", "U2b", "U3b", "U4b", "U5b", "U6b", "U7b", "U8b", "U9b", "U12b"]
     münchen = ["U1m", "U2m", "U3m", "U4m", "U5m", "U6m", "U7m", "U8m"]
     hamburg = ["U1h", "U2h", "U3h", "U4h"]
+    frankfurt = ["U1f", "U2f", "U3f", "U4f", "U5f", "U6f", "U7f", "U8f", "U9f"]
 
     def render_emojis(train_types):
         return "\n".join([f"`{tt:>6}` {train_type_emoji[tt]}" for tt in train_types])
 
     transit_lines_a = f"""
     The following cities' transit lines are automatically detected and get colored icons:
-    **Berlin** (`U1b` … `U12b`) {' '.join([train_type_emoji[tt] for tt in berlin])} 
-    **Hamburg** (`U1h` … `U4h`) {' '.join([train_type_emoji[tt] for tt in hamburg])} 
-    **Hannover** (`Ü1`…`Ü17`) {' '.join([train_type_emoji[tt] for tt in üstra])}
+    **Berlin** (`U1b`…`U12b`) {' '.join([train_type_emoji[tt] for tt in berlin])}
+    **Frankfurt** (`U1f`…`U9f`) {' '.join([train_type_emoji[tt] for tt in frankfurt])}
+    **Hamburg** (`U1h`…`U4h`) {' '.join([train_type_emoji[tt] for tt in hamburg])}
     """
     transit_lines_b = f"""
-    **München** (`U1m` … `U8m`) {' '.join([train_type_emoji[tt] for tt in münchen])}
+    **Hannover** (`Ü1`…`Ü17`) {' '.join([train_type_emoji[tt] for tt in üstra])}
+    **München** (`U1m`…`U8m`) {' '.join([train_type_emoji[tt] for tt in münchen])}
     **Nürnberg** (`U1n`…`U3n`) {' '.join([train_type_emoji[tt] for tt in nürnberg])}
     **Wien** (`U1`…`U6`, `WLB`) {' '.join([train_type_emoji[tt] for tt in wien])}
     """
@@ -1175,6 +1177,7 @@ async def pleasegivemetraintypes(ia):
         + hamburg
         + berlin
         + münchen
+        + frankfurt
     ):
         embed = embed.add_field(name="uncategorized", value=render_emojis(s))
 
