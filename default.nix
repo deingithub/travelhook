@@ -24,6 +24,6 @@ in python310Packages.buildPythonPackage {
   version = "0.0.0";
 
   propagatedBuildInputs =
-    (with python310Packages; [ discordpy setuptools haversine tomli tomli-w ]) ++ [ pyhafas ];
+    (with python310Packages; [ discordpy setuptools haversine tomli tomli-w ]) ++ [ pyhafas perl (import ./hafas-m.nix) perlPackages.JSON ];
   format = "pyproject";
 }

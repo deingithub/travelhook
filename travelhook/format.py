@@ -7,6 +7,7 @@ import re
 import discord
 from haversine import haversine
 
+from . import database as DB
 from .helpers import (
     fetch_headsign,
     format_delta,
@@ -15,7 +16,9 @@ from .helpers import (
     LineEmoji,
     train_type_color,
     train_presentation,
+    trip_length,
     replace_city_suffix_with_prefix,
+    zugid,
 )
 
 re_hbf = re.compile(r"(?P<city>.+) Hbf")
@@ -191,15 +194,27 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 if route_link
                 else f" **{train_line} » {headsign}** ✱"
             )
-            + (" ●" if train["comment"] else "")
+            + (" ●\n" if train["comment"] else "\n")
         )
-        trip_time = timedelta(
-            seconds=train["toStation"]["realTime"] - train["fromStation"]["realTime"]
-        )
-        desc += f" *· {format_delta(trip_time)}*\n"
-        # add extra spacing at last trip in the journey
+        # add extra information at last trip in the journey
         if not continue_link and not _next(statuses, i):
-            desc += f"{LineEmoji.RAIL}\n"
+            trip = DB.Trip.find(userid, zugid(train))
+            desc += f"{LineEmoji.RAIL} {LineEmoji.SPACER}➔ "
+
+            trip_time = timedelta(
+                seconds=train["toStation"]["realTime"]
+                - train["fromStation"]["realTime"]
+            )
+            desc += format_delta(trip_time)
+
+            length = trip_length(trip)
+            if length > 0:
+                desc += (
+                    f" · {length:.1f}{'km+' if trip.hafas_data.get('beeline', True) else 'km'} · "
+                    f"{(length/(trip_time.total_seconds()/3600)):.1f}km/h"
+                )
+
+            desc += f"\n{LineEmoji.RAIL}\n"
 
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
@@ -258,14 +273,14 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         desc += f"> {comment}\n"
 
     if continue_link:
-        desc += f"**Weiterfahrt ➤** {continue_link}\n"
+        desc += f"\n**Weiterfahrt ➤** {continue_link}\n"
     else:
         to_time = format_time(
             statuses[-1]["toStation"]["scheduledTime"],
             statuses[-1]["toStation"]["realTime"],
             True,
         )
-        desc += f"### ➤ {statuses[-1]['toStation']['name']} {to_time}\n"
+        desc += f"\n**➤ {statuses[-1]['toStation']['name']} {to_time}**\n"
 
     total_time = timedelta(
         seconds=statuses[-1]["toStation"]["realTime"]
@@ -277,7 +292,17 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             for train in statuses
         )
     )
-    desc += f"*journey {format_delta(total_time)} ({format_delta(journey_time)} in transit) · {len(statuses)} trips*"
+    lengths = [trip_length(DB.Trip.find(user.id, zugid(status))) for status in statuses]
+    includes_beelines = any(l == 0 for l in lengths) or any(
+        DB.Trip.find(user.id, zugid(status)).hafas_data.get("beeline", True)
+        for status in statuses
+    )
+    desc += (
+        f"➔ {len(statuses)} trips · {format_delta(total_time)} "
+        f"({format_delta(journey_time)} in transit) · "
+        f"{sum(lengths):.1f}km{'+' if includes_beelines else ''} · "
+        f"{sum(lengths)/(total_time.total_seconds()/3600):.1f}km/h"
+    )
 
     embed = discord.Embed(
         description=desc,

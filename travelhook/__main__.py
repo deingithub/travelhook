@@ -106,8 +106,10 @@ def handle_status_update(userid, reason, status):
 
     DB.Trip.upsert(userid, status)
     trip = DB.Trip.find(userid, zugid(status))
+    trip.fetch_hafas_data()
     trip.maybe_fix_circle_line()
     trip.maybe_fix_1970()
+    trip.fetch_headsign()
 
 
 async def receive(bot):
@@ -292,6 +294,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
         )
         return
 
+    await ia.response.defer()
     async with ClientSession() as session:
         async with session.get(
             f"https://travelynx.de/api/v1/status/{user.token_status}"
@@ -302,7 +305,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                 if not status["checkedIn"] or (
                     status["visibility"]["desc"] == "private"
                 ):
-                    await ia.response.send_message(
+                    await ia.edit_original_response(
                         embed=discord.Embed().set_author(
                             name=f"{member.name} ist gerade nicht unterwegs",
                             icon_url=member.avatar.url,
@@ -313,7 +316,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                 handle_status_update(member.id, "update", status)
                 current_trips = DB.Trip.find_current_trips_for(member.id)
 
-                await ia.response.send_message(
+                await ia.edit_original_response(
                     embed=format_travelynx(
                         bot, member.id, [trip.status for trip in current_trips]
                     ),
@@ -589,6 +592,7 @@ async def manualtrip(
     departure_delay: typing.Optional[int] = 0,
     arrival_delay: typing.Optional[int] = 0,
     comment: typing.Optional[str] = "",
+    distance: typing.Optional[float] = None,
 ):
     "Manually add a check-in not available on HAFAS/IRIS to your journey."
     user = DB.User.find(discord_id=ia.user.id)
@@ -633,6 +637,7 @@ async def manualtrip(
             "id": "travelhookfaked" + secrets.token_urlsafe(),
             "hafasId": None,
         },
+        "distance": distance,
         "visibility": {"desc": "public", "level": 100},
     }
     webhook = {"reason": "checkout", "status": status}
@@ -855,6 +860,7 @@ async def edit(
     train: typing.Optional[str],
     headsign: typing.Optional[str],
     comment: typing.Optional[str],
+    distance: typing.Optional[float],
 ):
     "manually overwrite some data of your current trip. you will be asked to confirm your changes."
     user = DB.User.find(discord_id=ia.user.id)
@@ -914,6 +920,7 @@ async def edit(
             prepare_patch["train"]["line"] = " ".join(train.split(" ")[1:])
 
     prepare_patch["comment"] = comment
+    prepare_patch["distance"] = distance
 
     newpatch = DB.DB.execute(
         "SELECT json_patch(?,?) AS newpatch",
@@ -1036,11 +1043,12 @@ async def walk(
     name: typing.Optional[str],
     actually_bike_instead: typing.Optional[bool],
     comment: typing.Optional[str],
+    distance: typing.Optional[float],
 ):
     "do a manual trip walking, see /journey manualtrip"
-    train = f"walk {name or 'walking…'}"
+    train = f"walk {name or ''}"
     if actually_bike_instead:
-        train = f"bike {name or 'cycling…'}"
+        train = f"bike {name or ''}"
     await manualtrip.callback(
         ia,
         from_station,
@@ -1052,6 +1060,7 @@ async def walk(
         0,
         0,
         comment,
+        distance,
     )
 
 

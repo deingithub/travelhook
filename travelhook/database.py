@@ -4,6 +4,7 @@ import asyncio
 import collections
 import json
 import sqlite3
+import subprocess
 from dataclasses import dataclass, astuple
 from datetime import datetime, timedelta
 from enum import IntEnum
@@ -13,7 +14,7 @@ import traceback
 import discord
 from pyhafas.types.fptf import Stopover
 
-from .helpers import zugid, hafas, tz
+from .helpers import zugid, hafas, tz, replace_headsign
 
 DB = None
 
@@ -158,16 +159,18 @@ class Trip:
     to_lon: float
     headsign: str
     status_patch: str
+    hafas_data: str
 
     def __post_init__(self):
         self.status = json.loads(self.travelynx_status)
         self.status_patch = json.loads(self.status_patch)
+        self.hafas_data = json.loads(self.hafas_data)
 
     @classmethod
     def find(cls, user_id, journey_id):
         row = DB.execute(
             "SELECT journey_id, user_id, json_patch(travelynx_status, status_patch) as travelynx_status, "
-            "from_time, from_station, from_lat, from_lon, to_time, to_station, to_lat, to_lon, headsign, status_patch "
+            "from_time, from_station, from_lat, from_lon, to_time, to_station, to_lat, to_lon, headsign, status_patch, hafas_data "
             "FROM trips WHERE user_id = ? AND journey_id = ?",
             (user_id, journey_id),
         ).fetchone()
@@ -179,7 +182,7 @@ class Trip:
     def find_current_trips_for(cls, user_id):
         rows = DB.execute(
             "SELECT journey_id, user_id, json_patch(travelynx_status, status_patch) as travelynx_status, "
-            "from_time, from_station, from_lat, from_lon, to_time, to_station, to_lat, to_lon, headsign, status_patch "
+            "from_time, from_station, from_lat, from_lon, to_time, to_station, to_lat, to_lon, headsign, status_patch, hafas_data "
             "FROM trips WHERE user_id = ? ORDER BY json_patch(travelynx_status, status_patch) ->> '$.fromStation.realTime' ASC",
             (user_id,),
         ).fetchall()
@@ -346,6 +349,146 @@ class Trip:
         except:  # pylint: disable=bare-except
             print("error while running circle line fixup:")
             traceback.print_exc()
+
+    def fetch_hafas_data(self):
+        "perform arcane magick (perl 'FFI') to get hafas data for our trip"
+
+        def write_hafas_data(journey_id):
+            hafas = subprocess.run(
+                ["perl", "json-hafas.pl", journey_id], capture_output=True
+            )
+            status = {}
+            try:
+                status = json.loads(hafas.stdout)
+            except:  # pylint: disable=bare-except
+                print(f"hafas perl broke:\n{hafas.stdout}")
+                traceback.print_exc()
+
+            if "error_code" in status:
+                print(f"hafas perl broke:\n{status}")
+            else:
+                self.hafas_data = status
+                DB.execute(
+                    "UPDATE trips SET hafas_data=? WHERE user_id = ? AND journey_id = ?",
+                    (json.dumps(status), self.user_id, self.journey_id),
+                )
+
+        if "travelhookfaked" in self.status["train"]["id"] or "id" in self.hafas_data:
+            return
+
+        jid = self.status["train"]["hafasId"]
+        if not jid and "|" in self.status["train"]["id"]:
+            jid = self.status["train"]["id"]
+        if jid:
+            write_hafas_data(jid)
+
+        def check_same_train(hafas_name, train):
+            hafas_name = hafas_name.replace(" ", "")
+            train_line = train["type"] + (train["line"] or "").replace(" ", "")
+            train_no = train["type"] + train["no"]
+            return (
+                (hafas_name == train_line)
+                or (hafas_name == train_no)
+                or (hafas_name == train["type"] == "ZahnR")
+            )
+
+        try:
+            departure = datetime.fromtimestamp(
+                self.status["fromStation"]["scheduledTime"], tz=tz
+            )
+            candidates = hafas.departures(
+                station=self.status["fromStation"]["uic"], date=departure, duration=10
+            )
+            candidates2 = [
+                c
+                for c in candidates
+                if check_same_train(c.name, self.status["train"])
+                and c.dateTime == departure
+            ]
+            if len(candidates2) == 1:
+                write_hafas_data(candidates2[0].id)
+
+            for candidate in candidates2:
+                trip = hafas.trip(candidate.id)
+                stops = [
+                    Stopover(
+                        stop=trip.destination,
+                        arrival=trip.arrival,
+                        arrival_delay=trip.arrivalDelay,
+                    )
+                ]
+                if trip.stopovers:
+                    stops += trip.stopovers
+                if any(
+                    stop.stop.id == str(self.status["toStation"]["uic"])
+                    and (
+                        stop.arrival
+                        and int(stop.arrival.timestamp())
+                        == self.status["toStation"]["scheduledTime"]
+                    )
+                    for stop in stops
+                ):
+                    write_hafas_data(candidate.id)
+                else:
+                    print_leg = lambda c: f"{c.id} {c.name} {c.direction} {c.dateTime}"
+                    print(
+                        f"can't decide! {self.status['train']['type']} {self.status['train']['line']} {self.status['train']['no']} {departure}",
+                        self.status["fromStation"],
+                        self.status["toStation"],
+                        "cand",
+                        "\n".join([print_leg(c) for c in candidates]),
+                        "cand2",
+                        "\n".join([print_leg(c) for c in candidates2]),
+                        sep="\n",
+                    )
+        except:  # pylint: disable=bare-except
+            print("error trying to find train:")
+            traceback.print_exc()
+
+    def fetch_headsign(self):
+        if headsign := (self.headsign or self.status["train"].get("fakeheadsign")):
+            return headsign
+
+        def get_headsign_from_stationboard(leg):
+            headsign = leg.direction
+            train_key = (
+                (
+                    self.status["train"]["type"]
+                    + (self.status["train"]["line"] or self.status["train"]["no"])
+                ),
+                headsign,
+            )
+            return replace_headsign.get(
+                train_key,
+                headsign,
+            )
+
+        self.headsign = "?"
+        if "id" in self.hafas_data:
+            try:
+                departure = datetime.fromtimestamp(
+                    self.status["fromStation"]["scheduledTime"], tz=tz
+                )
+                candidates = [
+                    c
+                    for c in hafas.departures(
+                        station=self.status["fromStation"]["uic"],
+                        date=departure,
+                        duration=10,
+                    )
+                    if c.id == self.hafas_data["id"]
+                ]
+                if len(candidates) == 1:
+                    self.headsign = get_headsign_from_stationboard(candidates[0])
+
+            except:  # pylint: disable=bare-except
+                print("error trying to fetch headsign:")
+                traceback.print_exc()
+
+        DB.execute(
+            "UPDATE trips SET headsign=? WHERE user_id = ? AND journey_id = ?",
+            (self.headsign, self.user_id, self.journey_id),
+        )
 
 
 @dataclass

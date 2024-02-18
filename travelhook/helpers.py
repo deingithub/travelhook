@@ -286,110 +286,39 @@ def train_presentation(data):
     return (train_type, train_line, link)
 
 
-def fetch_headsign(status):
-    "try to fetch a train headsign or destination name from HAFAS"
+def trip_length(trip):
+    if dist := trip.status.get("distance"):
+        return dist
 
-    if fhs := status["train"].get("fakeheadsign"):
-        return fhs
-
-    # have we already fetched the headsign? just use that.
-    cached = DB.DB.execute(
-        "SELECT headsign FROM trips WHERE journey_id = ?", (zugid(status),)
-    ).fetchone()
-    if cached and cached["headsign"]:
-        return cached["headsign"]
-
-    def get_headsign_from_stationboard(leg):
-        headsign = leg.direction
-        train_key = (
-            (
-                status["train"]["type"]
-                + (status["train"]["line"] or status["train"]["no"])
-            ),
-            headsign,
-        )
-        return replace_headsign.get(
-            train_key,
-            headsign,
-        )
-
-    def check_same_train(hafas_name, train):
-        hafas_name = hafas_name.replace(" ", "")
-        train_line = train["type"] + (train["line"] or "").replace(" ", "")
-        train_no = train["type"] + train["no"]
-        return (
-            (hafas_name == train_line)
-            or (hafas_name == train_no)
-            or (hafas_name == train["type"] == "ZahnR")
-        )
-
-    headsign = "?"
-    try:
-        departure = datetime.fromtimestamp(
-            status["fromStation"]["scheduledTime"], tz=tz
-        )
-        candidates = hafas.departures(
-            station=status["fromStation"]["uic"], date=departure, duration=10
-        )
-        candidates2 = [
-            c
-            for c in candidates
-            if (
-                c.id == (status["train"]["hafasId"] or status["train"]["id"])
-                or check_same_train(c.name, status["train"])
-            )
-            and c.dateTime == departure
-        ]
-        if len(candidates2) == 1:
-            headsign = get_headsign_from_stationboard(candidates2[0])
-        else:
-            for candidate in candidates2:
-                trip = hafas.trip(candidate.id)
-                stops = [
-                    Stopover(
-                        stop=trip.destination,
-                        arrival=trip.arrival,
-                        arrival_delay=trip.arrivalDelay,
-                    )
-                ]
-                if trip.stopovers:
-                    stops += trip.stopovers
-                if any(
-                    stop.stop.id == str(status["toStation"]["uic"])
-                    and (
-                        stop.arrival
-                        and int(stop.arrival.timestamp())
-                        == status["toStation"]["scheduledTime"]
-                    )
-                    for stop in stops
-                ):
-                    headsign = get_headsign_from_stationboard(candidate)
-                    break
-            else:
-                print_leg = lambda c: f"{c.id} {c.name} {c.direction} {c.dateTime}"
-                print(
-                    f"can't decide! {status['train']['type']} {status['train']['line']} {status['train']['no']} {departure}",
-                    status["fromStation"],
-                    status["toStation"],
-                    "cand",
-                    "\n".join([print_leg(c) for c in candidates]),
-                    "cand2",
-                    "\n".join([print_leg(c) for c in candidates2]),
-                    sep="\n",
+    if trip.hafas_data:
+        trip_length = 0
+        trip_started = False
+        for i, point in enumerate(trip.hafas_data["polyline"]):
+            if point["eva"] == trip.status["fromStation"]["uic"]:
+                trip_started = True
+            if point["eva"] == trip.status["toStation"]["uic"]:
+                break
+            if trip_started:
+                trip_length += haversine(
+                    (point["lat"], point["lon"]),
+                    (
+                        trip.hafas_data["polyline"][i + 1]["lat"],
+                        trip.hafas_data["polyline"][i + 1]["lon"],
+                    ),
                 )
 
-    except:  # pylint: disable=bare-except
-        print("error fetching headsign from journey:")
-        traceback.print_exc()
+    return trip_length
 
-    DB.DB.execute(
-        "UPDATE trips SET headsign = ? WHERE journey_id = ?",
-        (
-            headsign,
-            zugid(status),
-        ),
-    )
-    return headsign
+
+def fetch_headsign(status):
+    "try to fetch a train headsign or destination name from HAFAS"
+    cached = DB.DB.execute(
+        "SELECT headsign, travelynx_status FROM trips WHERE journey_id = ?", (zugid(status),)
+    ).fetchone()
+    if cached:
+        return cached["headsign"] or json.loads(cached["travelynx_status"])["train"].get(
+            "fakeheadsign", "?"
+        )
 
 
 def random_id():
