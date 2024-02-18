@@ -355,13 +355,13 @@ class Trip:
 
         def write_hafas_data(journey_id):
             hafas = subprocess.run(
-                ["perl", "json-hafas.pl", journey_id], capture_output=True
+                ["json-hafas.pl", journey_id], capture_output=True
             )
             status = {}
             try:
                 status = json.loads(hafas.stdout)
             except:  # pylint: disable=bare-except
-                print(f"hafas perl broke:\n{hafas.stdout}")
+                print(f"hafas perl broke:\n{hafas.stdout} {hafas.stderr}")
                 traceback.print_exc()
 
             if "error_code" in status:
@@ -381,6 +381,7 @@ class Trip:
             jid = self.status["train"]["id"]
         if jid:
             write_hafas_data(jid)
+            return
 
         def check_same_train(hafas_name, train):
             hafas_name = hafas_name.replace(" ", "")
@@ -407,6 +408,7 @@ class Trip:
             ]
             if len(candidates2) == 1:
                 write_hafas_data(candidates2[0].id)
+                return
 
             for candidate in candidates2:
                 trip = hafas.trip(candidate.id)
@@ -429,6 +431,7 @@ class Trip:
                     for stop in stops
                 ):
                     write_hafas_data(candidate.id)
+                    return
                 else:
                     print_leg = lambda c: f"{c.id} {c.name} {c.direction} {c.dateTime}"
                     print(
