@@ -814,41 +814,6 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
 
 
 @journey.command()
-async def kas(ia):
-    "turn your S into a KAS"
-    user = DB.User.find(discord_id=ia.user.id)
-    if not user:
-        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
-        return
-
-    await ia.response.defer()
-
-    trip = DB.Trip.find_last_trip_for(user.discord_id)
-    if not trip:
-        await ia.response.send_message(
-            "Sorry, but the bot doesn't have a trip saved for you currently.",
-            ephemeral=True,
-        )
-        return
-
-    newpatch = DB.DB.execute(
-        "SELECT json_patch(?,?) AS newpatch",
-        (json.dumps(trip.status_patch), json.dumps({"train": {"type": "KAS"}})),
-    ).fetchone()["newpatch"]
-
-    trip.write_patch(json.loads(newpatch))
-
-    reason = "update" if trip.status["checkedIn"] else "checkout"
-    async with ClientSession() as session:
-        async with session.post(
-            "http://localhost:6005/travelynx",
-            json={"reason": reason, "status": trip.get_unpatched_status()},
-            headers={"Authorization": f"Bearer {user.token_webhook}"},
-        ) as r:
-            await ia.edit_original_response(content="🧇")
-
-
-@journey.command()
 async def edit(
     ia,
     from_station: typing.Optional[str],

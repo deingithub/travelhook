@@ -103,6 +103,13 @@ def train_presentation(data):
     "do some cosmetic fixes to train type/line and generate a bahn.expert link for it"
     is_hafas = "|" in data["train"]["id"]
 
+    operator = None
+    cached = DB.DB.execute(
+        "SELECT hafas_data FROM trips WHERE journey_id = ? AND hafas_data != '{}'", (zugid(data),)
+    ).fetchone()
+    if cached:
+        operator = json.loads(cached["hafas_data"]).get("operator")
+
     train_type = blanket_replace_train_type.get(
         data["train"]["type"], data["train"]["type"]
     )
@@ -120,15 +127,11 @@ def train_presentation(data):
     if not train_line:
         train_line = data["train"]["no"]
 
-    # special treatment for üstra because i love you
-    def is_in_hannover(lat, lon):
-        return (52.20 < lat < 52.45) and (9.56 < lon < 10.0)
+    if train_type == "S" and operator == "Albtal-Verkehrs-Gesellschaft mbH":
+        train_type = "KAS"
 
-    if train_type == "STR" and is_in_hannover(
-        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
-    ):
+    if train_type == "STR" and operator == "üstra Hannoversche Verkehrsbetriebe AG":
         train_type = "Ü"
-
     if (
         train_type == "Ü"
         and train_line
@@ -137,6 +140,12 @@ def train_presentation(data):
     ):
         train_type = f"Ü{train_line}"
         train_line = ""
+
+    # the dutch
+    if train_type == "RE" and operator == "Nederlandse Spoorwegen":
+        train_type = "SPR"
+    if not train_type and operator in ("Blauwnet", "Arriva Nederland", "RRReis", "R-net"):
+        train_type = "ST"
 
     # special treatment for VAG Nürnberg U-Bahn
     def is_in_nürnberg(lat, lon):
