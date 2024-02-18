@@ -299,8 +299,8 @@ def trip_length(trip):
     if dist := trip.status.get("distance"):
         return dist
 
+    trip_length = 0
     if trip.hafas_data:
-        trip_length = 0
         trip_started = False
         for i, point in enumerate(trip.hafas_data["polyline"]):
             if point["eva"] == trip.status["fromStation"]["uic"]:
