@@ -196,8 +196,8 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             )
             + (" ●\n" if train["comment"] else "\n")
         )
-        # add extra information at last trip in the journey
-        if not continue_link and not _next(statuses, i):
+        # add extra information at last trip in the embed
+        if not _next(statuses, i):
             trip = DB.Trip.find(userid, zugid(train))
             desc += f"{LineEmoji.RAIL} {LineEmoji.SPACER}➔ "
 
@@ -211,10 +211,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             if length > 0:
                 desc += (
                     f" · {length:.1f}{'km+' if trip.hafas_data.get('beeline', True) else 'km'} · "
-                    f"{(length/(trip_time.total_seconds()/3600)):.1f}km/h"
+                    f"{(length/(trip_time.total_seconds()/3600)):.1f}km/h\n"
                 )
 
-            desc += f"\n{LineEmoji.RAIL}\n"
+            if not continue_link :
+                desc += f"{LineEmoji.RAIL}\n"
 
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
@@ -273,7 +274,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         desc += f"> {comment}\n"
 
     if continue_link:
-        desc += f"\n**Weiterfahrt ➤** {continue_link}\n"
+        desc += f"**Weiterfahrt ➤** {continue_link}\n"
     else:
         to_time = format_time(
             statuses[-1]["toStation"]["scheduledTime"],
