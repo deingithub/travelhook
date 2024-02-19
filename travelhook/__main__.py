@@ -1,6 +1,9 @@
 "contains our bot commands and the incoming webhook handler"
 import json
 import secrets
+import shlex
+import subprocess
+import traceback
 import typing
 import urllib
 from datetime import datetime, timedelta
@@ -21,12 +24,14 @@ from .helpers import (
     not_registered_embed,
     train_type_color,
     train_type_emoji,
+    trip_length,
     zugid,
     tz,
     train_presentation,
     parse_manual_time,
     fetch_headsign,
     blanket_replace_train_type,
+    OEBB_EMOJI,
 )
 
 config = {}
@@ -420,6 +425,8 @@ class TripActionsView(discord.ui.View):
             self.trip.status["train"]["fakeheadsign"],
             departure_delay,
             arrival_delay,
+            "",
+            trip_length(self.trip)
         )
 
 
@@ -600,7 +607,12 @@ async def manualtrip(
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
 
-    await ia.response.defer(ephemeral=True)
+    try:
+        # if we call this from another command this would fail with
+        # "interaction already responded to"
+        await ia.response.defer(ephemeral=True)
+    except:
+        pass
 
     departure = parse_manual_time(departure)
     arrival = parse_manual_time(arrival)
@@ -992,6 +1004,232 @@ class EditTripView(discord.ui.View):
 
 bot.tree.add_command(configure, guilds=servers)
 bot.tree.add_command(journey, guilds=servers)
+
+
+def scotty_journey(jid):
+    hafas = subprocess.run(
+        " ".join(["json-hafas-oebb.pl", shlex.quote(jid)]),
+        capture_output=True,
+        shell=True,
+    )
+    status = {}
+    try:
+        return json.loads(hafas.stdout)
+    except:  # pylint: disable=bare-except
+        print(f"öbb journey hafas perl broke:\n{hafas.stdout} {hafas.stderr}")
+        traceback.print_exc()
+
+
+def scotty_stationboard(station, time):
+    hafas = subprocess.run(
+        " ".join(["json-hafas-oebb-stationboard.pl", shlex.quote(station), str(time)]),
+        capture_output=True,
+        shell=True,
+    )
+    status = {}
+    try:
+        return json.loads(hafas.stdout)
+    except:  # pylint: disable=bare-except
+        print(f"öbb stationboard hafas perl broke:\n{hafas.stdout} {hafas.stderr}")
+        traceback.print_exc()
+
+
+def scotty_stopfinder(station):
+    hafas = subprocess.run(
+        " ".join(["json-hafas-oebb-stopfinder.pl", shlex.quote(station)]),
+        capture_output=True,
+        shell=True,
+    )
+    status = {}
+    try:
+        return json.loads(hafas.stdout)
+    except:  # pylint: disable=bare-except
+        print(f"öbb stopfinder hafas perl broke:\n{hafas.stdout} {hafas.stderr}")
+        traceback.print_exc()
+
+
+class ScottyView(discord.ui.View):
+    """attached to the /scotty response, select station then train then target,
+    then fire off a manual checkin
+    """
+
+    @discord.ui.select()
+    async def select_station(self, ia, select):
+        await ia.response.defer()
+        self.eva = select.values[0]
+        self.select_station.placeholder = [
+            option.label
+            for option in self.select_station.options
+            if str(option.value) == select.values[0]
+        ][0]
+        self.add_select_train()
+        await ia.edit_original_response(view=self)
+
+    @discord.ui.select(placeholder="select transport to check into")
+    async def select_train(self, ia, select):
+        await ia.response.defer()
+        self.select_train.placeholder = [
+            option.label
+            for option in self.select_train.options
+            if str(option.value) == select.values[0]
+        ][0]
+        self.selected_train = self.trains["trains"][int(select.values[0])]
+        self.add_select_destination()
+        await ia.edit_original_response(view=self)
+
+    def add_select_train(self):
+        self.trains = scotty_stationboard(self.eva, int(self.request_time.timestamp()))
+        if "error_string" in self.trains:
+            print(f"Scotty error: {self.trains['error_string']}")
+            return
+        trains = self.trains["trains"]
+        self.select_train.options = [
+            discord.SelectOption(
+                label=(
+                    f"{format_time(train['scheduled'], train['realtime'] or train['scheduled'])} {train['type'] or ''} "
+                    f"{train['line'] or train['number']} » {train['direction']}"
+                ).replace("**", ""),
+                value=i,
+            )
+            for (i, train) in enumerate(trains)
+        ][:24]
+        self.add_item(self.select_train)
+
+    @discord.ui.select(placeholder="select destination")
+    async def select_destination(self, ia, select):
+        await ia.response.defer()
+        destination_index = int(select.values[0][1:])
+        self.selected_destination = self.stops_after[destination_index]
+        self.select_destination.placeholder = [
+            option.label
+            for option in self.select_destination.options
+            if str(option.value) == select.values[0]
+        ][0]
+        departure = datetime.fromtimestamp(self.selected_train["scheduled"], tz=tz)
+        arrival = datetime.fromtimestamp(self.selected_destination["sched_arr"], tz=tz)
+        departure_delay = 0
+        arrival_delay = 0
+        if rt := self.selected_train["realtime"]:
+            departure_rt = datetime.fromtimestamp(rt, tz=tz)
+            departure_delay = (departure_rt - departure).total_seconds() // 60
+        if rt := self.selected_destination["rt_arr"]:
+            arrival_rt = datetime.fromtimestamp(rt, tz=tz)
+            arrival_delay = (arrival_rt - arrival).total_seconds() // 60
+
+        trip_length = 0
+        for i, point in enumerate(
+            [self.selected_origin] + self.stops_after[0 : destination_index + 1]
+        ):
+            if i == destination_index:
+                break
+            trip_length += haversine(
+                (point["lat"], point["lon"]),
+                (
+                    self.stops_after[i + 1]["lat"],
+                    self.stops_after[i + 1]["lon"],
+                ),
+            )
+
+        if not self.selected_train["type"] and self.selected_train["line"].startswith(
+            "U"
+        ):
+            self.selected_train["type"] = "U"
+            self.selected_train["line"] = self.selected_train["line"][1:]
+        if self.selected_train["type"] == "WLB":
+            self.selected_train["line"] = ""
+
+        self.select_station.disabled = True
+        self.select_train.disabled = True
+        self.select_destination.disabled = True
+        await manualtrip.callback(
+            ia,
+            self.selected_train["station"],
+            departure.isoformat(),
+            self.selected_destination["name"],
+            arrival.isoformat(),
+            f"{self.selected_train['type'] or ''} {self.selected_train['line'] or self.selected_train['number']}",
+            self.selected_train["direction"],
+            departure_delay,
+            arrival_delay,
+            "",
+            trip_length,
+        )
+
+    def add_select_destination(self):
+        self.selected_journey = scotty_journey(self.selected_train["id"])
+        if "error_string" in self.selected_journey:
+            print(f"Scotty error: {self.results['error_string']}")
+            return
+        self.selected_origin = [
+            stop
+            for stop in self.selected_journey["route"]
+            if (stop["sched_dep"]) == self.selected_train["scheduled"]
+        ][0]
+        self.stops_after = [
+            stop
+            for stop in self.selected_journey["route"]
+            if (stop["sched_dep"] or stop["sched_arr"] or 0)
+            > self.selected_train["scheduled"]
+        ]
+
+        self.select_destination.options = [
+            discord.SelectOption(
+                label=(
+                    f"{format_time(stop['sched_arr'], stop['rt_arr'] or stop['sched_arr'])} {stop['name']}"
+                ).replace("**", ""),
+                value=f"d{i}",
+            )
+            for (i, stop) in enumerate(self.stops_after)
+        ][:24]
+        self.add_item(self.select_destination)
+
+    def __init__(self, ia, station_name, request_time):
+        super().__init__()
+        self.remove_item(self.select_train)
+        self.remove_item(self.select_destination)
+        self.request_time = parse_manual_time(request_time)
+        self.stops = scotty_stopfinder(station_name)
+        if "error_string" in self.stops:
+            print(f"Scotty error: {self.stops['error_string']}")
+            return
+
+        stops = self.stops["stops"]
+        if exact_match := [
+            stop for stop in stops if stop["name"].casefold() == station_name.casefold()
+        ]:
+            self.eva = str(exact_match[0]["eva"])
+            self.select_station.options = [
+                discord.SelectOption(label=exact_match[0]["name"])
+            ]
+            self.select_station.disabled = True
+            self.select_station.placeholder = exact_match[0]["name"]
+            self.add_select_train()
+        else:
+            self.select_station.options = [
+                discord.SelectOption(label=stop["name"], value=stop["eva"])
+                for stop in stops
+            ][:9]
+            self.select_station.placeholder = f"select stop to check in from"
+
+
+@bot.tree.command(guilds=servers)
+@discord.app_commands.autocomplete(station_name=manual_station_autocomplete)
+async def scotty(
+    ia,
+    station_name: str,
+    request_time: typing.Optional[str] = datetime.now(tz=tz).isoformat(),
+):
+    "perform a manual checkin from a station covered by ÖBB HAFAS"
+
+    user = DB.User.find(discord_id=ia.user.id)
+    if not user:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+        return
+    await ia.response.defer(ephemeral=True)
+    await ia.edit_original_response(
+        content=f"### {OEBB_EMOJI} manual check-in",
+        view=ScottyView(ia, station_name, request_time),
+    )
 
 
 @bot.tree.command(guilds=servers)

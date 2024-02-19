@@ -105,7 +105,8 @@ def train_presentation(data):
 
     operator = None
     cached = DB.DB.execute(
-        "SELECT hafas_data FROM trips WHERE journey_id = ? AND hafas_data != '{}'", (zugid(data),)
+        "SELECT hafas_data FROM trips WHERE journey_id = ? AND hafas_data != '{}'",
+        (zugid(data),),
     ).fetchone()
     if cached:
         operator = json.loads(cached["hafas_data"]).get("operator")
@@ -144,7 +145,12 @@ def train_presentation(data):
     # the dutch
     if train_type == "RE" and operator == "Nederlandse Spoorwegen":
         train_type = "SPR"
-    if not train_type and operator in ("Blauwnet", "Arriva Nederland", "RRReis", "R-net"):
+    if not train_type and operator in (
+        "Blauwnet",
+        "Arriva Nederland",
+        "RRReis",
+        "R-net",
+    ):
         train_type = "ST"
 
     # special treatment for VAG Nürnberg U-Bahn
@@ -322,12 +328,13 @@ def trip_length(trip):
 def fetch_headsign(status):
     "try to fetch a train headsign or destination name from HAFAS"
     cached = DB.DB.execute(
-        "SELECT headsign, travelynx_status FROM trips WHERE journey_id = ?", (zugid(status),)
+        "SELECT headsign, travelynx_status FROM trips WHERE journey_id = ?",
+        (zugid(status),),
     ).fetchone()
     if cached:
-        return cached["headsign"] or json.loads(cached["travelynx_status"])["train"].get(
-            "fakeheadsign", "?"
-        )
+        return cached["headsign"] or json.loads(cached["travelynx_status"])[
+            "train"
+        ].get("fakeheadsign", "?")
 
 
 def random_id():
@@ -470,6 +477,8 @@ train_type_emoji = {
     "WB": "<:wa:1162760160129855609><:wb:1162760161417515058>",
     "WLB": "<:wlb:1164614809887719474>",
 }
+
+OEBB_EMOJI = "<:oebb1:1209147711274614815><:oebb2:1209147709437509663>"
 
 
 def get_train_emoji(train_type):

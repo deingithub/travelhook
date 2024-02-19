@@ -39,14 +39,15 @@ python310Packages.buildPythonPackage {
   version = "0.11.1";
   nativeBuildInputs = [ makeWrapper ];
 
-  postFixup = ''
+  postFixup = let hafasperl = with perlPackages; makeFullPerlPath [
+    JSON hafas-m
+  ]; in ''
   mkdir -p $out/bin
-  cp $src/json-hafas.pl $out/bin
-  wrapProgram $out/bin/json-hafas.pl \
-    --set PERL5LIB ${with perlPackages; makeFullPerlPath [
-      JSON hafas-m
-    ]}
-
+  cp $src/*.pl $out/bin
+  wrapProgram $out/bin/json-hafas.pl --set PERL5LIB ${hafasperl}
+  wrapProgram $out/bin/json-hafas-oebb.pl --set PERL5LIB ${hafasperl}
+  wrapProgram $out/bin/json-hafas-oebb-stationboard.pl --set PERL5LIB ${hafasperl}
+  wrapProgram $out/bin/json-hafas-oebb-stopfinder.pl --set PERL5LIB ${hafasperl}
   '';
 
   propagatedBuildInputs =

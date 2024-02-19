@@ -4,6 +4,7 @@ import asyncio
 import collections
 import json
 import sqlite3
+import shlex
 import subprocess
 from dataclasses import dataclass, astuple
 from datetime import datetime, timedelta
@@ -142,6 +143,7 @@ class User:
             (self.suggestions, self.discord_id),
         )
 
+
 @dataclass
 class City:
     "city names for use with format.shortened_name()"
@@ -156,6 +158,7 @@ class City:
         if row:
             return cls(**row)
         return None
+
 
 @dataclass
 class Trip:
@@ -369,7 +372,9 @@ class Trip:
 
         def write_hafas_data(journey_id):
             hafas = subprocess.run(
-                ["json-hafas.pl", journey_id], capture_output=True
+                " ".join(["json-hafas.pl", shlex.quote(journey_id)]),
+                capture_output=True,
+                shell=True,
             )
             status = {}
             try:

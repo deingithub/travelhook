@@ -215,7 +215,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 )
             desc += "\n"
 
-            if not continue_link :
+            if not continue_link:
                 desc += f"{LineEmoji.RAIL}\n"
 
         arrival = format_time(
