@@ -142,6 +142,20 @@ class User:
             (self.suggestions, self.discord_id),
         )
 
+@dataclass
+class City:
+    "city names for use with format.shortened_name()"
+    name: str
+
+    @classmethod
+    def find(cls, name):
+        row = DB.execute(
+            "SELECT name FROM cities WHERE name = ?",
+            (name,),
+        ).fetchone()
+        if row:
+            return cls(**row)
+        return None
 
 @dataclass
 class Trip:

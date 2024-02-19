@@ -98,9 +98,9 @@ def shortened_name(previous_name, this_name):
     if not mprev or not mthis:
         return this_name
 
-    if mprev["city"] == mthis["city"] and not mprev["station"] == mthis["station"]:
+    if mprev["city"] == mthis["city"] and DB.City.find(mprev["city"]):
         return mthis["station"]
-    elif not mprev["city"] == mthis["city"] and mprev["station"] == mthis["station"]:
+    elif mprev["station"] == mthis["station"] and DB.City.find(mprev["station"]):
         return mthis["city"]
 
     return this_name
@@ -211,8 +211,9 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             if length > 0:
                 desc += (
                     f" · {length:.1f}{'km+' if trip.hafas_data.get('beeline', True) else 'km'} · "
-                    f"{(length/(trip_time.total_seconds()/3600)):.1f}km/h\n"
+                    f"{(length/(trip_time.total_seconds()/3600)):.1f}km/h"
                 )
+            desc += "\n"
 
             if not continue_link :
                 desc += f"{LineEmoji.RAIL}\n"
