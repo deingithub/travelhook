@@ -21,8 +21,8 @@ if (my $status = $result->result) {
 		push(@polyline, {
 			lat=>$point->{lat},
 			lon=>$point->{lon},
-			eva=>$point->{eva},
-			name=>$point->{name}
+			eva=>$point->{eva} // JSON::null,
+			name=>$point->{name} // JSON::null
 		});
 	}
 	my @messages;
