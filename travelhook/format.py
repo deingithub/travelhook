@@ -205,6 +205,8 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 seconds=train["toStation"]["realTime"]
                 - train["fromStation"]["realTime"]
             )
+            if not trip_time:
+                trip_time += timedelta(seconds=30)
             desc += format_delta(trip_time)
 
             length = trip_length(trip)

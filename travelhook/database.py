@@ -372,9 +372,8 @@ class Trip:
 
         def write_hafas_data(journey_id):
             hafas = subprocess.run(
-                " ".join(["json-hafas.pl", shlex.quote(journey_id)]),
+                ["json-hafas.pl", journey_id],
                 capture_output=True,
-                shell=True,
             )
             status = {}
             try:

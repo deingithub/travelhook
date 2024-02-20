@@ -1008,9 +1008,8 @@ bot.tree.add_command(journey, guilds=servers)
 
 def scotty_journey(jid):
     hafas = subprocess.run(
-        " ".join(["json-hafas-oebb.pl", shlex.quote(jid)]),
+        ["json-hafas-oebb.pl", jid],
         capture_output=True,
-        shell=True,
     )
     status = {}
     try:
@@ -1022,9 +1021,8 @@ def scotty_journey(jid):
 
 def scotty_stationboard(station, time):
     hafas = subprocess.run(
-        " ".join(["json-hafas-oebb-stationboard.pl", shlex.quote(station), str(time)]),
+        ["json-hafas-oebb-stationboard.pl", station, str(time)],
         capture_output=True,
-        shell=True,
     )
     status = {}
     try:
@@ -1036,9 +1034,8 @@ def scotty_stationboard(station, time):
 
 def scotty_stopfinder(station):
     hafas = subprocess.run(
-        " ".join(["json-hafas-oebb-stopfinder.pl", shlex.quote(station)]),
+        ["json-hafas-oebb-stopfinder.pl", station],
         capture_output=True,
-        shell=True,
     )
     status = {}
     try:
@@ -1074,6 +1071,7 @@ class ScottyView(discord.ui.View):
             if str(option.value) == select.values[0]
         ][0]
         self.selected_train = self.trains["trains"][int(select.values[0])]
+        self.remove_item(self.select_destination)
         self.add_select_destination()
         await ia.edit_original_response(view=self)
 
@@ -1111,22 +1109,23 @@ class ScottyView(discord.ui.View):
         arrival_delay = 0
         if rt := self.selected_train["realtime"]:
             departure_rt = datetime.fromtimestamp(rt, tz=tz)
-            departure_delay = (departure_rt - departure).total_seconds() // 60
+            departure_delay =int((departure_rt - departure).total_seconds() / 60)
         if rt := self.selected_destination["rt_arr"]:
             arrival_rt = datetime.fromtimestamp(rt, tz=tz)
-            arrival_delay = (arrival_rt - arrival).total_seconds() // 60
+            arrival_delay = int((arrival_rt - arrival).total_seconds() / 60)
 
         trip_length = 0
+        full_route = [self.selected_origin] + self.stops_after[0 : destination_index + 1]
         for i, point in enumerate(
-            [self.selected_origin] + self.stops_after[0 : destination_index + 1]
+            full_route
         ):
-            if i == destination_index:
+            if i == destination_index + 1:
                 break
             trip_length += haversine(
                 (point["lat"], point["lon"]),
                 (
-                    self.stops_after[i + 1]["lat"],
-                    self.stops_after[i + 1]["lon"],
+                    full_route[i + 1]["lat"],
+                    full_route[i + 1]["lon"],
                 ),
             )
 
@@ -1137,10 +1136,13 @@ class ScottyView(discord.ui.View):
             self.selected_train["line"] = self.selected_train["line"][1:]
         if self.selected_train["type"] == "WLB":
             self.selected_train["line"] = ""
+        if self.selected_train["type"] == "S":
+            self.selected_train["type"] = "ATS"
 
         self.select_station.disabled = True
         self.select_train.disabled = True
         self.select_destination.disabled = True
+        await ia.edit_original_response(view=self)
         await manualtrip.callback(
             ia,
             self.selected_train["station"],
@@ -1217,7 +1219,7 @@ class ScottyView(discord.ui.View):
 async def scotty(
     ia,
     station_name: str,
-    request_time: typing.Optional[str] = datetime.now(tz=tz).isoformat(),
+    request_time: typing.Optional[str],
 ):
     "perform a manual checkin from a station covered by ÖBB HAFAS"
 
@@ -1225,6 +1227,9 @@ async def scotty(
     if not user:
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
+    if not request_time:
+        request_time = datetime.now(tz=tz).isoformat()
+
     await ia.response.defer(ephemeral=True)
     await ia.edit_original_response(
         content=f"### {OEBB_EMOJI} manual check-in",
