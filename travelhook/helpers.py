@@ -309,9 +309,16 @@ def trip_length(trip):
     if trip.hafas_data:
         trip_started = False
         for i, point in enumerate(trip.hafas_data["polyline"]):
-            if point["eva"] == trip.status["fromStation"]["uic"]:
+            if (
+                point["eva"] == trip.status["fromStation"]["uic"]
+                or point["name"] == trip.status["fromStation"]["name"]
+            ):
                 trip_started = True
-            if point["eva"] == trip.status["toStation"]["uic"]:
+            if (
+                point["eva"] == trip.status["toStation"]["uic"]
+                or point["name"] == trip.status["toStation"]["name"]
+                or i + 1 == len(trip.hafas_data["polyline"])
+            ):
                 break
             if trip_started:
                 trip_length += haversine(

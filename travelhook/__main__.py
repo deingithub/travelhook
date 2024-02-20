@@ -426,7 +426,7 @@ class TripActionsView(discord.ui.View):
             departure_delay,
             arrival_delay,
             "",
-            trip_length(self.trip)
+            trip_length(self.trip),
         )
 
 
@@ -1109,16 +1109,16 @@ class ScottyView(discord.ui.View):
         arrival_delay = 0
         if rt := self.selected_train["realtime"]:
             departure_rt = datetime.fromtimestamp(rt, tz=tz)
-            departure_delay =int((departure_rt - departure).total_seconds() / 60)
+            departure_delay = int((departure_rt - departure).total_seconds() / 60)
         if rt := self.selected_destination["rt_arr"]:
             arrival_rt = datetime.fromtimestamp(rt, tz=tz)
             arrival_delay = int((arrival_rt - arrival).total_seconds() / 60)
 
         trip_length = 0
-        full_route = [self.selected_origin] + self.stops_after[0 : destination_index + 1]
-        for i, point in enumerate(
-            full_route
-        ):
+        full_route = [self.selected_origin] + self.stops_after[
+            0 : destination_index + 1
+        ]
+        for i, point in enumerate(full_route):
             if i == destination_index + 1:
                 break
             trip_length += haversine(
