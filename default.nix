@@ -15,10 +15,10 @@ let
 };
     hafas-m = perlPackages.buildPerlModule {
         pname = "Travel-Status-DE-DeutscheBahn";
-        version = "5.04";
+        version = "5.05";
         src = fetchurl {
-          url = "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DeutscheBahn-5.04.tar.gz";
-          hash = "sha256-1NW3d/X8VS86bjx2+9ML+xaLeCAmXPdSg6nBD9cV/E0=";
+          url = "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DeutscheBahn-5.05.tar.gz";
+          hash = "sha256-FCrDL4IyqJio1YezpXX55m+IXsFtOXHMkdiuRh9aymE=";
         };
         doCheck = false;
         buildInputs = with perlPackages; [ FileSlurp TestCompile TestPod ];

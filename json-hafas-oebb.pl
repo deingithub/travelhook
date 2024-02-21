@@ -22,6 +22,7 @@ if (my $status = $result->result) {
 			lat=>$point->{lat},
 			lon=>$point->{lon},
 			eva=>$point->{eva},
+			name=>$point->{name}
 		});
 	}
 	my @route;
