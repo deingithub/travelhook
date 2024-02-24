@@ -336,8 +336,8 @@ def fetch_headsign(status):
     "try to fetch a train headsign or destination name from HAFAS"
 
     if cached := DB.DB.execute(
-        "SELECT headsign, travelynx_status FROM trips WHERE journey_id = ? or journey_id like '?%''",
-        (zugid(status), status["train"]["id"]),
+        "SELECT headsign, travelynx_status FROM trips WHERE journey_id = ? or journey_id like ?",
+        (zugid(status), status["train"]["id"] + '%') ,
     ).fetchone():
         return (
             json.loads(cached["travelynx_status"])["train"].get("fakeheadsign")
