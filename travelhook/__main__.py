@@ -1346,9 +1346,11 @@ async def pleasegivemetraintypes(ia):
     **Hamburg** (`U1h`…`U4h`) {' '.join([train_type_emoji[tt] for tt in hamburg])}
     """
     transit_lines_b = f"""
-    **Hannover** (`Ü1`…`Ü17`) {' '.join([train_type_emoji[tt] for tt in üstra])}
+    **Hannover** (`Ü1`…`Ü17`) <:UE:1189298047784591431> {' '.join([train_type_emoji[tt][25:] for tt in üstra])}
     **München** (`U1m`…`U8m`) {' '.join([train_type_emoji[tt] for tt in münchen])}
     **Nürnberg** (`U1n`…`U3n`) {' '.join([train_type_emoji[tt] for tt in nürnberg])}
+    """
+    transit_lines_c = f"""
     **Wien** (`U1`…`U6`, `WLB`) {' '.join([train_type_emoji[tt] for tt in wien])}
     """
 
@@ -1367,6 +1369,7 @@ async def pleasegivemetraintypes(ia):
         .add_field(name="Poland", value=render_emojis(poland))
         .add_field(name="Transit line numbers", inline=False, value=transit_lines_a)
         .add_field(name="… continued", inline=False, value=transit_lines_b)
+        .add_field(name="… continued", inline=False, value=transit_lines_c)
     )
 
     if s := set(train_type_emoji.keys()) - set(
