@@ -334,14 +334,17 @@ def trip_length(trip):
 
 def fetch_headsign(status):
     "try to fetch a train headsign or destination name from HAFAS"
-    cached = DB.DB.execute(
-        "SELECT headsign, travelynx_status FROM trips WHERE journey_id = ?",
-        (zugid(status),),
-    ).fetchone()
-    if cached:
-        return cached["headsign"] or json.loads(cached["travelynx_status"])[
-            "train"
-        ].get("fakeheadsign", "?")
+
+    if cached := DB.DB.execute(
+        "SELECT headsign, travelynx_status FROM trips WHERE journey_id = ? or journey_id like '?%''",
+        (zugid(status), status["train"]["id"]),
+    ).fetchone():
+        return (
+            json.loads(cached["travelynx_status"])["train"].get("fakeheadsign")
+            or cached["headsign"]
+            or "?"
+        )
+    return "?"
 
 
 def random_id():
