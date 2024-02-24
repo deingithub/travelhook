@@ -302,7 +302,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         for status in statuses
     )
     desc += (
-        f"➔ {len(statuses)} trips · {format_delta(total_time)} "
+        f"➔ {len(statuses)} trip{'' if len(statuses) == 1 else 's'} · {format_delta(total_time)} "
         f"({format_delta(journey_time)} in transit) · "
         f"{sum(lengths):.1f}km{'+' if includes_beelines else ''} · "
         f"{sum(lengths)/(total_time.total_seconds()/3600):.1f}km/h"
