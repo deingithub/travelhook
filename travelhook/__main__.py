@@ -169,9 +169,7 @@ async def receive(bot):
                     ):
                         msg = await message.fetch(bot)
                         await msg.edit(
-                            embed=format_travelynx(
-                                bot, userid, [trip.status for trip in current_trips]
-                            ),
+                            embed=format_travelynx(bot, userid, current_trips),
                             view=None,
                         )
 
@@ -223,16 +221,14 @@ async def receive(bot):
                         embed=format_travelynx(
                             bot,
                             userid,
-                            [trip.status for trip in current_trips],
+                            current_trips,
                             continue_link=continue_link,
                         ),
                         view=TripActionsView(current_trips[-1]),
                     )
                 else:
                     message = await channel.send(
-                        embed=format_travelynx(
-                            bot, userid, [trip.status for trip in current_trips]
-                        ),
+                        embed=format_travelynx(bot, userid, current_trips),
                         view=TripActionsView(current_trips[-1]),
                     )
                     DB.Message(
@@ -249,7 +245,7 @@ async def receive(bot):
                             embed=format_travelynx(
                                 bot,
                                 userid,
-                                [trip.status for trip in current_trips[0:-1]],
+                                current_trips[0:-1],
                                 continue_link=message.jump_url,
                             ),
                             view=None,
@@ -322,9 +318,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                 current_trips = DB.Trip.find_current_trips_for(member.id)
 
                 await ia.edit_original_response(
-                    embed=format_travelynx(
-                        bot, member.id, [trip.status for trip in current_trips]
-                    ),
+                    embed=format_travelynx(bot, member.id, current_trips),
                     view=TripActionsView(current_trips[-1]),
                 )
 
@@ -381,15 +375,11 @@ class TripActionsView(discord.ui.View):
                     data = await r.json()
                     if data["checkedIn"] and self.trip.journey_id == zugid(data):
                         handle_status_update(self.trip.user_id, "update", data)
-                        current_statuses = [
-                            trip.status
-                            for trip in DB.Trip.find_current_trips_for(
-                                self.trip.user_id
-                            )
-                        ]
                         await ia.response.edit_message(
                             embed=format_travelynx(
-                                bot, self.trip.user_id, current_statuses
+                                bot,
+                                self.trip.user_id,
+                                DB.Trip.find_current_trips_for(self.trip.user_id),
                             ),
                             view=self,
                         )
@@ -787,8 +777,8 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
             headers={"Authorization": f"Bearer {user.token_webhook}"},
         ) as r:
             if r.status == 200:
-                train_type, train_line, link = train_presentation(trip.status)
-                headsign = fetch_headsign(trip.status)
+                train_type, train_line, link = train_presentation(trip.status())
+                headsign = fetch_headsign(trip.get_unpatched_status())
                 train_line = f"**{train_line}**" if train_line else ""
                 dep_delay = format_time(
                     trip.status["fromStation"]["scheduledTime"],

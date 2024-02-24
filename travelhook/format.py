@@ -106,7 +106,7 @@ def shortened_name(previous_name, this_name):
     return this_name
 
 
-def format_travelynx(bot, userid, statuses, continue_link=None):
+def format_travelynx(bot, userid, trips, continue_link=None):
     """the actual formatting function called by message sends and edits
     to render an embed describing the current journey"""
     user = bot.get_user(userid)
@@ -126,13 +126,14 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             return statuses[current_index - 1]
         return None
 
-    for i, train in enumerate(statuses):
+    for i, trip in enumerate(trips):
+        train = trip.status
         departure = format_time(
             train["fromStation"]["scheduledTime"], train["fromStation"]["realTime"]
         )
         # compact layout for completed trips
-        if continue_link and _next(statuses, i):
-            if not _prev(statuses, i):
+        if continue_link and _next(trips, i):
+            if not _prev(trips, i):
                 name = train["fromStation"]["name"]
                 prefix_to_add = replace_city_suffix_with_prefix.get(
                     name.split(", ")[-1]
@@ -148,7 +149,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             if train_line:
                 desc += f" **{train_line}**"
             # draw an arrow to the next trip in the compact section until the last one in the section
-            if _next(statuses, i + 1):
+            if _next(trips, i + 1):
                 desc += " → "
             else:
                 desc += "\n"
@@ -157,15 +158,16 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
 
         # regular layout for full journey display
         # if we're the first trip of the journey, draw a journey start icon
-        if not _prev(statuses, i):
+        if not _prev(trips, i):
             name = train["fromStation"]["name"]
             prefix_to_add = replace_city_suffix_with_prefix.get(name.split(", ")[-1])
             if prefix_to_add:
                 name = f"{prefix_to_add} {', '.join(name.split(', ')[0:-1])}"
             desc += f"{LineEmoji.START}{departure} **{name}**\n"
-        elif prev_train := _prev(statuses, i):
+        elif prev := _prev(trips, i):
+            prev_train = prev.status
             # if we've just drawn the last compact mode entry, draw a station
-            if continue_link and not _next(statuses, i):
+            if continue_link and not _next(trips, i):
                 desc += f"{LineEmoji.CHANGE_SAME_STOP}{departure} **{train['fromStation']['name']}**\n"
             # if our trip starts on a different station than the last ended, draw a new station icon
             elif not is_one_line_change(prev_train["toStation"], train["fromStation"]):
@@ -184,7 +186,9 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
                 pass
 
         train_type, train_line, route_link = train_presentation(train)
-        headsign = shortened_name(train["fromStation"]["name"], fetch_headsign(train))
+        headsign = shortened_name(
+            train["fromStation"]["name"], fetch_headsign(trip.get_unpatched_status())
+        )
         desc += (
             LineEmoji.RAIL
             + LineEmoji.SPACER
@@ -197,8 +201,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             + (" ●\n" if train["comment"] else "\n")
         )
         # add extra information at last trip in the embed
-        if not _next(statuses, i):
-            trip = DB.Trip.find(userid, zugid(train))
+        if not _next(trips, i):
             desc += f"{LineEmoji.RAIL} {LineEmoji.SPACER}➔ "
 
             trip_time = timedelta(
@@ -227,10 +230,11 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
             train["fromStation"]["name"], train["toStation"]["name"]
         )
         # if we're on the last trip of the journey, draw an end icon
-        if not _next(statuses, i):
+        if not _next(trips, i):
             desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
         # draw a transfer instead
-        elif next_train := _next(statuses, i):
+        elif next := _next(trips, i):
+            next_train = next.status
             # if we don't leave the station to change, draw a single change line
             if is_one_line_change(train["toStation"], next_train["fromStation"]):
                 station_name = (
@@ -271,7 +275,7 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
 
     # end of format loop, finish up embed
 
-    if comment := statuses[-1]["comment"]:
+    if comment := trips[-1].status["comment"]:
         if len(comment) >= 500:
             comment = comment[0:500] + "…"
         desc += f"> {comment}\n"
@@ -280,29 +284,35 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         desc += f"**Weiterfahrt ➤** {continue_link}\n"
     else:
         to_time = format_time(
-            statuses[-1]["toStation"]["scheduledTime"],
-            statuses[-1]["toStation"]["realTime"],
+            trips[-1].status["toStation"]["scheduledTime"],
+            trips[-1].status["toStation"]["realTime"],
             True,
         )
-        desc += f"\n**➤ {statuses[-1]['toStation']['name']} {to_time}**\n"
+        desc += f"\n**➤ {trips[-1].status['toStation']['name']} {to_time}**\n"
 
     total_time = timedelta(
-        seconds=statuses[-1]["toStation"]["realTime"]
-        - statuses[0]["fromStation"]["realTime"]
+        seconds=trips[-1].status["toStation"]["realTime"]
+        - trips[0].status["fromStation"]["realTime"]
     )
     journey_time = timedelta(
         seconds=sum(
-            train["toStation"]["realTime"] - train["fromStation"]["realTime"]
-            for train in statuses
+            trip.status["toStation"]["realTime"]
+            - trip.status["fromStation"]["realTime"]
+            for trip in trips
         )
     )
-    lengths = [trip_length(DB.Trip.find(user.id, zugid(status))) for status in statuses]
+    lengths = [
+        trip_length(DB.Trip.find(user.id, zugid(trip.get_unpatched_status())))
+        for trip in trips
+    ]
     includes_beelines = any(l == 0 for l in lengths) or any(
-        DB.Trip.find(user.id, zugid(status)).hafas_data.get("beeline", True)
-        for status in statuses
+        DB.Trip.find(user.id, zugid(trip.get_unpatched_status())).hafas_data.get(
+            "beeline", True
+        )
+        for trip in trips
     )
     desc += (
-        f"➔ {len(statuses)} trip{'' if len(statuses) == 1 else 's'} · {format_delta(total_time)} "
+        f"➔ {len(trips)} {'trip' if len(trips) == 1 else 'trips'} · {format_delta(total_time)} "
         f"({format_delta(journey_time)} in transit) · "
         f"{sum(lengths):.1f}km{'+' if includes_beelines else ''} · "
         f"{sum(lengths)/(total_time.total_seconds()/3600):.1f}km/h"
@@ -312,20 +322,22 @@ def format_travelynx(bot, userid, statuses, continue_link=None):
         description=desc,
         color=color,
     ).set_author(
-        name=f"{user.name} {'war' if not statuses[-1]['checkedIn'] else 'ist'} unterwegs",
+        name=f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'} unterwegs",
         icon_url=user.avatar.url,
     )
 
-    embed = sillies(statuses, embed)
+    embed = sillies(trips, embed)
 
     return embed
 
 
-def sillies(statuses, embed):
+def sillies(trips, embed):
     "do funny things with the embed once it's done"
 
     sortkey = lambda tup: tup[0] + tup[1]
-    train_lines = sorted([train_presentation(train) for train in statuses], key=sortkey)
+    train_lines = sorted(
+        [train_presentation(trip.status) for trip in trips], key=sortkey
+    )
     grouped = []
     for _, group in groupby(train_lines, key=sortkey):
         grouped.append(list(group))
@@ -334,7 +346,7 @@ def sillies(statuses, embed):
         train_type, train_line, _ = grouped[0][0]
         embed.description += f"\n### {len(grouped[0])}× {get_train_emoji(train_type)} {train_line} COMBO!"
 
-    status = statuses[-1]
+    status = trips[-1].status
     stations = status["fromStation"]["name"] + status["toStation"]["name"]
     if "Durlacher Tor" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/6WhzdSp.png")
