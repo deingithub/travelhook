@@ -370,9 +370,9 @@ class Trip:
     def fetch_hafas_data(self):
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
 
-        def write_hafas_data(journey_id):
+        def write_hafas_data(departureboard_entry):
             hafas = subprocess.run(
-                ["json-hafas.pl", journey_id],
+                ["json-hafas.pl", departureboard_entry.id],
                 capture_output=True,
             )
             status = {}
@@ -387,8 +387,13 @@ class Trip:
             else:
                 self.hafas_data = status
                 DB.execute(
-                    "UPDATE trips SET hafas_data=? WHERE user_id = ? AND journey_id = ?",
-                    (json.dumps(status), self.user_id, self.journey_id),
+                    "UPDATE trips SET hafas_data=?, headsign=? WHERE user_id = ? AND journey_id = ?",
+                    (
+                        json.dumps(status),
+                        departureboard_entry.direction,
+                        self.user_id,
+                        self.journey_id,
+                    ),
                 )
 
         if "travelhookfaked" in self.status["train"]["id"] or "id" in self.hafas_data:
@@ -397,9 +402,6 @@ class Trip:
         jid = self.status["train"]["hafasId"]
         if not jid and "|" in self.status["train"]["id"]:
             jid = self.status["train"]["id"]
-        if jid:
-            write_hafas_data(jid)
-            return
 
         def check_same_train(hafas_name, train):
             hafas_name = hafas_name.replace(" ", "")
@@ -421,11 +423,14 @@ class Trip:
             candidates2 = [
                 c
                 for c in candidates
-                if check_same_train(c.name, self.status["train"])
-                and c.dateTime == departure
+                if (jid and c.id == jid)
+                or (
+                    check_same_train(c.name, self.status["train"])
+                    and c.dateTime == departure
+                )
             ]
             if len(candidates2) == 1:
-                write_hafas_data(candidates2[0].id)
+                write_hafas_data(candidates2[0])
                 return
 
             for candidate in candidates2:
@@ -448,7 +453,7 @@ class Trip:
                     )
                     for stop in stops
                 ):
-                    write_hafas_data(candidate.id)
+                    write_hafas_data(candidate)
                     return
                 else:
                     print_leg = lambda c: f"{c.id} {c.name} {c.direction} {c.dateTime}"
