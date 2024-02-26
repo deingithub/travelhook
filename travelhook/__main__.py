@@ -777,7 +777,7 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
             headers={"Authorization": f"Bearer {user.token_webhook}"},
         ) as r:
             if r.status == 200:
-                train_type, train_line, link = train_presentation(trip.status())
+                train_type, train_line, link = train_presentation(trip.status)
                 headsign = fetch_headsign(trip.get_unpatched_status())
                 train_line = f"**{train_line}**" if train_line else ""
                 dep_delay = format_time(

@@ -335,7 +335,7 @@ def trip_length(trip):
 def fetch_headsign(status):
     "try to fetch a train headsign or destination name from HAFAS"
 
-    if fhs := status.get("fakeheadsign"):
+    if fhs := status["train"].get("fakeheadsign"):
         return fhs
 
     if cached := DB.DB.execute(
