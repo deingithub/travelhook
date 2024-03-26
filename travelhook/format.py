@@ -217,7 +217,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
 
             desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
 
-            if composition := trip.status["composition"]:
+            if composition := trip.status.get("composition"):
                 desc += f"{LineEmoji.COMPOSITION} {composition}\n"
 
             desc += f"{LineEmoji.TRIP_SPEED} {format_delta(trip_time)}"

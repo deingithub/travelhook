@@ -419,7 +419,7 @@ class TripActionsView(discord.ui.View):
             "",
             trip_length(self.trip),
             self.trip.status.get("composition"),
-            True
+            True,
         )
 
 
@@ -594,7 +594,7 @@ async def manualtrip(
     comment: typing.Optional[str] = "",
     distance: typing.Optional[float] = None,
     composition: typing.Optional[str] = None,
-    do_not_format_composition: bool = False
+    do_not_format_composition: bool = False,
 ):
     "Manually add a check-in not available on HAFAS/IRIS to your journey."
     user = DB.User.find(discord_id=ia.user.id)
