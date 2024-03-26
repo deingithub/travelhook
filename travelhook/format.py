@@ -217,6 +217,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
 
             desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
 
+            if composition := trip.status["composition"]:
+                desc += f"{LineEmoji.COMPOSITION} {composition}\n"
+
             desc += f"{LineEmoji.TRIP_SPEED} {format_delta(trip_time)}"
             length = trip_length(trip)
             if length > 0:
@@ -225,7 +228,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     f"{(length/(trip_time.total_seconds()/3600)):.0f}km/h"
                 )
             desc += "\n"
-            if comment := trips[-1].status["comment"]:
+            if comment := trip.status["comment"]:
                 if len(comment) >= 500:
                     comment = comment[0:500] + "…"
                 desc += f"{LineEmoji.COMMENT} _{comment}_\n"

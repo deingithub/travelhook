@@ -18,6 +18,7 @@ import tomli_w
 from . import database as DB
 from .format import format_travelynx
 from .helpers import (
+    format_composition_element,
     format_time,
     get_train_emoji,
     is_token_valid,
@@ -417,6 +418,8 @@ class TripActionsView(discord.ui.View):
             arrival_delay,
             "",
             trip_length(self.trip),
+            self.trip.status.get("composition"),
+            True
         )
 
 
@@ -590,6 +593,8 @@ async def manualtrip(
     arrival_delay: typing.Optional[int] = 0,
     comment: typing.Optional[str] = "",
     distance: typing.Optional[float] = None,
+    composition: typing.Optional[str] = None,
+    do_not_format_composition: bool = False
 ):
     "Manually add a check-in not available on HAFAS/IRIS to your journey."
     user = DB.User.find(discord_id=ia.user.id)
@@ -642,6 +647,14 @@ async def manualtrip(
         "distance": distance,
         "visibility": {"desc": "public", "level": 100},
     }
+    if do_not_format_composition:
+        status["composition"] = composition
+    elif composition:
+        status["composition"] = ""
+        composition = composition.split("+")
+        status["composition"] = " + ".join(
+            [format_composition_element(unit.strip()) for unit in composition]
+        )
     webhook = {"reason": "checkout", "status": status}
     async with ClientSession() as session:
         async with session.post(
@@ -828,6 +841,8 @@ async def edit(
     headsign: typing.Optional[str],
     comment: typing.Optional[str],
     distance: typing.Optional[float],
+    composition: typing.Optional[str],
+    do_not_format_composition: bool = False,
 ):
     "manually overwrite some data of your current trip. you will be asked to confirm your changes."
     user = DB.User.find(discord_id=ia.user.id)
@@ -888,6 +903,15 @@ async def edit(
 
     prepare_patch["comment"] = comment
     prepare_patch["distance"] = distance
+
+    if do_not_format_composition:
+        prepare_patch["composition"] = composition
+    elif composition:
+        prepare_patch["composition"] = ""
+        composition = composition.split("+")
+        prepare_patch["composition"] = " + ".join(
+            [format_composition_element(unit.strip()) for unit in composition]
+        )
 
     newpatch = DB.DB.execute(
         "SELECT json_patch(?,?) AS newpatch",

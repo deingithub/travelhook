@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import json
 import random
+import re
 import string
 import traceback
 
@@ -301,6 +302,23 @@ def train_presentation(data):
     return (train_type, train_line, link)
 
 
+def format_composition_element(element):
+    composition_regex = re.compile(
+        r"(?P<count>\d+x)? ?((?P<class>\d{3,4}) ?(?P<number>[\d-]{,5}) ?)?(?P<name>.*)"
+    )
+    if match := composition_regex.match(element):
+        out = ""
+        if count := match["count"]:
+            out += count[:-1] + "× "
+        if numbers := match[2]:
+            out += f"**{match['class']}** {match['number']} "
+        if name := match["name"]:
+            out += f"_{name}_"
+        return out
+
+    return element
+
+
 def trip_length(trip):
     if dist := trip.status.get("distance"):
         return dist
@@ -369,7 +387,7 @@ class LineEmoji:  # pylint: disable=too-few-public-methods
     COMPACT_JOURNEY_START = "<:A3:1152995610216104077>"
     COMPACT_JOURNEY = "<:A4:1152930006478106724>"
     SPACER = " "
-    COACH = "<:wr:1222221269487976520>"
+    COMPOSITION = "<:wr:1222221269487976520>"
     TRIP_SPEED = "<:vm:1222222144075862067>"
     TRIP_SUM = "<:sum:1222225548827295794>"
     DESTINATION = "<:to:1222247891947622512>"
