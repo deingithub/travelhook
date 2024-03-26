@@ -369,6 +369,11 @@ class LineEmoji:  # pylint: disable=too-few-public-methods
     COMPACT_JOURNEY_START = "<:A3:1152995610216104077>"
     COMPACT_JOURNEY = "<:A4:1152930006478106724>"
     SPACER = " "
+    COACH = "<:wr:1222221269487976520>"
+    TRIP_SPEED = "<:vm:1222222144075862067>"
+    TRIP_SUM = "<:sum:1222225548827295794>"
+    DESTINATION = "<:to:1222247891947622512>"
+    COMMENT = "<:com:1222253020981624915>"
 
 
 train_type_emoji = {

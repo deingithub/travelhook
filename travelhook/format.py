@@ -198,31 +198,8 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                 if route_link
                 else f" **{train_line} » {headsign}** ✱"
             )
-            + (" ●\n" if train["comment"] else "\n")
         )
-        # add extra information at last trip in the embed
-        if not _next(trips, i):
-            desc += f"{LineEmoji.RAIL} {LineEmoji.SPACER}➔ "
-
-            trip_time = timedelta(
-                seconds=train["toStation"]["realTime"]
-                - train["fromStation"]["realTime"]
-            )
-            if not trip_time:
-                trip_time += timedelta(seconds=30)
-            desc += format_delta(trip_time)
-
-            length = trip_length(trip)
-            if length > 0:
-                desc += (
-                    f" · {length:.1f}{'km+' if trip.hafas_data.get('beeline', True) else 'km'} · "
-                    f"{(length/(trip_time.total_seconds()/3600)):.1f}km/h"
-                )
-            desc += "\n"
-
-            if not continue_link:
-                desc += f"{LineEmoji.RAIL}\n"
-
+        desc += " ●\n" if train["comment"] else "\n"
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
         )
@@ -231,7 +208,28 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         )
         # if we're on the last trip of the journey, draw an end icon
         if not _next(trips, i):
+            trip_time = timedelta(
+                seconds=train["toStation"]["realTime"]
+                - train["fromStation"]["realTime"]
+            )
+            if not trip_time:
+                trip_time += timedelta(seconds=30)
+
             desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
+
+            desc += f"{LineEmoji.TRIP_SPEED} {format_delta(trip_time)}"
+            length = trip_length(trip)
+            if length > 0:
+                desc += (
+                    f" · {length:.1f}{'km+' if trip.hafas_data.get('beeline', True) else 'km'} · "
+                    f"{(length/(trip_time.total_seconds()/3600)):.0f}km/h"
+                )
+            desc += "\n"
+            if comment := trips[-1].status["comment"]:
+                if len(comment) >= 500:
+                    comment = comment[0:500] + "…"
+                desc += f"{LineEmoji.COMMENT} _{comment}_\n"
+
         # draw a transfer instead
         elif next := _next(trips, i):
             next_train = next.status
@@ -275,20 +273,15 @@ def format_travelynx(bot, userid, trips, continue_link=None):
 
     # end of format loop, finish up embed
 
-    if comment := trips[-1].status["comment"]:
-        if len(comment) >= 500:
-            comment = comment[0:500] + "…"
-        desc += f"> {comment}\n"
-
     if continue_link:
-        desc += f"**Weiterfahrt ➤** {continue_link}\n"
+        desc += f"\n{LineEmoji.DESTINATION} {continue_link}"
     else:
         to_time = format_time(
             trips[-1].status["toStation"]["scheduledTime"],
             trips[-1].status["toStation"]["realTime"],
             True,
         )
-        desc += f"\n**➤ {trips[-1].status['toStation']['name']} {to_time}**\n"
+        desc += f"\n{LineEmoji.DESTINATION} **{trips[-1].status['toStation']['name']} {to_time}**\n"
 
     total_time = timedelta(
         seconds=trips[-1].status["toStation"]["realTime"]
@@ -312,10 +305,10 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         for trip in trips
     )
     desc += (
-        f"➔ {len(trips)} {'trip' if len(trips) == 1 else 'trips'} · {format_delta(total_time)} "
-        f"({format_delta(journey_time)} in transit) · "
+        f"{LineEmoji.TRIP_SUM} {len(trips)} {'trip' if len(trips) == 1 else 'trips'} · "
+        f"{format_delta(total_time)} ({format_delta(journey_time)} in transit) · "
         f"{sum(lengths):.1f}km{'+' if includes_beelines else ''} · "
-        f"{sum(lengths)/(total_time.total_seconds()/3600):.1f}km/h"
+        f"{sum(lengths)/(total_time.total_seconds()/3600):.0f}km/h"
     )
 
     embed = discord.Embed(
