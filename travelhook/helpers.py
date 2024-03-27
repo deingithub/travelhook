@@ -314,7 +314,7 @@ def format_composition_element(element):
             out += f"**{match['class']}** {match['number']} "
         if name := match["name"]:
             out += f"_{name}_"
-        return out
+        return out.strip()
 
     return element
 
@@ -387,11 +387,11 @@ class LineEmoji:  # pylint: disable=too-few-public-methods
     COMPACT_JOURNEY_START = "<:A3:1152995610216104077>"
     COMPACT_JOURNEY = "<:A4:1152930006478106724>"
     SPACER = " "
-    COMPOSITION = "<:wr:1222221269487976520>"
-    TRIP_SPEED = "<:vm:1222222144075862067>"
-    TRIP_SUM = "<:sum:1222225548827295794>"
-    DESTINATION = "<:to:1222247891947622512>"
-    COMMENT = "<:com:1222253020981624915>"
+    COMPOSITION = "<:wr:1222613801472622623>"
+    TRIP_SPEED = "<:trip:1222616284253130873>"
+    TRIP_SUM = "<:sum:1222616286291562558>"
+    DESTINATION = "<:to:1222613802873520189>"
+    COMMENT = "<:note:1222613807507968121>"
 
 
 train_type_emoji = {

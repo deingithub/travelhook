@@ -277,7 +277,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
     # end of format loop, finish up embed
 
     if continue_link:
-        desc += f"\n{LineEmoji.DESTINATION} {continue_link}"
+        desc += f"\n{LineEmoji.DESTINATION} {continue_link}\n"
     else:
         to_time = format_time(
             trips[-1].status["toStation"]["scheduledTime"],
