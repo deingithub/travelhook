@@ -16,6 +16,7 @@ import tomli
 import tomli_w
 
 from . import database as DB
+from . import oebb_wr
 from .format import format_travelynx
 from .helpers import (
     format_composition_element,
@@ -63,7 +64,7 @@ async def on_ready():
     print(f"logged in as {bot.user}")
 
 
-def handle_status_update(userid, reason, status):
+async def handle_status_update(userid, reason, status):
     """update trip data in the database, also starting a new journey if the last data
     we have is too old or distant for this to be a changeover"""
 
@@ -116,6 +117,7 @@ def handle_status_update(userid, reason, status):
     trip.maybe_fix_circle_line()
     trip.maybe_fix_1970()
     trip.fetch_headsign()
+    await trip.get_oebb_composition()
 
 
 async def receive(bot):
@@ -188,7 +190,7 @@ async def receive(bot):
                 )
 
             # update database to maintain trip data
-            handle_status_update(userid, data["reason"], data["status"])
+            await handle_status_update(userid, data["reason"], data["status"])
 
             current_trips = DB.Trip.find_current_trips_for(user.discord_id)
 
@@ -315,7 +317,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
                     )
                     return
 
-                handle_status_update(member.id, "update", status)
+                await handle_status_update(member.id, "update", status)
                 current_trips = DB.Trip.find_current_trips_for(member.id)
 
                 await ia.edit_original_response(
@@ -375,7 +377,7 @@ class TripActionsView(discord.ui.View):
                 if r.status == 200:
                     data = await r.json()
                     if data["checkedIn"] and self.trip.journey_id == zugid(data):
-                        handle_status_update(self.trip.user_id, "update", data)
+                        await handle_status_update(self.trip.user_id, "update", data)
                         await ia.response.edit_message(
                             embed=format_travelynx(
                                 bot,

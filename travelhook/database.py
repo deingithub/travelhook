@@ -15,7 +15,8 @@ import traceback
 import discord
 from pyhafas.types.fptf import Stopover
 
-from .helpers import zugid, hafas, tz, replace_headsign
+from .helpers import zugid, hafas, tz, replace_headsign, format_composition_element
+from . import oebb_wr
 
 DB = None
 
@@ -515,6 +516,32 @@ class Trip:
             "UPDATE trips SET headsign=? WHERE user_id = ? AND journey_id = ?",
             (self.headsign, self.user_id, self.journey_id),
         )
+
+    async def get_oebb_composition(self):
+        if "composition" in self.status:
+            return
+        composition_text = None
+        if (
+            station_no := oebb_wr.get_station_no(self.status["fromStation"]["name"])
+        ) and (
+            composition := await oebb_wr.get_composition(
+                self.status["train"]["no"],
+                station_no,
+                datetime.fromtimestamp(self.status["fromStation"]["realTime"], tz=tz),
+            )
+        ):
+            composition_text = " + ".join(
+                [format_composition_element(unit["class_name"]) for unit in composition]
+            )
+
+            newpatch = DB.execute(
+                "SELECT json_patch(?,?) AS newpatch",
+                (
+                    json.dumps({"composition": composition_text}),
+                    json.dumps(self.status_patch),
+                ),
+            ).fetchone()["newpatch"]
+            self.write_patch(json.loads(newpatch))
 
 
 @dataclass

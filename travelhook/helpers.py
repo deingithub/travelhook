@@ -304,7 +304,7 @@ def train_presentation(data):
 
 def format_composition_element(element):
     composition_regex = re.compile(
-        r"(?P<count>\d+x)? ?((?P<class>\d{3,4}) ?(?P<number>[\d-]{,5}) ?)?(?P<name>.*)"
+        r"(?P<count>\d+x)? ?((?P<class>\d{3,4}) ?(?P<number>[\dx-]{,5}) ?)?(?P<name>.*)"
     )
     if match := composition_regex.match(element):
         out = ""
