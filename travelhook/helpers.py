@@ -659,6 +659,7 @@ not_registered_embed = discord.Embed(
     "If you want to fix this minor oversight, use **/register** today!",
 )
 
+db_replace_group_classes = {"808": "402", "812": "412"}
 
 # this is specifically because Knielinger Allee/Städt. Klinikum, Karlsruhe is very long and doesn't fit in one line
 # but look how maintainable this is, you could add any city you like

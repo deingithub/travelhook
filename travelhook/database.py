@@ -15,7 +15,14 @@ import traceback
 import discord
 from pyhafas.types.fptf import Stopover
 
-from .helpers import zugid, hafas, tz, replace_headsign, format_composition_element
+from .helpers import (
+    zugid,
+    hafas,
+    tz,
+    replace_headsign,
+    format_composition_element,
+    db_replace_group_classes,
+)
 from . import oebb_wr
 
 DB = None
@@ -517,9 +524,98 @@ class Trip:
             (self.headsign, self.user_id, self.journey_id),
         )
 
+    def get_db_composition(self):
+        if "composition" in self.status:
+            return
+        if not self.status["train"]["no"]:
+            return
+        if not self.status["fromStation"]["uic"] or not (
+            8000000 < self.status["fromStation"]["uic"] < 8100000
+        ):
+            return
+
+        composition = []
+        departure = datetime.fromtimestamp(
+            self.status["fromStation"]["scheduledTime"], tz=tz
+        )
+        db_wr = subprocess.run(
+            [
+                "json-db-composition.pl",
+                self.status["train"]["no"],
+                f"{departure:%Y%m%d%H%M}",
+            ],
+            capture_output=True,
+        )
+        status = {}
+        try:
+            status = json.loads(db_wr.stdout)
+        except:  # pylint: disable=bare-except
+            print(f"db_wr perl broke:\n{db_wr.stdout} {db_wr.stderr}")
+            traceback.print_exc()
+
+        print(status)
+        if "errstr" in status:
+            print(f"db_wr perl broke:\n{status}")
+        else:
+            for group in status["groups"]:
+                # multiple units
+                if all(wagon["uic_id"][0] == "9" for wagon in group):
+                    group_class = group[0]["uic_id"][5:8]
+                    group_class = db_replace_group_classes.get(group_class, group_class)
+                    group_number = sorted(
+                        [
+                            int(wagon["uic_id"][8:11])
+                            for wagon in group
+                            if wagon["uic_id"][5:8] == group_class
+                        ]
+                    )[0]
+                    composition.append(f"{group_class} {group_number:03}")
+                else:
+                    same_type_counter = [0, ""]
+                    for wagon in group:
+                        if wagon["uic_id"][0] in ("9", "L"):
+                            if len(wagon["uic_id"]) == 12:
+                                composition.append(
+                                    f"{wagon['uic_id'][5:8]} {wagon['uic_id'][8:11]}"
+                                )
+                            else:
+                                composition.append(wagon["uic_id"])
+                            continue
+                        elif same_type_counter[1] == wagon["type"]:
+                            same_type_counter[0] += 1
+                        else:
+                            if same_type_counter[0] == 1:
+                                composition.append(same_type_counter[1])
+                            elif same_type_counter[0]:
+                                composition.append(
+                                    f"{same_type_counter[0]}x {same_type_counter[1]}"
+                                )
+                            same_type_counter = [1, wagon["type"]]
+                    if same_type_counter[0] == 1:
+                        composition.append(same_type_counter[1])
+                    elif same_type_counter[0]:
+                        composition.append(
+                            f"{same_type_counter[0]}x {same_type_counter[1]}"
+                        )
+
+            composition_text = " + ".join(
+                [format_composition_element(unit) for unit in composition]
+            )
+            newpatch = DB.execute(
+                "SELECT json_patch(?,?) AS newpatch",
+                (
+                    json.dumps({"composition": composition_text}),
+                    json.dumps(self.status_patch),
+                ),
+            ).fetchone()["newpatch"]
+            self.write_patch(json.loads(newpatch))
+
     async def get_oebb_composition(self):
         if "composition" in self.status:
             return
+        if not self.status["train"]["no"]:
+            return
+
         composition_text = None
         if (
             station_no := oebb_wr.get_station_no(self.status["fromStation"]["name"])

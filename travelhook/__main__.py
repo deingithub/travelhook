@@ -118,6 +118,7 @@ async def handle_status_update(userid, reason, status):
     trip.maybe_fix_1970()
     trip.fetch_headsign()
     await trip.get_oebb_composition()
+    trip.get_db_composition()
 
 
 async def receive(bot):
