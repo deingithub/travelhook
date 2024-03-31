@@ -1,0 +1,30 @@
+diff --git a/lib/Travel/Status/DE/DBWagenreihung.pm b/lib/Travel/Status/DE/DBWagenreihung.pm
+index ffb55ab..889d258 100644
+--- a/lib/Travel/Status/DE/DBWagenreihung.pm
++++ b/lib/Travel/Status/DE/DBWagenreihung.pm
+@@ -711,6 +711,26 @@ sub wagons {
+ 	return @{ $self->{wagons} // [] };
+ }
+
++sub wgroups {
++	my ($self) = @_;
++	if (not exists $self->{wagongroups}) {
++		$self->wagons;
++	}
++	my @ret;
++	my $i = 0;
++	for my $group (@{$self->{wagongroups}}) {
++		my @group = @{$group};
++		my $wagongroup_name = $self->{data}{istformation}{allFahrzeuggruppe}[$i]->{fahrzeuggruppebezeichnung};
++		my @wret;
++		for my $wagon (@group) {
++			push(@wret, $wagon->TO_JSON);
++		}
++		push(@ret, [$wagongroup_name, [@wret]]);
++	$i++;
++	}
++	return @ret;
++}
++
+ sub get_with_cache {
+ 	my ( $self, $cache, $url ) = @_;

@@ -5,6 +5,7 @@ use warnings;
 
 use JSON;
 use Travel::Status::DE::DBWagenreihung;
+use Travel::Status::DE::DBWagenreihung::Wagon;
 
 my $result = Travel::Status::DE::DBWagenreihung->new(
 	train_number => $ARGV[0],
@@ -15,18 +16,5 @@ if (my $errstr = $result->errstr) {
 		error_string => $result->errstr
 	});
 } else {
-	my @wagons = $result->wagons;
-	my @groups;
-	for my $group (@{$result->{wagongroups}}) {
-		my @group_wagons;
-		for my $wagon (@{$group}) {
-			push(
-				@group_wagons, $wagon->TO_JSON
-			);
-		}
-		push(@groups, [@group_wagons]);
-	}
-	print encode_json(
-		{groups=>[@groups]},
-	);
+	print encode_json({groups=>[$result->wgroups]});
 }

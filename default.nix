@@ -125,6 +125,9 @@ let
         description = "Interface to Deutsche Bahn Wagon Order API";
         license = with lib.licenses; [ artistic1 gpl1Plus ];
       };
+      patches = [
+        ./patches/0001-dbwr-add-wagon-groups.patch
+      ];
     };
 
 in python310Packages.buildPythonPackage {

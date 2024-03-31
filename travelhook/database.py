@@ -167,6 +167,20 @@ class City:
             return cls(**row)
         return None
 
+@dataclass
+class TrainsetName:
+    identifier: str
+    name: str
+
+    @classmethod
+    def find(cls, identifier):
+        row = DB.execute(
+            "SELECT name FROM trainset_names WHERE identifier = ?",
+            (identifier,),
+        ).fetchone()
+        if row:
+            return row["name"]
+        return None
 
 @dataclass
 class Trip:
@@ -557,7 +571,7 @@ class Trip:
         if "errstr" in status:
             print(f"db_wr perl broke:\n{status}")
         else:
-            for group in status["groups"]:
+            for (group_name, group) in status["groups"]:
                 # multiple units
                 if all(wagon["uic_id"][0] == "9" for wagon in group):
                     group_class = group[0]["uic_id"][5:8]
@@ -569,7 +583,9 @@ class Trip:
                             if wagon["uic_id"][5:8] == group_class
                         ]
                     )[0]
-                    composition.append(f"{group_class} {group_number:03}")
+                    trainset_name = TrainsetName.find(group_name) or ""
+                    composition.append(f"{group_class} {group_number:03} {trainset_name}")
+
                 else:
                     same_type_counter = [0, ""]
                     for wagon in group:
