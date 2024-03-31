@@ -568,7 +568,7 @@ class Trip:
             traceback.print_exc()
 
         print(status)
-        if "errstr" in status:
+        if "error_string" in status:
             print(f"db_wr perl broke:\n{status}")
         else:
             for (group_name, group) in status["groups"]:
