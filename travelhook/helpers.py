@@ -392,6 +392,8 @@ class LineEmoji:  # pylint: disable=too-few-public-methods
     TRIP_SUM = "<:sum:1222616286291562558>"
     DESTINATION = "<:to:1222613802873520189>"
     COMMENT = "<:note:1222613807507968121>"
+    WARN = "<:warn:1225520405851410614>"
+    INFO = "<:info:1225520403670241381>"
 
 
 train_type_emoji = {

@@ -10,13 +10,13 @@ from . import database as DB
 match_data = {
     # 1016 could also be 1116
     # 1016 could also be 2016 „Hercules“, a diesel loco with the same length
-    "1016 xxx Taurus": [
+    "1016 xxx": [
         {"lengthOverBuffers": 19.28, "capacityFirstClass": 0, "capacitySecondClass": 0}
     ],
-    "1144 xxx Alpenstaubsauger": [
+    "1144 xxx": [
         {"lengthOverBuffers": 16.1, "capacityFirstClass": 0, "capacitySecondClass": 0}
     ],
-    "1216 xxx Taurus": [
+    "1216 xxx": [
         {"lengthOverBuffers": 19.58, "capacityFirstClass": 0, "capacitySecondClass": 0}
     ],
     "4020 xxx": [
@@ -179,15 +179,13 @@ match_data = {
             "capacityWheelChair": 0,
         }
     ],
-    "CityShuttle-Dosto": [
+    "Wieseldosto Bmpz-dl": [
         {
             "lengthOverBuffers": 26.8,
-            "capacitySecondClass": 110,
-            "capacityBicycle": 1,
-            "capacityWheelChair": 0,
+            "capacitySecondClass": 114,
         }
     ],
-    "CityShuttle-Dosto Steuerwagen": [
+    "Wieseldosto Bbfmpz": [
         {
             "lengthOverBuffers": 27.13,
             "capacitySecondClass": 86,

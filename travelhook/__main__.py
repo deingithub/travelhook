@@ -1132,17 +1132,28 @@ class ScottyView(discord.ui.View):
             arrival_delay = int((arrival_rt - arrival).total_seconds() / 60)
 
         trip_length = 0
-        full_route = [self.selected_origin] + self.stops_after[
-            0 : destination_index + 1
-        ]
-        for i, point in enumerate(full_route):
-            if i == destination_index + 1:
+        within = False
+        for i, point in enumerate(self.selected_journey["polyline"]):
+            if (point["eva"] == self.selected_origin["eva"]) and not within:
+                within = True
+            if (point["eva"] == self.selected_destination["eva"]) and within:
+                within = False
+            if not within:
+                continue
+            if i + 1 == len(self.selected_journey["polyline"]):
                 break
+            print(
+                point,
+                self.selected_origin["eva"],
+                self.selected_destination["eva"],
+                within,
+            )
+
             trip_length += haversine(
                 (point["lat"], point["lon"]),
                 (
-                    full_route[i + 1]["lat"],
-                    full_route[i + 1]["lon"],
+                    self.selected_journey["polyline"][i + 1]["lat"],
+                    self.selected_journey["polyline"][i + 1]["lon"],
                 ),
             )
 

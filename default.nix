@@ -16,11 +16,11 @@ let
   hafas-m = with perlPackages;
     buildPerlModule {
       pname = "Travel-Status-DE-DeutscheBahn";
-      version = "5.06";
+      version = "6.01";
       src = fetchurl {
         url =
           "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DeutscheBahn-5.06.tar.gz";
-        hash = "sha256-gmHfubBNkrHz2tZnZIqwrU9Yi00AU55oPT5bMW85M9Q=";
+        hash = "sha256-gmHfubBNkrHz2tZnZIqwrU9Yi00AU55oPT5bMW85M9Q==";
       };
       doCheck = false;
       buildInputs = [ FileSlurp TestCompile TestPod ];

@@ -228,6 +228,16 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     f"{(length/(trip_time.total_seconds()/3600)):.0f}km/h"
                 )
             desc += "\n"
+            if hafas_data := trip.hafas_data:
+                messages = hafas_data["messages"]
+                for stop, smessages in hafas_data["stop_messages"].items():
+                    messages += smessages
+
+                for message in messages:
+                    if message["type"] == "D":
+                        desc += f"{LineEmoji.WARN} {message['text']}\n"
+                    elif message["type"] in ("Q", "L"):
+                        desc += f"{LineEmoji.INFO} {message['text']}\n"
             if comment := trip.status["comment"]:
                 if len(comment) >= 500:
                     comment = comment[0:500] + "…"

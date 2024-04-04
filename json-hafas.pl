@@ -34,13 +34,27 @@ if (my $status = $result->result) {
 			type=>$message->type,
 		});
 	}
+	my %stop_messages;
+	foreach my $stop ($status->route) {
+		my @ret;
+		foreach my $message ($stop->messages) {
+			push(@ret, {
+				short=>$message->short,
+				text=>$message->text,
+				code=>$message->code,
+				type=>$message->type,
+			});
+		}
+		@stop_messages{$stop->loc->eva} = [@ret];
+	}
 	print encode_json({
 		id=>$status->id,
 		operator=>$status->operator,
 		direction=>$status->direction,
 		polyline=>[@polyline],
 		beeline=>$only_eva,
-		messages=>[@messages]
+		messages=>[@messages],
+		stop_messages=>{%stop_messages}
 	});
 } else {
 	print encode_json({

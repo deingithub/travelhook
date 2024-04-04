@@ -167,6 +167,7 @@ class City:
             return cls(**row)
         return None
 
+
 @dataclass
 class TrainsetName:
     identifier: str
@@ -181,6 +182,7 @@ class TrainsetName:
         if row:
             return row["name"]
         return None
+
 
 @dataclass
 class Trip:
@@ -567,11 +569,10 @@ class Trip:
             print(f"db_wr perl broke:\n{db_wr.stdout} {db_wr.stderr}")
             traceback.print_exc()
 
-        print(status)
         if "error_string" in status:
             print(f"db_wr perl broke:\n{status}")
         else:
-            for (group_name, group) in status["groups"]:
+            for group_name, group in status["groups"]:
                 # multiple units
                 if all(wagon["uic_id"][0] == "9" for wagon in group):
                     group_class = group[0]["uic_id"][5:8]
@@ -584,20 +585,22 @@ class Trip:
                         ]
                     )[0]
                     trainset_name = TrainsetName.find(group_name) or ""
-                    composition.append(f"{group_class} {group_number:03} {trainset_name}")
+                    composition.append(
+                        f"{group_class} {group_number:03} {trainset_name}"
+                    )
 
                 else:
                     same_type_counter = [0, ""]
                     for wagon in group:
                         if wagon["uic_id"][0] in ("9", "L"):
                             if len(wagon["uic_id"]) == 12:
-                                composition.append(
-                                    f"{wagon['uic_id'][5:8]} {wagon['uic_id'][8:11]}"
-                                )
+                                wagon[
+                                    "type"
+                                ] = f"{wagon['uic_id'][4:8]} {wagon['uic_id'][8:11]}-{wagon['uic_id'][11]}"
                             else:
-                                composition.append(wagon["uic_id"])
-                            continue
-                        elif same_type_counter[1] == wagon["type"]:
+                                wagon["type"] = wagon["uic_id"]
+
+                        if same_type_counter[1] == wagon["type"]:
                             same_type_counter[0] += 1
                         else:
                             if same_type_counter[0] == 1:
@@ -636,14 +639,36 @@ class Trip:
         if (
             station_no := oebb_wr.get_station_no(self.status["fromStation"]["name"])
         ) and (
-            composition := await oebb_wr.get_composition(
+            oebb_composition := await oebb_wr.get_composition(
                 self.status["train"]["no"],
                 station_no,
-                datetime.fromtimestamp(self.status["fromStation"]["realTime"], tz=tz),
+                datetime.fromtimestamp(
+                    self.status["fromStation"]["scheduledTime"], tz=tz
+                ),
             )
         ):
+            composition = []
+            same_type_counter = [0, ""]
+            for wagon in oebb_composition:
+                if wagon["class_name"].startswith("7x"):
+                    composition.append(wagon["class_name"])
+                elif same_type_counter[1] == wagon["class_name"]:
+                    same_type_counter[0] += 1
+                else:
+                    if same_type_counter[0] == 1:
+                        composition.append(same_type_counter[1])
+                    elif same_type_counter[0]:
+                        composition.append(
+                            f"{same_type_counter[0]}x {same_type_counter[1]}"
+                        )
+                    same_type_counter = [1, wagon["class_name"]]
+            if same_type_counter[0] == 1:
+                composition.append(same_type_counter[1])
+            elif same_type_counter[0]:
+                composition.append(f"{same_type_counter[0]}x {same_type_counter[1]}")
+
             composition_text = " + ".join(
-                [format_composition_element(unit["class_name"]) for unit in composition]
+                [format_composition_element(unit) for unit in composition]
             )
 
             newpatch = DB.execute(
