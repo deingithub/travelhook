@@ -229,7 +229,8 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                 )
             desc += "\n"
             if hafas_data := trip.hafas_data:
-                messages = hafas_data["messages"]
+                messages = hafas_data["messages"].copy()
+
                 for stop, smessages in hafas_data["stop_messages"].items():
                     messages += smessages
 
