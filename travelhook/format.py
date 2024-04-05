@@ -262,7 +262,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     next_train["fromStation"]["scheduledTime"],
                     next_train["fromStation"]["realTime"],
                 )
-                desc += f"{LineEmoji.CHANGE_SAME_STOP}{arrival} – {next_train_departure} {station_name}\n"
+                desc += f"{LineEmoji.CHANGE_SAME_STOP}{arrival} → {next_train_departure} {station_name}\n"
             else:
                 # if we leave the station, draw the upper part of a two-line change
                 desc += f"{LineEmoji.CHANGE_LEAVE_STOP}{arrival} " + f"{station_name}\n"
@@ -277,8 +277,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                 change_meters = haversine(
                     train_end_location, next_train_start_location, unit="m"
                 )
-                if change_meters > 200.0 and not "travelhookfaked" in (
-                    train["train"]["id"] + next_train["train"]["id"]
+                if change_meters > 200.0 and not any(
+                    lat == lon == 0.0
+                    for (lat, lon) in [train_end_location, next_train_start_location]
                 ):
                     desc += f"{LineEmoji.CHANGE_WALK}{LineEmoji.SPACER}*— {int(change_meters)} m —*\n"
 

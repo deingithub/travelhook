@@ -1179,6 +1179,23 @@ class ScottyView(discord.ui.View):
             "",
             trip_length,
         )
+        try:
+            await EditTripView(
+                DB.Trip.find_last_trip_for(ia.user.id),
+                {
+                    "train": {"no": self.selected_train["number"]},
+                    "fromStation": {
+                        "latitude": self.selected_origin["lat"],
+                        "longitude": self.selected_origin["lon"],
+                    },
+                    "toStation": {
+                        "latitude": self.selected_destination["lat"],
+                        "longitude": self.selected_destination["lon"],
+                    },
+                },
+            ).commit.callback(ia)
+        except discord.errors.InteractionResponded:
+            pass
 
     def add_select_destination(self):
         self.selected_journey = scotty_journey(self.selected_train["id"])
