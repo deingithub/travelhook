@@ -1143,12 +1143,6 @@ class ScottyView(discord.ui.View):
                 continue
             if i + 1 == len(self.selected_journey["polyline"]):
                 break
-            print(
-                point,
-                self.selected_origin["eva"],
-                self.selected_destination["eva"],
-                within,
-            )
 
             trip_length += haversine(
                 (point["lat"], point["lon"]),

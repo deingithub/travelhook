@@ -76,6 +76,9 @@ def format_time(sched, actual, relative=False):
     if actual > sched:
         diff = (actual - sched) // 60
         diff = f" +{diff}′"
+    elif actual < sched:
+        diff = (sched - actual) // 60
+        diff = f" -{diff}′"
 
     return f"**{time:%H:%M}{diff}**"
 
