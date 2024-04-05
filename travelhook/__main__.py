@@ -379,6 +379,7 @@ class TripActionsView(discord.ui.View):
                     data = await r.json()
                     if data["checkedIn"] and self.trip.journey_id == zugid(data):
                         await handle_status_update(self.trip.user_id, "update", data)
+                        self.trip.fetch_hafas_data(force=True)
                         await ia.response.edit_message(
                             embed=format_travelynx(
                                 bot,

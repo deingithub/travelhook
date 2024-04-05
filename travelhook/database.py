@@ -391,7 +391,7 @@ class Trip:
             print("error while running circle line fixup:")
             traceback.print_exc()
 
-    def fetch_hafas_data(self):
+    def fetch_hafas_data(self, force: bool = False):
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
 
         def write_hafas_data(departureboard_entry):
@@ -420,7 +420,9 @@ class Trip:
                     ),
                 )
 
-        if "travelhookfaked" in self.status["train"]["id"] or "id" in self.hafas_data:
+        if "travelhookfaked" in self.status["train"]["id"] or (
+            "id" in self.hafas_data and not force
+        ):
             return
 
         jid = self.status["train"]["hafasId"]
