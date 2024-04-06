@@ -1,5 +1,5 @@
-# current icons as of relay bot version 0.10.2
- 
+# current icons as of relay bot version 0.15.2
+
  Icon  | Full Name | Notes
 :----: | --------- | -----
 <img src="/icons/A.png" style="height: 2em;"> | AKN | Hamburg, Germany
@@ -67,6 +67,7 @@
 <img src="/icons/Ü.png" style="height: 2em;"> | üstra | Hannover, Germany
 <img src="/icons/WB.png" style="height: 2em;width:4em;"> | WESTbahn | Austria
 <img src="/icons/WLB.png" style="height: 2em;"> | Wiener Lokalbahnen | Austria
+<img src="/icons/ZahnR.png" style="height: 2em;"> | ZahnR, rack railway |
 
 Transit System | Line numbers
 ---- | -----

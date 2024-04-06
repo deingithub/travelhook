@@ -93,7 +93,6 @@ def format_delta(delta):
 
 
 blanket_replace_train_type = {
-    "ZahnR": "SB",
     "RNV": "STR",
     "O-Bus": "Bus",
     "Tram": "STR",
@@ -518,6 +517,7 @@ train_type_emoji = {
     "walk": "<:sbbwalk:1161321193001992273>",
     "WB": "<:wa:1162760160129855609><:wb:1162760161417515058>",
     "WLB": "<:wlb:1164614809887719474>",
+    "ZahnR": "<:zahnr:1226231292954153011>"
 }
 
 OEBB_EMOJI = "<:oebb1:1209147711274614815><:oebb2:1209147709437509663>"
