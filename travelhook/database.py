@@ -576,7 +576,9 @@ class Trip:
         else:
             for group_name, group in status["groups"]:
                 # multiple units
-                if all(wagon["uic_id"][0] == "9" for wagon in group):
+                if all(
+                    wagon["uic_id"] and wagon["uic_id"][0] == "9" for wagon in group
+                ):
                     group_class = group[0]["uic_id"][5:8]
                     group_class = db_replace_group_classes.get(group_class, group_class)
                     group_number = sorted(
@@ -594,7 +596,7 @@ class Trip:
                 else:
                     same_type_counter = [0, ""]
                     for wagon in group:
-                        if wagon["uic_id"][0] in ("9", "L"):
+                        if wagon["uic_id"] and wagon["uic_id"][0] in ("9", "L"):
                             if len(wagon["uic_id"]) == 12:
                                 wagon[
                                     "type"
