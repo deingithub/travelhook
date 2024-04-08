@@ -186,19 +186,26 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                 pass
 
         train_type, train_line, route_link = train_presentation(train)
-        headsign = shortened_name(
-            train["fromStation"]["name"], fetch_headsign(trip.get_unpatched_status())
-        )
-        desc += (
-            LineEmoji.RAIL
-            + LineEmoji.SPACER
-            + get_train_emoji(train_type)
-            + (
+        headsign = shortened_name(train["fromStation"]["name"], fetch_headsign(train))
+        if fhs := train["train"].get("fakeheadsign"):
+            headsign = fhs
+        desc += LineEmoji.RAIL + LineEmoji.SPACER + get_train_emoji(train_type)
+        if (
+            train["train"]["no"]
+            and train_type in ("IC", "ICE", "EC", "ECE", "RJ", "RJX", "D")
+            and train_line != train["train"]["no"]
+        ):
+            desc += (
+                f" **{train_line}** {train['train']['no']} **[» {headsign}]({route_link})**"
+                if route_link
+                else f" **{train_line}** {train['train']['no']} **» {headsign}** ✱"
+            )
+        else:
+            desc += (
                 f" **{train_line} [» {headsign}]({route_link})**"
                 if route_link
                 else f" **{train_line} » {headsign}** ✱"
             )
-        )
         desc += " ●\n" if train["comment"] else "\n"
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
