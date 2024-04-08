@@ -1180,6 +1180,11 @@ class ScottyView(discord.ui.View):
             trip_length,
         )
         try:
+            link = (
+                "https://dbf.finalrewind.org/z/"
+                + urllib.parse.quote(self.selected_train["id"])
+                + "?hafas=ÖBB"
+            )
             await EditTripView(
                 DB.Trip.find_last_trip_for(ia.user.id),
                 {
@@ -1192,6 +1197,7 @@ class ScottyView(discord.ui.View):
                         "latitude": self.selected_destination["lat"],
                         "longitude": self.selected_destination["lon"],
                     },
+                    "link": link,
                 },
             ).commit.callback(ia)
         except discord.errors.InteractionResponded:

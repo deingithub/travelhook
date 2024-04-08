@@ -284,6 +284,8 @@ def train_presentation(data):
     if "travelhookfaked" in data["train"]["id"]:
         link = None
 
+    link = data.get("link", link)
+
     if link:
         # reuse IDs of previously shortened URLs
         previd = DB.Link.find_by_long(long_url=link)
