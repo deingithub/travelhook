@@ -474,6 +474,24 @@ async def privacy(ia, level: typing.Optional[DB.Privacy]):
 
 
 @configure.command()
+async def showtrainnumbers(ia, toggle: bool):
+    "Configure whether you want your journeys to include train numbers"
+
+    if user := DB.User.find(discord_id=ia.user.id):
+        user.set_show_train_numbers(toggle)
+        await ia.response.send_message(
+            (
+                "The relay bot will now show train numbers on all your journeys."
+                if toggle
+                else "The bot will no longer show train numbers on your journeys, except for long-distance trains with a line number."
+            ),
+            ephemeral=True,
+        )
+    else:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+
+
+@configure.command()
 async def suggestions(ia):
     "Edit autocomplete suggestions for your manual checkins."
 

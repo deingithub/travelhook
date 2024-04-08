@@ -79,6 +79,7 @@ class User:
     token_travel: Optional[str]
     break_journey: BreakMode
     suggestions: str
+    show_train_numbers: bool
 
     Locks = collections.defaultdict(asyncio.Lock)
 
@@ -132,6 +133,12 @@ class User:
         "Break a journey, deleting stored trips and messages up to this point."
         DB.execute("DELETE FROM trips WHERE user_id = ?", (self.discord_id,))
         DB.execute("DELETE FROM messages WHERE user_id = ?", (self.discord_id,))
+
+    def set_show_train_numbers(self, show_train_numbers: bool):
+        DB.execute(
+            "UPDATE users SET show_train_numbers = ? WHERE discord_id = ?",
+            (show_train_numbers, self.discord_id),
+        )
 
     def find_live_channel_ids(self):
         rows = DB.execute(

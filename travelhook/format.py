@@ -194,6 +194,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             train["train"]["no"]
             and train_type in ("IC", "ICE", "EC", "ECE", "RJ", "RJX", "D")
             and train_line != train["train"]["no"]
+            or DB.User.find(userid).show_train_numbers
         ):
             desc += (
                 f" **{train_line}** {train['train']['no']} **[» {headsign}]({route_link})**"
