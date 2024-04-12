@@ -666,7 +666,44 @@ not_registered_embed = discord.Embed(
     "If you want to fix this minor oversight, use **/register** today!",
 )
 
-db_replace_group_classes = {"808": "402", "812": "412"}
+db_replace_group_classes = {"808": "402", "812": "412", "928": "628"}
+german_classes = {
+    "401": "ICE 1",
+    "402": "ICE 2",
+    "403": "ICE 3",
+    "406": "ICE 3M",
+    "407": "ICE 3V",
+    "408": "ICE 3neo",
+    "411": "ICE-T",
+    "412": "ICE 4",
+    "415": "ICE-T",
+    "425": "Quietschie",
+    "427": "FLIRT",
+    "428": "FLIRT",
+    "429": "FLIRT",
+    "430": "FLIRT",
+    "440": "Continental",
+    "442": "Talent 2",
+    "445": "KISS",
+    "460": "Desiro ML",
+    "462": "Desiro HC",
+    "463": "Mireo",
+    "464": "Mireo Smart",
+    "620": "LINT 81",
+    "621": "LINT 81",
+    "622": "LINT 54",
+    "623": "LINT 41",
+    "631": "LINK",
+    "632": "LINK",
+    "633": "LINK",
+    "640": "LINT 27",
+    "641": "Coradia A TER",
+    "642": "Desiro Classic",
+    "643": "Talent 1",
+    "644": "Talent 1",
+    "648": "LINT 41",
+    "650": "RegioShuttle",
+}
 
 # this is specifically because Knielinger Allee/Städt. Klinikum, Karlsruhe is very long and doesn't fit in one line
 # but look how maintainable this is, you could add any city you like

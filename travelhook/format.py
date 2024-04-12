@@ -189,24 +189,27 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         headsign = shortened_name(train["fromStation"]["name"], fetch_headsign(train))
         if fhs := train["train"].get("fakeheadsign"):
             headsign = fhs
+        headsign = "» " + headsign
+
         desc += LineEmoji.RAIL + LineEmoji.SPACER + get_train_emoji(train_type)
-        if (
-            train["train"]["no"]
-            and train_type in ("IC", "ICE", "EC", "ECE", "RJ", "RJX", "D")
-            and train_line != train["train"]["no"]
-            or DB.User.find(userid).show_train_numbers
-        ):
-            desc += (
-                f" **{train_line}** {train['train']['no']} **[» {headsign}]({route_link})**"
-                if route_link
-                else f" **{train_line}** {train['train']['no']} **» {headsign}** ✱"
-            )
+        if route_link:
+            headsign = f"[{headsign}]({route_link})"
+        if trip.journey_id.startswith("travelhookfaked"):
+            headsign += " ✱"
+
+        if train_line and train_line == train["train"]["no"]:
+            desc += f" {train_line} **{headsign}**"
+        elif train_line:
+            number = ""
+            if train["train"]["no"] and (
+                train_type in ("IC", "ICE", "EC", "ECE", "RJ", "RJX", "D")
+                or DB.User.find(userid).show_train_numbers
+            ):
+                number = f" {train['train']['no']}"
+            desc += f" **{train_line}**{number} **{headsign}**"
         else:
-            desc += (
-                f" **{train_line} [» {headsign}]({route_link})**"
-                if route_link
-                else f" **{train_line} » {headsign}** ✱"
-            )
+            desc += f" **{headsign}**"
+
         desc += " ●\n" if train["comment"] else "\n"
         arrival = format_time(
             train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
