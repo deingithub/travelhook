@@ -8,6 +8,7 @@ import traceback
 import typing
 import urllib
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from aiohttp import ClientSession, web
 import discord
@@ -20,6 +21,7 @@ from . import database as DB
 from . import oebb_wr
 from .format import format_travelynx
 from .helpers import (
+    available_tzs,
     format_composition_element,
     format_time,
     get_train_emoji,
@@ -414,9 +416,9 @@ class TripActionsView(discord.ui.View):
         await manualtrip.callback(
             ia,
             self.trip.status["fromStation"]["name"],
-            f"{datetime.fromtimestamp(departure, tz=tz):%H:%M}",
+            f"{datetime.fromtimestamp(departure, tz=user.get_timezone()):%H:%M}",
             self.trip.status["toStation"]["name"],
-            f"{datetime.fromtimestamp(arrival, tz=tz):%H:%M}",
+            f"{datetime.fromtimestamp(arrival, tz=user.get_timezone()):%H:%M}",
             f"{self.trip.status['train']['type']} {self.trip.status['train']['line']}",
             self.trip.status["train"]["fakeheadsign"],
             departure_delay,
@@ -486,6 +488,33 @@ async def showtrainnumbers(ia, toggle: bool):
                 if toggle
                 else "The bot will no longer show train numbers on your journeys, except for long-distance trains with a line number."
             ),
+            ephemeral=True,
+        )
+    else:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+
+
+async def timezone_autocomplete(ia, current):
+    print(current)
+    return [
+        Choice(name=s, value=s)
+        for s in available_tzs
+        if current.casefold() in s.casefold()
+    ][:25]
+
+
+@configure.command()
+@discord.app_commands.autocomplete(tz=timezone_autocomplete)
+async def timezone(ia, tz: str):
+    "Configure the timezone your date inputs are interpreted as"
+
+    if user := DB.User.find(discord_id=ia.user.id):
+        if not tz in available_tzs:
+            await ia.response.send_message(f"I don't know {tz}.", ephemeral=True)
+            return
+        user.write_timezone(tz)
+        await ia.response.send_message(
+            f"Your date and time inputs will now be interpreted as {tz}.",
             ephemeral=True,
         )
     else:
@@ -657,8 +686,8 @@ async def manualtrip(
         train_line = train_line[0:-1]
     train_line = " ".join(train_line)
 
-    departure = parse_manual_time(departure)
-    arrival = parse_manual_time(arrival)
+    departure = parse_manual_time(departure, user.get_timezone())
+    arrival = parse_manual_time(arrival, user.get_timezone())
     if arrival < departure:
         arrival += timedelta(days=1)
     status = {
@@ -844,15 +873,15 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
                 dep_delay = format_time(
                     trip.status["fromStation"]["scheduledTime"],
                     trip.status["fromStation"]["realTime"],
-                )[8:-2]
+                ).split(">")[1]
                 arr_delay = format_time(
                     trip.status["toStation"]["scheduledTime"],
                     trip.status["toStation"]["realTime"],
-                )[8:-2]
+                ).split(">")[1]
 
                 embed = discord.Embed(
                     description=f"{get_train_emoji(train_type)} {train_line} **» {headsign}** "
-                    f"is delayed by **{dep_delay or '+0′'}/{arr_delay or '+0′'}**.",
+                    f"is delayed by {dep_delay or '+0′'}/{arr_delay or '+0′'}.",
                     color=train_type_color["SB"],
                 ).set_author(
                     name=f"{ia.user.name} ist {'nicht ' if len(dep_delay+arr_delay) == 0 else ''}verspätet",
@@ -912,12 +941,12 @@ async def edit(
     if from_station or departure or departure_delay:
         prepare_patch["fromStation"] = {"name": from_station}
         if departure:
-            departure = parse_manual_time(departure)
+            departure = parse_manual_time(departure, user.get_timezone())
             prepare_patch["fromStation"]["scheduledTime"] = int(departure.timestamp())
             departure_delay = departure_delay or 0
         else:
             departure = datetime.fromtimestamp(
-                trip.status["fromStation"]["scheduledTime"], tz=tz
+                trip.status["fromStation"]["scheduledTime"], tz=user.get_timezone()
             )
 
         if departure_delay is not None:
@@ -928,12 +957,12 @@ async def edit(
     if to_station or arrival or arrival_delay:
         prepare_patch["toStation"] = {"name": to_station}
         if arrival:
-            arrival = parse_manual_time(arrival)
+            arrival = parse_manual_time(arrival, user.get_timezone())
             prepare_patch["toStation"]["scheduledTime"] = int(arrival.timestamp())
             arrival_delay = arrival_delay or 0
         else:
             arrival = datetime.fromtimestamp(
-                trip.status["toStation"]["scheduledTime"], tz=tz
+                trip.status["toStation"]["scheduledTime"], tz=user.get_timezone()
             )
 
         if arrival_delay is not None:
@@ -954,7 +983,7 @@ async def edit(
                 train_no = train_line[-1][1:]
                 train_line = train_line[0:-1]
             train_line = " ".join(train_line)
-            
+
             prepare_patch["train"]["type"] = train_type
             prepare_patch["train"]["line"] = train_line
             if train_no:
@@ -1286,11 +1315,11 @@ class ScottyView(discord.ui.View):
         ][:24]
         self.add_item(self.select_destination)
 
-    def __init__(self, ia, station_name, request_time):
+    def __init__(self, ia, station_name, request_time, timezone):
         super().__init__()
         self.remove_item(self.select_train)
         self.remove_item(self.select_destination)
-        self.request_time = parse_manual_time(request_time)
+        self.request_time = parse_manual_time(request_time, timezone)
         self.stops = scotty_stopfinder(station_name)
         if "error_string" in self.stops:
             print(f"Scotty error: {self.stops['error_string']}")
@@ -1334,7 +1363,7 @@ async def scotty(
     await ia.response.defer(ephemeral=True)
     await ia.edit_original_response(
         content=f"### {OEBB_EMOJI} manual check-in",
-        view=ScottyView(ia, station_name, request_time),
+        view=ScottyView(ia, station_name, request_time, user.get_timezone()),
     )
 
 

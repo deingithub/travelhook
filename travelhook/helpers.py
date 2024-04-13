@@ -1,6 +1,6 @@
 "various helper functions that do more than just pure formatting logic. the icon library lives in here too"
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from zoneinfo import available_timezones, ZoneInfo
 import json
 import random
 import re
@@ -29,18 +29,19 @@ def zugid(data):
 
 # globally used timezone
 tz = ZoneInfo("Europe/Berlin")
+available_tzs = available_timezones()
 hafas = HafasClient(DBProfile())
 
 
-def parse_manual_time(time):
+def parse_manual_time(time, timezone):
     try:
         dt = datetime.fromisoformat(time)
         if not dt.tzinfo:
-            dt = dt.replace(tzinfo=tz)
+            dt = dt.replace(tzinfo=timezone)
         return dt
     except ValueError:
         time = time.split(":")
-        return datetime.now(tz=tz).replace(
+        return datetime.now(tz=timezone).replace(
             hour=int(time[0]),
             minute=int(time[1]),
             second=0,
@@ -75,12 +76,12 @@ def format_time(sched, actual, relative=False):
     diff = ""
     if actual > sched:
         diff = (actual - sched) // 60
-        diff = f" +{diff}′"
+        diff = f" **+{diff}′**"
     elif actual < sched:
         diff = (sched - actual) // 60
-        diff = f" -{diff}′"
+        diff = f" **-{diff}′**"
 
-    return f"**{time:%H:%M}{diff}**"
+    return f"<t:{int(time.timestamp())}:t>{diff}"
 
 
 def format_delta(delta):

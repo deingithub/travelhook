@@ -6,11 +6,12 @@ import json
 import sqlite3
 import shlex
 import subprocess
+import traceback
 from dataclasses import dataclass, astuple
 from datetime import datetime, timedelta
 from enum import IntEnum
 from typing import Optional
-import traceback
+from zoneinfo import ZoneInfo
 
 import discord
 from pyhafas.types.fptf import Stopover
@@ -81,6 +82,7 @@ class User:
     break_journey: BreakMode
     suggestions: str
     show_train_numbers: bool
+    timezone: str
 
     Locks = collections.defaultdict(asyncio.Lock)
 
@@ -157,6 +159,16 @@ class User:
         DB.execute(
             "UPDATE users SET suggestions = ? WHERE discord_id = ?",
             (self.suggestions, self.discord_id),
+        )
+
+    def get_timezone(self):
+        return ZoneInfo(self.timezone)
+
+    def write_timezone(self, timezone):
+        self.timezone = timezone
+        DB.execute(
+            "UPDATE users SET timezone = ? WHERE discord_id = ?",
+            (self.timezone, self.discord_id),
         )
 
 
