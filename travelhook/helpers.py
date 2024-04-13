@@ -667,22 +667,24 @@ not_registered_embed = discord.Embed(
     "If you want to fix this minor oversight, use **/register** today!",
 )
 
-db_replace_group_classes = {"808": "402", "812": "412", "928": "628"}
-german_classes = {
+db_replace_group_classes = {
+    "808": "402",  # ICE 2
+    "812": "412",  # ICE 4
+    "826": "526",  # FLIRT Akku
+    "928": "628",  # BR 628
+}
+
+db_classes3 = {
     "401": "ICE 1",
     "402": "ICE 2",
     "403": "ICE 3",
     "406": "ICE 3M",
-    "407": "ICE 3V",
+    "407": "ICE 3 Velaro",
     "408": "ICE 3neo",
     "411": "ICE-T",
     "412": "ICE 4",
     "415": "ICE-T",
     "425": "Quietschie",
-    "427": "FLIRT",
-    "428": "FLIRT",
-    "429": "FLIRT",
-    "430": "FLIRT",
     "440": "Continental",
     "442": "Talent 2",
     "445": "KISS",
@@ -690,6 +692,9 @@ german_classes = {
     "462": "Desiro HC",
     "463": "Mireo",
     "464": "Mireo Smart",
+    "526": "FLIRT Akku",
+    "554": "iLINT",
+    "563": "Mireo Plus H",
     "620": "LINT 81",
     "621": "LINT 81",
     "622": "LINT 54",
@@ -705,6 +710,47 @@ german_classes = {
     "648": "LINT 41",
     "650": "RegioShuttle",
 }
+db_classes4 = {
+    "1430": "FLIRT",
+    "0427": "FLIRT 1",
+    "1427": "FLIRT 3",
+    "3427": "FLIRT 3XL",
+    "0428": "FLIRT 1",
+    "1428": "FLIRT 3",
+    "1429": "FLIRT 3",
+    "2429": "FLIRT 3 (+NL)",
+    "3429": "FLIRT 3XL",
+    "1430": "FLIRT 3",
+}
+db_classes_subtype = {
+    "4260": "Babyquietschie",
+    "4261": "FLIRT",
+    "4290": "FLIRT 1",
+    "4291": "FLIRT 3",
+}
+
+
+def describe_class(uic_id: str):
+    if not len(uic_id) == 12:
+        return None
+    # 9x 80 1234 5xx x
+    # 234 is commonly reported as "baureihe" in germany, but the register number
+    # actually has four digits 1234. sometimes baureihe codes are shared too
+    # and you have to determine the actual type by the first digit of the trainset number, 5
+    baureihe3 = uic_id[5:8]  # 234
+    # for ICE2/ICE4 and two-car multiple units we might have the "wrong" number at the
+    # end of the train, replace it with the more commonly used number for that group
+    baureihe3 = db_replace_group_classes.get(baureihe3, baureihe3)
+    baureihe4 = uic_id[4:8]  # 1234
+    baureihe_subtype = uic_id[5:9]  # 2345
+    if baureihe3 in db_classes3:
+        return db_classes3[baureihe3]
+    if baureihe4 in db_classes4:
+        return db_classes4[baureihe4]
+    if baureihe_subtype in db_classes_subtype:
+        return db_classes_subtype[baureihe_subtype]
+    return None
+
 
 # this is specifically because Knielinger Allee/Städt. Klinikum, Karlsruhe is very long and doesn't fit in one line
 # but look how maintainable this is, you could add any city you like

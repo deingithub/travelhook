@@ -23,7 +23,7 @@ from .helpers import (
     replace_headsign,
     format_composition_element,
     db_replace_group_classes,
-    german_classes,
+    describe_class,
 )
 from . import oebb_wr
 
@@ -608,7 +608,7 @@ class Trip:
                             if wagon["uic_id"][5:8] == group_class
                         ]
                     )[0]
-                    trainset_name = german_classes.get(group_class, "")
+                    trainset_name = describe_class(group[0]["uic_id"]) or ""
                     if trainname := TrainsetName.find(group_name):
                         trainset_name += f" {trainname}"
                     composition.append(

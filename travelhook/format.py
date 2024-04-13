@@ -411,7 +411,11 @@ def sillies(trips, embed):
     if status.get("composition") and (
         "**612**" in status["composition"] or "**628**" in status["composition"]
     ):
-        return embed.set_image("https://i.imgur.com/2LTmfiW.png")
+        return embed.set_image(url="https://i.imgur.com/2LTmfiW.png")
+    if status.get("composition") and (
+        "**440**" in status["composition"] or "**441**" in status["composition"]
+    ):
+        return embed.set_thumbnail(url="https://i.imgur.com/FO6Q5sR.png")
     if status["train"]["type"] == "Schw-B":
         return embed.set_image(url="https://i.imgur.com/8deLTcU.png")
     if status["train"]["line"] == "4" and "uniwuni" in embed.author.name:
