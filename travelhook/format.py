@@ -1,7 +1,7 @@
 "this module, or rather its function format_travelynx, renders nice embed describing the current journey"
 
 from itertools import groupby
-from datetime import timedelta
+from datetime import datetime, timedelta
 import re
 
 import discord
@@ -344,12 +344,28 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         f"{sum(lengths)/(total_time.total_seconds()/3600):.0f}km/h"
     )
 
+    timezone = DB.User.find(user.id).get_timezone()
+    offset = timezone.utcoffset(datetime.now()).seconds/3600
+    if offset > 12:
+        offset -= 24
+
+    if offset == int(offset):
+        offset = f"{'+' if offset > 0 else ''}{int(offset)}"
+    else:
+        offset_h = int(offset)
+        offset_m = int((offset - offset_h)*60)
+        if offset < 0:
+            offset_m *= -1
+        offset = f"{'+' if offset > 0 else ''}{offset_h}:{offset_m}"
+
     embed = discord.Embed(
         description=desc,
         color=color,
     ).set_author(
         name=f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'} unterwegs",
         icon_url=user.avatar.url,
+    ).set_footer(
+        text=f"{timezone.key} (UTC{offset})"
     )
 
     embed = sillies(trips, embed)

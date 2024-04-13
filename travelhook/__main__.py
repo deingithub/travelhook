@@ -872,15 +872,15 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
                 dep_delay = format_time(
                     trip.status["fromStation"]["scheduledTime"],
                     trip.status["fromStation"]["realTime"],
-                ).split(">")[1]
+                )[8:-2]
                 arr_delay = format_time(
                     trip.status["toStation"]["scheduledTime"],
                     trip.status["toStation"]["realTime"],
-                ).split(">")[1]
+                )[8:-2]
 
                 embed = discord.Embed(
                     description=f"{get_train_emoji(train_type)} {train_line} **» {headsign}** "
-                    f"is delayed by {dep_delay or '+0′'}/{arr_delay or '+0′'}.",
+                    f"is delayed by **{dep_delay or '+0′'}/{arr_delay or '+0′'}**.",
                     color=train_type_color["SB"],
                 ).set_author(
                     name=f"{ia.user.name} ist {'nicht ' if len(dep_delay+arr_delay) == 0 else ''}verspätet",
@@ -894,7 +894,7 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
                     )
                 ):
                     embed.description += (
-                        f"\n### current journey: {(await msg.fetch(bot)).jump_url}"
+                        f"\n**current journey:** {(await msg.fetch(bot)).jump_url}"
                     )
 
                 await ia.edit_original_response(content=None, embed=embed)

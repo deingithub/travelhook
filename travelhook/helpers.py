@@ -76,12 +76,12 @@ def format_time(sched, actual, relative=False):
     diff = ""
     if actual > sched:
         diff = (actual - sched) // 60
-        diff = f" **+{diff}′**"
+        diff = f" +{diff}′"
     elif actual < sched:
         diff = (sched - actual) // 60
-        diff = f" **-{diff}′**"
+        diff = f" -{diff}′"
 
-    return f"<t:{int(time.timestamp())}:t>{diff}"
+    return f"**{time:%H:%M}{diff}**"
 
 
 def format_delta(delta):
