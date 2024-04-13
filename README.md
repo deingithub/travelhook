@@ -1,6 +1,8 @@
 # the travelynx relay bot
 
-a bot for [discord](https://en.wikipedia.org/wiki/Apple_of_Discord) and [travelynx](https://travelynx.de), combining the privacy nightmare powers of both to broadcast your live location to your friends and enemies on aforementioned chat programme.
+a bot for [discord](https://en.wikipedia.org/wiki/Apple_of_Discord) and [travelynx](https://travelynx.de), combining the privacy nightmare powers of both to broadcast your live location to your friends and enemies on aforementioned chat programme. it looks something like this:
+
+![](./embed-example.png)
 
 see [this page](/icons/descriptions.md) for a list of all currently supported train types (it won't break on others, it just looks fancier if the train is supported)
 

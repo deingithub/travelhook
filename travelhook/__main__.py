@@ -1,6 +1,7 @@
 "contains our bot commands and the incoming webhook handler"
 import json
 import secrets
+import re
 import shlex
 import subprocess
 import traceback
@@ -588,6 +589,11 @@ async def manual_station_autocomplete(ia, current):
     return [Choice(name=s, value=s) for s in set(suggestions)]
 
 
+re_walk_distance = re.compile(
+    r"(?P<type>walk |bike )(?P<number>\d+(?:.\d+)?)(?P<unit>k?m)"
+)
+
+
 @journey.command()
 @discord.app_commands.describe(
     from_station="the name of the station you're departing from",
@@ -596,7 +602,7 @@ async def manual_station_autocomplete(ia, current):
     to_station="the name of the station you will arrive at",
     arrival="HH:MM arrival according to the timetable",
     arrival_delay="minutes of delay",
-    train="train type and line/number like 'S 42'. also try 'walk 1km', 'bike 3km', 'car 3km', 'plane LH3999'",
+    train="train type, line & number like 'S 42', 'walk 1km', 'bike 3km', 'plane LH3999', 'REX 3 #123'",
 )
 @discord.app_commands.autocomplete(
     from_station=manual_station_autocomplete,
@@ -631,6 +637,26 @@ async def manualtrip(
     except:
         pass
 
+    # transform pre-distance style usage into new format
+    # by extracting the distance and setting it into the proper field
+    if match := re_walk_distance.match(train):
+        try:
+            distance = float(match["number"])
+            if match["unit"] == "m":
+                distance /= 1000
+            train = match["type"]
+        except:
+            pass
+
+    train_type = train.split(" ")[0]
+    train_line = train.split(" ")[1:]
+    train_no = ""
+    # if the last element in train_line starts with #, treat that as the train number
+    if train_line and train_line[-1].startswith("#"):
+        train_no = train_line[-1][1:]
+        train_line = train_line[0:-1]
+    train_line = " ".join(train_line)
+
     departure = parse_manual_time(departure)
     arrival = parse_manual_time(arrival)
     if arrival < departure:
@@ -660,9 +686,9 @@ async def manualtrip(
         "intermediateStops": [],
         "train": {
             "fakeheadsign": headsign,
-            "type": train.split(" ")[0],
-            "line": " ".join(train.split(" ")[1:]),
-            "no": "",
+            "type": train_type,
+            "line": train_line,
+            "no": train_no,
             "id": "travelhookfaked" + secrets.token_urlsafe(),
             "hafasId": None,
         },
@@ -920,8 +946,19 @@ async def edit(
             "fakeheadsign": headsign,
         }
         if train:
-            prepare_patch["train"]["type"] = train.split(" ")[0]
-            prepare_patch["train"]["line"] = " ".join(train.split(" ")[1:])
+            train_type = train.split(" ")[0]
+            train_line = train.split(" ")[1:]
+            train_no = ""
+            # if the last element in train_line starts with #, treat that as the train number
+            if train_line and train_line[-1].startswith("#"):
+                train_no = train_line[-1][1:]
+                train_line = train_line[0:-1]
+            train_line = " ".join(train_line)
+            
+            prepare_patch["train"]["type"] = train_type
+            prepare_patch["train"]["line"] = train_line
+            if train_no:
+                prepare_patch["train"]["no"] = train_no
 
     prepare_patch["comment"] = comment
     prepare_patch["distance"] = distance
@@ -1190,7 +1227,7 @@ class ScottyView(discord.ui.View):
             departure.isoformat(),
             self.selected_destination["name"],
             arrival.isoformat(),
-            f"{self.selected_train['type'] or ''} {self.selected_train['line'] or self.selected_train['number']}",
+            f"{self.selected_train['type'] or ''} {self.selected_train['line'] or ''}",
             self.selected_train["direction"],
             departure_delay,
             arrival_delay,
