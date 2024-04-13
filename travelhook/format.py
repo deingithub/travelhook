@@ -226,19 +226,19 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         )
         # if we're on the last trip of the journey, draw an end icon
         if not _next(trips, i):
+            desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
+
+            if composition := trip.status.get("composition"):
+                desc += f"{LineEmoji.COMPOSITION} {composition}\n"
+
             trip_time = timedelta(
                 seconds=train["toStation"]["realTime"]
                 - train["fromStation"]["realTime"]
             )
             if not trip_time:
                 trip_time += timedelta(seconds=30)
-
-            desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
-
-            if composition := trip.status.get("composition"):
-                desc += f"{LineEmoji.COMPOSITION} {composition}\n"
-
             desc += f"{LineEmoji.TRIP_SPEED} {format_delta(trip_time)}"
+
             length = trip_length(trip)
             if length > 0:
                 desc += (
@@ -360,6 +360,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
 def sillies(trips, embed):
     "do funny things with the embed once it's done"
 
+    # sort by "S"+"31", ie train type and line
     sortkey = lambda tup: tup[0] + tup[1]
     train_lines = sorted(
         [train_presentation(trip.status) for trip in trips], key=sortkey
@@ -367,6 +368,7 @@ def sillies(trips, embed):
     grouped = []
     for _, group in groupby(train_lines, key=sortkey):
         grouped.append(list(group))
+    # get the most used type+line combinations
     grouped = sorted(grouped, key=len, reverse=True)
     if len(grouped[0]) >= 3:
         train_type, train_line, _ = grouped[0][0]
@@ -388,6 +390,10 @@ def sillies(trips, embed):
         return embed.set_thumbnail(url="https://i.imgur.com/W3mPNEn.gif")
     if "Erlangen" in status["toStation"]["name"]:
         return embed.set_thumbnail(url="https://i.imgur.com/pHp8Sus.png")
+    if "**612**" in status.get("composition", "") or "**628**" in status.get(
+        "composition", ""
+    ):
+        return embed.set_image("https://i.imgur.com/2LTmfiW.png")
     if status["train"]["type"] == "Schw-B":
         return embed.set_image(url="https://i.imgur.com/8deLTcU.png")
     if status["train"]["line"] == "4" and "uniwuni" in embed.author.name:
