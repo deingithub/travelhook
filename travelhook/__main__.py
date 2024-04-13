@@ -495,7 +495,6 @@ async def showtrainnumbers(ia, toggle: bool):
 
 
 async def timezone_autocomplete(ia, current):
-    print(current)
     return [
         Choice(name=s, value=s)
         for s in available_tzs
