@@ -21,6 +21,7 @@ from .helpers import (
     zugid,
 )
 
+re_remove_vienna_suffixes = re.compile(r"Wien (?P<name>.+) \(.+\)")
 re_hbf = re.compile(r"(?P<city>.+) Hbf")
 re_hauptbahnhof = re.compile(
     r"Hauptbahnhof(?: \(S?\+?U?\)| \(Tram\/Bus\))?, (?P<city>.+)"
@@ -189,6 +190,12 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         headsign = shortened_name(train["fromStation"]["name"], fetch_headsign(train))
         if fhs := train["train"].get("fakeheadsign"):
             headsign = fhs
+
+        # all lines in vienna have overly long HAFAS destinations not consistent with the vehicle display
+        # like "Wien Winckelmannstraße (Schwendergasse 61)" when it should just be Winckelmannstraße
+        if match := re_remove_vienna_suffixes.match(headsign):
+            headsign = match["name"]
+
         headsign = "» " + headsign
 
         desc += LineEmoji.RAIL + LineEmoji.SPACER + get_train_emoji(train_type)
