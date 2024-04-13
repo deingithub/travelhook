@@ -345,7 +345,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
     )
 
     timezone = DB.User.find(user.id).get_timezone()
-    offset = timezone.utcoffset(datetime.now()).seconds/3600
+    offset = timezone.utcoffset(datetime.now()).seconds / 3600
     if offset > 12:
         offset -= 24
 
@@ -353,19 +353,21 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         offset = f"{'+' if offset > 0 else ''}{int(offset)}"
     else:
         offset_h = int(offset)
-        offset_m = int((offset - offset_h)*60)
+        offset_m = int((offset - offset_h) * 60)
         if offset < 0:
             offset_m *= -1
         offset = f"{'+' if offset > 0 else ''}{offset_h}:{offset_m}"
 
-    embed = discord.Embed(
-        description=desc,
-        color=color,
-    ).set_author(
-        name=f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'} unterwegs",
-        icon_url=user.avatar.url,
-    ).set_footer(
-        text=f"{timezone.key} (UTC{offset})"
+    embed = (
+        discord.Embed(
+            description=desc,
+            color=color,
+        )
+        .set_author(
+            name=f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'} unterwegs",
+            icon_url=user.avatar.url,
+        )
+        .set_footer(text=f"{timezone.key} (UTC{offset})")
     )
 
     embed = sillies(trips, embed)
@@ -406,8 +408,8 @@ def sillies(trips, embed):
         return embed.set_thumbnail(url="https://i.imgur.com/W3mPNEn.gif")
     if "Erlangen" in status["toStation"]["name"]:
         return embed.set_thumbnail(url="https://i.imgur.com/pHp8Sus.png")
-    if "**612**" in status.get("composition", "") or "**628**" in status.get(
-        "composition", ""
+    if status.get("composition") and (
+        "**612**" in status["composition"] or "**628**" in status["composition"]
     ):
         return embed.set_image("https://i.imgur.com/2LTmfiW.png")
     if status["train"]["type"] == "Schw-B":
