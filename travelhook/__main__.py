@@ -1617,6 +1617,8 @@ class RegisterTravelynxStepOne(discord.ui.View):
                     token_travel=None,
                     break_journey=DB.BreakMode.NATURAL,
                     suggestions="",
+                    show_train_numbers=False,
+                    timezone="Europe/Berlin"
                 ).write()
                 await ia.response.edit_message(
                     embed=discord.Embed(
