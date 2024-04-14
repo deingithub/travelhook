@@ -167,8 +167,6 @@ match_data = {
         {
             "lengthOverBuffers": 26.4,
             "capacitySecondClass": 44,
-            "capacityBicycle": 1,
-            "capacityWheelChair": 1,
         }
     ],
     "CityShuttle Bmpz-l": [
@@ -182,7 +180,7 @@ match_data = {
     "Wieseldosto Bmpz-dl": [
         {
             "lengthOverBuffers": 26.8,
-            "capacitySecondClass": 114,
+            "capacitySecondClass": 110,
         }
     ],
     "Wieseldosto Bbfmpz": [
