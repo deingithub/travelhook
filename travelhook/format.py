@@ -19,6 +19,7 @@ from .helpers import (
     trip_length,
     replace_city_suffix_with_prefix,
     zugid,
+    format_timezone,
 )
 
 re_remove_vienna_suffixes = re.compile(r"Wien (?P<name>.+) \(.+\)")
@@ -111,6 +112,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
     """the actual formatting function called by message sends and edits
     to render an embed describing the current journey"""
     user = bot.get_user(userid)
+    timezone = DB.User.find(user.id).get_timezone()
 
     desc = ""
     color = None
@@ -130,7 +132,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
     for i, trip in enumerate(trips):
         train = trip.status
         departure = format_time(
-            train["fromStation"]["scheduledTime"], train["fromStation"]["realTime"]
+            train["fromStation"]["scheduledTime"],
+            train["fromStation"]["realTime"],
+            timezone=timezone,
         )
         # compact layout for completed trips
         if continue_link and _next(trips, i):
@@ -219,7 +223,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
 
         desc += " ●\n" if train["comment"] else "\n"
         arrival = format_time(
-            train["toStation"]["scheduledTime"], train["toStation"]["realTime"]
+            train["toStation"]["scheduledTime"],
+            train["toStation"]["realTime"],
+            timezone=timezone,
         )
         station_name = shortened_name(
             train["fromStation"]["name"], train["toStation"]["name"]
@@ -279,6 +285,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
                     next_train["fromStation"]["realTime"],
+                    timezone=timezone,
                 )
                 desc += f"{LineEmoji.CHANGE_SAME_STOP}{arrival} → {next_train_departure} {station_name}\n"
             else:
@@ -320,6 +327,8 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         seconds=trips[-1].status["toStation"]["realTime"]
         - trips[0].status["fromStation"]["realTime"]
     )
+    if not total_time:
+        total_time += timedelta(seconds=30)
     journey_time = timedelta(
         seconds=sum(
             trip.status["toStation"]["realTime"]
@@ -327,6 +336,8 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             for trip in trips
         )
     )
+    if not journey_time:
+        journey_time += timedelta(seconds=30)
     lengths = [
         trip_length(DB.Trip.find(user.id, zugid(trip.get_unpatched_status())))
         for trip in trips
@@ -344,20 +355,6 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         f"{sum(lengths)/(total_time.total_seconds()/3600):.0f}km/h"
     )
 
-    timezone = DB.User.find(user.id).get_timezone()
-    offset = timezone.utcoffset(datetime.now()).seconds / 3600
-    if offset > 12:
-        offset -= 24
-
-    if offset == int(offset):
-        offset = f"{'+' if offset > 0 else ''}{int(offset)}"
-    else:
-        offset_h = int(offset)
-        offset_m = int((offset - offset_h) * 60)
-        if offset < 0:
-            offset_m *= -1
-        offset = f"{'+' if offset > 0 else ''}{offset_h}:{offset_m}"
-
     embed = (
         discord.Embed(
             description=desc,
@@ -367,7 +364,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             name=f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'} unterwegs",
             icon_url=user.avatar.url,
         )
-        .set_footer(text=f"{timezone.key} (UTC{offset})")
+        .set_footer(text=format_timezone(timezone))
     )
 
     embed = sillies(trips, embed)

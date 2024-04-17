@@ -63,12 +63,12 @@ async def is_token_valid(token):
                 traceback.print_exc()
 
 
-def format_time(sched, actual, relative=False):
+def format_time(sched, actual, relative=False, timezone=tz):
     """render a nice timestamp for arrival/departure that includes delay information.
     relative=True creates a discord relative timestamp that looks like "in 3 minutes"
     and updates automatically, used for the embed's final destination arrival time.
     """
-    time = datetime.fromtimestamp(actual, tz=tz)
+    time = datetime.fromtimestamp(actual, tz=timezone)
 
     if relative:
         return f"<t:{int(time.timestamp())}:R>"
@@ -91,6 +91,22 @@ def format_delta(delta):
     if h > 0:
         return f"{h}:{m:02}h"
     return f"{m}′"
+
+
+def format_timezone(timezone):
+    "print a timezone with name and utc offset"
+    offset = timezone.utcoffset(datetime.now()).seconds / 3600
+    if offset > 12:
+        offset -= 24
+
+    if offset == int(offset):
+        return f"{timezone.key} (UTC{'+' if offset > 0 else ''}{int(offset)})"
+    else:
+        offset_h = int(offset)
+        offset_m = int((offset - offset_h) * 60)
+        if offset < 0:
+            offset_m *= -1
+        return f"{timezone.key} (UTC{'+' if offset > 0 else ''}{offset_h}:{offset_m})"
 
 
 blanket_replace_train_type = {

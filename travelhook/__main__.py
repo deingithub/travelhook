@@ -749,13 +749,17 @@ def render_patched_train(trip, patch):
             (json.dumps(trip.get_unpatched_status()), json.dumps(patch)),
         ).fetchone()["status"]
     )
+    user_tz = DB.User.find(trip.user_id).get_timezone()
     train_type, train_line, link = train_presentation(status)
     departure = format_time(
         status["fromStation"]["scheduledTime"],
         status["fromStation"]["realTime"],
+        timezone=user_tz,
     )
     arrival = format_time(
-        status["toStation"]["scheduledTime"], status["toStation"]["realTime"]
+        status["toStation"]["scheduledTime"],
+        status["toStation"]["realTime"],
+        timezone=user_tz,
     )
     headsign = fetch_headsign(status)
     train_line = f"**{train_line}**" if train_line else ""
@@ -872,10 +876,12 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
                 dep_delay = format_time(
                     trip.status["fromStation"]["scheduledTime"],
                     trip.status["fromStation"]["realTime"],
+                    timezone=user.get_timezone(),
                 )[8:-2]
                 arr_delay = format_time(
                     trip.status["toStation"]["scheduledTime"],
                     trip.status["toStation"]["realTime"],
+                    timezone=user.get_timezone(),
                 )[8:-2]
 
                 embed = discord.Embed(
@@ -1618,7 +1624,7 @@ class RegisterTravelynxStepOne(discord.ui.View):
                     break_journey=DB.BreakMode.NATURAL,
                     suggestions="",
                     show_train_numbers=False,
-                    timezone="Europe/Berlin"
+                    timezone="Europe/Berlin",
                 ).write()
                 await ia.response.edit_message(
                     embed=discord.Embed(
