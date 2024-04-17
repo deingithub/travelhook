@@ -22,7 +22,7 @@ from .helpers import (
     format_timezone,
 )
 
-re_remove_vienna_suffixes = re.compile(r"Wien (?P<name>.+) \(.+\)")
+re_remove_vienna_suffixes = re.compile(r"(?P<name>Wien .+) \(.+\)")
 re_hbf = re.compile(r"(?P<city>.+) Hbf")
 re_hauptbahnhof = re.compile(
     r"Hauptbahnhof(?: \(S?\+?U?\)| \(Tram\/Bus\))?, (?P<city>.+)"
@@ -98,6 +98,12 @@ def shortened_name(previous_name, this_name):
     mprev = re_station_city.match(previous_name)
     mthis = re_station_city.match(this_name)
     if not mprev or not mthis:
+        return this_name
+
+    # special case almost exclusively for "Bahnhof (Bus), Grimma"
+    # the (Bahnhof ) prefix in the station regex eats the thing that makes the name
+    # make sense here. it would get shown as just (Bus), which is silly
+    if mthis["station"] == "(Bus)":
         return this_name
 
     if mprev["city"] == mthis["city"] and DB.City.find(mprev["city"]):
