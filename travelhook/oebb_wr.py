@@ -177,10 +177,16 @@ match_data = {
             "capacityWheelChair": 0,
         }
     ],
-    "Wieseldosto Bmpz-dl": [
+    "CityShuttle-Dosto Bmpz-dl": [
         {
             "lengthOverBuffers": 26.8,
             "capacitySecondClass": 110,
+        }
+    ],
+    "Wieseldosto Bmpz-dl": [
+        {
+            "lengthOverBuffers": 26.8,
+            "capacitySecondClass": 114,
         }
     ],
     "Wieseldosto Bbfmpz": [
