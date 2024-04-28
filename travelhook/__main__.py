@@ -686,6 +686,21 @@ async def manualtrip(
     train_line = " ".join(train_line)
 
     departure = parse_manual_time(departure, user.get_timezone())
+    if (last_trip := DB.Trip.find_last_trip_for(user.discord_id)) and last_trip.status[
+        "toStation"
+    ]["realTime"] > int(departure.timestamp()):
+        last_arrival = format_time(
+            last_trip.status["toStation"]["scheduledTime"],
+            last_trip.status["toStation"]["realTime"],
+            timezone=user.get_timezone(),
+        )
+        await ia.edit_original_response(
+            content=f"At your last checkin, you arrived at {last_arrival}. "
+            "Your journey will get messed up if you add check-ins out of chronological order. "
+            "Please edit or undo your previous checkin first."
+        )
+        return
+
     arrival = parse_manual_time(arrival, user.get_timezone())
     if arrival < departure:
         arrival += timedelta(days=1)
@@ -910,9 +925,30 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
                 )
 
 
+async def journey_autocomplete(ia, current):
+    def train_name(status, user):
+        time = format_time(
+            status["fromStation"]["scheduledTime"],
+            status["fromStation"]["realTime"],
+            timezone=user.get_timezone(),
+        )[2:-2]
+        headsign = fetch_headsign(status)
+        if fhs := status["train"].get("fakeheadsign"):
+            headsign = fhs
+        return f"{time} {status['train']['type']} {status['train']['line'] or ''} » {headsign}"
+
+    if user := DB.User.find(ia.user.id):
+        return [
+            Choice(name=train_name(trip.status, user), value=trip.journey_id)
+            for trip in DB.Trip.find_current_trips_for(user.discord_id)
+        ][:24]
+
+
 @journey.command()
+@discord.app_commands.autocomplete(journey=journey_autocomplete)
 async def edit(
     ia,
+    journey: typing.Optional[str],
     from_station: typing.Optional[str],
     departure: typing.Optional[str],
     departure_delay: typing.Optional[int],
@@ -924,15 +960,17 @@ async def edit(
     comment: typing.Optional[str],
     distance: typing.Optional[float],
     composition: typing.Optional[str],
-    do_not_format_composition: bool = False,
+    do_not_format_composition: typing.Optional[bool],
 ):
-    "manually overwrite some data of your current trip. you will be asked to confirm your changes."
+    "manually overwrite some data of a trip. you will be asked to confirm your changes."
     user = DB.User.find(discord_id=ia.user.id)
     if not user:
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
 
-    trip = DB.Trip.find_last_trip_for(user.discord_id)
+    trip = DB.Trip.find(user.discord_id, journey) or DB.Trip.find_last_trip_for(
+        user.discord_id
+    )
     if not trip:
         await ia.response.send_message(
             "Sorry, but the bot doesn't have a trip saved for you currently.",
