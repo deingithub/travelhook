@@ -10,49 +10,49 @@ from . import database as DB
 match_data = {
     # 1016 could also be 1116
     # 1016 could also be 2016 „Hercules“, a diesel loco with the same length
-    "1016 xxx": [
+    "1016": [
         {"lengthOverBuffers": 19.28, "capacityFirstClass": 0, "capacitySecondClass": 0}
     ],
-    "1144 xxx": [
+    "1144": [
         {"lengthOverBuffers": 16.1, "capacityFirstClass": 0, "capacitySecondClass": 0}
     ],
-    "1216 xxx": [
+    "1216": [
         {"lengthOverBuffers": 19.58, "capacityFirstClass": 0, "capacitySecondClass": 0}
     ],
-    "4020 xxx": [
+    "4020": [
         {"lengthOverBuffers": 23.3, "capacitySecondClass": 56},
         {"lengthOverBuffers": 22.8, "capacitySecondClass": 64},
         {"lengthOverBuffers": 23.3, "capacitySecondClass": 64},
     ],
     # Talent 1 with three coaches
-    "4023 xxx Talent": [{"lengthOverBuffers": 52.12, "capacitySecondClass": 151}],
+    "4023 Talent": [{"lengthOverBuffers": 52.12, "capacitySecondClass": 151}],
     # Talent 1 with four coaches
     # 4024 could also be 4124, they're only distinguished by multi system capability apparently
-    "4024 xxx Talent": [{"lengthOverBuffers": 66.87, "capacitySecondClass": 199}],
+    "4024 Talent": [{"lengthOverBuffers": 66.87, "capacitySecondClass": 199}],
     # Desiro ML with three coaches and four doors (regional version)
-    "4744 xxx Desiro ML": [
+    "4744 Desiro ML": [
         {"lengthOverBuffers": 24.53, "capacitySecondClass": 71},
         {"lengthOverBuffers": 26.1, "capacitySecondClass": 100},
         {"lengthOverBuffers": 24.53, "capacitySecondClass": 83},
     ],
     # Desiro ML with three coaches and six doors (S-Bahn version)
-    "4746 xxx Desiro ML": [
+    "4746 Desiro ML": [
         {"lengthOverBuffers": 24.53, "capacitySecondClass": 60},
         {"lengthOverBuffers": 26.1, "capacitySecondClass": 92},
         {"lengthOverBuffers": 24.53, "capacitySecondClass": 72},
     ],
     # Desiro ML with four coaches and eight doors
-    "4748 xxx Desiro ML": [
+    "4748 Desiro ML": [
         {"lengthOverBuffers": 24.53, "capacitySecondClass": 68},
         {"lengthOverBuffers": 26.1, "capacitySecondClass": 92},
         {"lengthOverBuffers": 26.1, "capacitySecondClass": 92},
         {"lengthOverBuffers": 24.53, "capacitySecondClass": 38},
     ],
     # Desiro Classic
-    "5022 xxx Desiro Classic": [
+    "5022 Desiro Classic": [
         {"lengthOverBuffers": 41.7, "capacitySecondClass": 117}
     ],
-    "5047 xxx": [{"lengthOverBuffers": 25.4, "capacitySecondClass": 68}],
+    "5047": [{"lengthOverBuffers": 25.4, "capacitySecondClass": 68}],
     # ÖBB railjet 1, trainsets 01-51
     "7x ÖBB Railjet 1": [
         # family coach
@@ -83,7 +83,7 @@ match_data = {
         },
     ],
     # ÖBB railjet 1, trainsets 52-60. very similar to ČD trainsets, but with an infopoint in the restaurant.
-    "7x ÖBB Railjet 1": [
+    "7x ÖBB Railjet 1b": [
         # family coach
         {"lengthOverBuffers": 26.5, "features": 33},
         # regular coach
@@ -134,7 +134,7 @@ match_data = {
             "capacityBusinessClass": 6,
         },
     ],
-    "411 xxx ICE-T": [
+    "411 ICE-T": [
         # first class driving coach
         {"lengthOverBuffers": 27.9, "capacityFirstClass": 43},
         # first+second class coach
@@ -152,7 +152,7 @@ match_data = {
         # second class driving coach
         {"lengthOverBuffers": 27.9, "capacitySecondClass": 63},
     ],
-    "510 xxx SŽ FLIRT": [
+    "510 SŽ FLIRT": [
         {
             "lengthOverBuffers": 23.38,
             "capacityFirstClass": 12,
