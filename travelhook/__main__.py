@@ -1309,15 +1309,24 @@ class ScottyView(discord.ui.View):
             > self.selected_train["scheduled"]
         ]
 
-        self.select_destination.options = [
-            discord.SelectOption(
-                label=(
-                    f"{format_time(stop['sched_arr'], stop['rt_arr'] or stop['sched_arr'])} {stop['name']}"
-                ).replace("**", ""),
-                value=f"d{i}",
-            )
-            for (i, stop) in enumerate(self.stops_after)
-        ][:24]
+        for i, stop in enumerate(self.stops_after):
+            if i > 24:
+                break  # TODO add a second selector for trips with more stops
+            if arr := stop["rt_arr"] or stop["sched_arr"]:
+                self.select_destination.options.append(
+                    discord.SelectOption(
+                        label=f"{format_time(stop['sched_arr'], arr)[2:-2]} {stop['name']}",
+                        value=f"d{i}",
+                    )
+                )
+            elif dep := stop["rt_dep"] or stop["sched_dep"]:
+                self.select_destination.options.append(
+                    discord.SelectOption(
+                        label=f"({format_time(stop['sched_dep'], dep)[2:-2]}) {stop['name']}",
+                        value=f"d{i}",
+                    )
+                )
+
         self.add_item(self.select_destination)
 
     def __init__(self, ia, station_name, request_time, timezone):
