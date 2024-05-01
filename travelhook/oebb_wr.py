@@ -49,9 +49,7 @@ match_data = {
         {"lengthOverBuffers": 24.53, "capacitySecondClass": 38},
     ],
     # Desiro Classic
-    "5022 Desiro Classic": [
-        {"lengthOverBuffers": 41.7, "capacitySecondClass": 117}
-    ],
+    "5022 Desiro Classic": [{"lengthOverBuffers": 41.7, "capacitySecondClass": 117}],
     "5047": [{"lengthOverBuffers": 25.4, "capacitySecondClass": 68}],
     # ÖBB railjet 1, trainsets 01-51
     "7x ÖBB Railjet 1": [

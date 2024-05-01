@@ -1486,7 +1486,7 @@ async def pleasegivemetraintypes(ia):
         "STR",
         "U",
     ]
-    special = ["A", "CB", "SB", "SEV", "Ü", "ZahnR"]
+    special = ["A", "CB", "FEX", "SB", "SEV", "Ü", "ZahnR"]
     manual = ["bike", "boat", "car", "coach", "plane", "steam", "walk"]
     austria = [
         "ATS",
