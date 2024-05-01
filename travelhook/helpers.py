@@ -115,6 +115,7 @@ blanket_replace_train_type = {
     "Tram": "STR",
     "EV": "SEV",
     "SKW": "S",
+    "SVG": "FEX",
     "west": "WB",
 }
 
