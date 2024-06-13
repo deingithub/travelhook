@@ -370,13 +370,7 @@ class Trip:
             this_trip = hafas.trip(
                 self.status["train"]["hafasId"] or self.status["train"]["id"]
             )
-            stops = [
-                Stopover(
-                    stop=this_trip.destination,
-                    arrival=this_trip.arrival,
-                    arrival_delay=this_trip.arrivalDelay,
-                )
-            ]
+            stops = []
             if this_trip.stopovers:
                 stops += this_trip.stopovers
 
@@ -384,6 +378,7 @@ class Trip:
                 stop
                 for stop in stops
                 if stop.stop.id == str(self.status["fromStation"]["uic"])
+                and stop.departure
                 and (stop.departure + (stop.departureDelay or timedelta()))
                 >= datetime.fromtimestamp(trip["arrival"], tz=tz)
             ]
@@ -399,6 +394,34 @@ class Trip:
                         + int((stops[0].departureDelay or timedelta()).total_seconds()),
                     }
                 }
+                if (
+                    stops[0].departure.timestamp()
+                    > self.status["toStation"]["scheduledTime"]
+                ):
+                    destination = this_trip.stopovers + [
+                        Stopover(
+                            stop=this_trip.destination,
+                            arrival=this_trip.arrival,
+                            arrival_delay=this_trip.arrivalDelay,
+                        )
+                    ]
+                    print([d for d in destination if d.arrival and d.arrival > stops[0].departure])
+                    destination = [
+                        stop
+                        for stop in destination
+                        if stop.stop.id == str(self.status["toStation"]["uic"])
+                        and stop.arrival
+                        and stop.arrival > stops[0].departure
+                    ]
+                    if destination:
+                        arrival_ts = int(destination[0].arrival.timestamp())
+                        first_station_patch["toStation"] = {
+                            "scheduledTime": arrival_ts,
+                            "realTime": arrival_ts
+                            + int(
+                                (destination[0].arrivalDelay or timedelta()).total_seconds()
+                            ),
+                        }
                 newpatch = DB.execute(
                     "SELECT json_patch(?,?) AS newpatch",
                     (
