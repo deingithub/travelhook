@@ -688,7 +688,7 @@ async def manualtrip(
     departure = parse_manual_time(departure, user.get_timezone())
     if (last_trip := DB.Trip.find_last_trip_for(user.discord_id)) and last_trip.status[
         "toStation"
-    ]["realTime"] > int(departure.timestamp()):
+    ]["realTime"] > int(departure.timestamp() + departure_delay *60):
         last_arrival = format_time(
             last_trip.status["toStation"]["scheduledTime"],
             last_trip.status["toStation"]["realTime"],
