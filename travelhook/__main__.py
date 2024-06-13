@@ -1032,8 +1032,10 @@ async def edit(
             if train_no:
                 prepare_patch["train"]["no"] = train_no
 
-    prepare_patch["comment"] = comment
-    prepare_patch["distance"] = distance
+    if comment:
+        prepare_patch["comment"] = comment
+    if distance:
+        prepare_patch["distance"] = distance
 
     if do_not_format_composition:
         prepare_patch["composition"] = composition
