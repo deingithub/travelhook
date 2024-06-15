@@ -282,7 +282,8 @@ def train_presentation(data):
     link = "https://bahn.expert/details"
     # if HAFAS, add journeyid to link to make sure it gets the right one
     if jid := data["train"]["hafasId"] or (data["train"]["id"] if is_hafas else None):
-        link += f"/{data['fromStation']['scheduledTime'] * 1000}/?jid={jid}"
+        jid = jid.replace("#", "%23") # for some reason urlencode doesn't eat the first one???
+        link += f"/0/{data['fromStation']['scheduledTime'] * 1000}/?jid={jid}"
     # if we don't have an hafas jid link it to a station instead to disambiguate
     else:
         link += (
