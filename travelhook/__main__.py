@@ -1505,22 +1505,6 @@ async def pleasegivemetraintypes(ia):
     poland = ["EIC", "KM", "KML", "KS", "TLK"]
     nürnberg = ["U1n", "U2n", "U3n"]
     wien = ["U1", "U2", "U3", "U4", "U5", "U6", "WLB"]
-    üstra = [
-        "Ü1",
-        "Ü2",
-        "Ü3",
-        "Ü4",
-        "Ü5",
-        "Ü6",
-        "Ü7",
-        "Ü8",
-        "Ü9",
-        "Ü10",
-        "Ü11",
-        "Ü12",
-        "Ü13",
-        "Ü17",
-    ]
     berlin = ["U1b", "U2b", "U3b", "U4b", "U5b", "U6b", "U7b", "U8b", "U9b", "U12b"]
     münchen = ["U1m", "U2m", "U3m", "U4m", "U5m", "U6m", "U7m", "U8m"]
     hamburg = ["U1h", "U2h", "U3h", "U4h"]
@@ -1536,7 +1520,6 @@ async def pleasegivemetraintypes(ia):
     **Hamburg** (`U1h`…`U4h`) {' '.join([train_type_emoji[tt] for tt in hamburg])}
     """
     transit_lines_b = f"""
-    **Hannover** (`Ü1`…`Ü17`) <:UE:1189298047784591431> {' '.join([train_type_emoji[tt][25:] for tt in üstra])}
     **München** (`U1m`…`U8m`) {' '.join([train_type_emoji[tt] for tt in münchen])}
     **Nürnberg** (`U1n`…`U3n`) {' '.join([train_type_emoji[tt] for tt in nürnberg])}
     """

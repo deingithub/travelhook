@@ -152,16 +152,8 @@ def train_presentation(data):
     if train_type == "S" and operator == "Albtal-Verkehrs-Gesellschaft mbH":
         train_type = "KAS"
 
-    if train_type == "STR" and operator == "üstra Hannoversche Verkehrsbetriebe AG":
+    if train_type == "STB" and operator == "üstra Hannoversche Verkehrsbetriebe AG":
         train_type = "Ü"
-    if (
-        train_type == "Ü"
-        and train_line
-        and train_line
-        in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "17")
-    ):
-        train_type = f"Ü{train_line}"
-        train_line = ""
 
     # the dutch
     if train_type == "RE" and operator == "Nederlandse Spoorwegen":
@@ -521,20 +513,6 @@ train_type_emoji = {
     "U2n": "<:UNbg2:1189300100040757300>",
     "U3n": "<:UNbg3:1189300102351818852>",
     "Ü": "<:UE:1189298047784591431>",
-    "Ü1": "<:UE:1189298047784591431><:Ue1:1210965175302234112>",
-    "Ü2": "<:UE:1189298047784591431><:Ue2:1210965170860589096>",
-    "Ü3": "<:UE:1189298047784591431><:Ue3:1210965165768708188>",
-    "Ü4": "<:UE:1189298047784591431><:Ue4:1210965177135144990>",
-    "Ü5": "<:UE:1189298047784591431><:Ue5:1210965179152605285>",
-    "Ü6": "<:UE:1189298047784591431><:Ue6:1210965180717207633>",
-    "Ü7": "<:UE:1189298047784591431><:Ue7:1210965164178931722>",
-    "Ü8": "<:UE:1189298047784591431><:Ue8:1210965172579991586>",
-    "Ü9": "<:UE:1189298047784591431><:Ue9:1210965167089917952>",
-    "Ü10": "<:UE:1189298047784591431><:Ue10:1210965162454945832>",
-    "Ü11": "<:UE:1189298047784591431><:Ue11:1210965287751516170>",
-    "Ü12": "<:UE:1189298047784591431><:Ue12:1210965186895159307>",
-    "Ü13": "<:UE:1189298047784591431><:Ue13:1210965168838676490>",
-    "Ü17": "<:UE:1189298047784591431><:Ue17:1210965344035016724>",
     "walk": "<:sbbwalk:1161321193001992273>",
     "WB": "<:wa:1162760160129855609><:wb:1162760161417515058>",
     "WLB": "<:wlb:1164614809887719474>",
@@ -559,10 +537,6 @@ s_bahn_color = "#2c8e4e"
 metro_color = "#014e8d"
 night_train_color = "#282559"
 tram_color = "#c5161c"
-uestra_a_color = "#176fc1"
-uestra_b_color = "#ec1041"
-uestra_c_color = "#f9a70c"
-uestra_d_color = "#66c530"
 
 train_type_color = {
     k: discord.Color.from_str(v)
@@ -660,20 +634,6 @@ train_type_color = {
         "U2n": "#ed1c24",
         "U3n": "#4cc3bc",
         "Ü": "#78b41d",
-        "Ü1": uestra_b_color,
-        "Ü2": uestra_b_color,
-        "Ü3": uestra_a_color,
-        "Ü4": uestra_c_color,
-        "Ü5": uestra_c_color,
-        "Ü6": uestra_c_color,
-        "Ü7": uestra_a_color,
-        "Ü8": uestra_b_color,
-        "Ü9": uestra_a_color,
-        "Ü10": uestra_d_color,
-        "Ü11": uestra_c_color,
-        "Ü12": uestra_d_color,
-        "Ü13": uestra_a_color,
-        "Ü17": uestra_a_color,
         "WB": "#2e86ce",
         "WLB": "#175a97",
     }.items()
