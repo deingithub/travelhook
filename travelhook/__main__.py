@@ -939,7 +939,7 @@ async def journey_autocomplete(ia, current):
 
     if user := DB.User.find(ia.user.id):
         return [
-            Choice(name=train_name(trip.status, user), value=trip.journey_id)
+            Choice(name=train_name(trip.status, user), value=trip.journey_id[-100:])
             for trip in DB.Trip.find_current_trips_for(user.discord_id)
         ][:24]
 
@@ -968,9 +968,11 @@ async def edit(
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
 
-    trip = DB.Trip.find(user.discord_id, journey) or DB.Trip.find_last_trip_for(
-        user.discord_id
-    )
+    trip = DB.Trip.find_last_trip_for(user.discord_id)
+    if journey:
+        trips = DB.Trip.find_current_trips_for(user.discord_id)
+        trip = [trip for trip in trips if trip.journey_id.endswith(journey)][0]
+
     if not trip:
         await ia.response.send_message(
             "Sorry, but the bot doesn't have a trip saved for you currently.",
