@@ -405,7 +405,13 @@ class Trip:
                             arrival_delay=this_trip.arrivalDelay,
                         )
                     ]
-                    print([d for d in destination if d.arrival and d.arrival > stops[0].departure])
+                    print(
+                        [
+                            d
+                            for d in destination
+                            if d.arrival and d.arrival > stops[0].departure
+                        ]
+                    )
                     destination = [
                         stop
                         for stop in destination
@@ -419,7 +425,9 @@ class Trip:
                             "scheduledTime": arrival_ts,
                             "realTime": arrival_ts
                             + int(
-                                (destination[0].arrivalDelay or timedelta()).total_seconds()
+                                (
+                                    destination[0].arrivalDelay or timedelta()
+                                ).total_seconds()
                             ),
                         }
                 newpatch = DB.execute(

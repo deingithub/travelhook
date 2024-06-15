@@ -401,7 +401,10 @@ def sillies(trips, embed):
         return embed.set_image(url="https://i.imgur.com/6WhzdSp.png")
     if "Mühlburger Tor" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/jGATXUv.jpg")
-    if "Wien Floridsdorf" in status["fromStation"]["name"] and status["train"]["type"] == "U":
+    if (
+        "Wien Floridsdorf" in status["fromStation"]["name"]
+        and status["train"]["type"] == "U"
+    ):
         return embed.set_image(url="https://i.imgur.com/Gul73tp.png")
     if "Wien Floridsdorf" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/CSBTb0z.gif")
