@@ -18,6 +18,7 @@ from .helpers import (
     train_presentation,
     trip_length,
     replace_city_suffix_with_prefix,
+    replace_operators,
     zugid,
     format_timezone,
 )
@@ -360,6 +361,13 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         f"{sum(lengths):.1f}km{'+' if includes_beelines else ''} · "
         f"{sum(lengths)/(total_time.total_seconds()/3600):.0f}km/h"
     )
+    embed_title = (
+        f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'} unterwegs"
+    )
+    if operator := trips[-1].hafas_data.get("operator"):
+        if operator.split(" ")[0].casefold().endswith("bahn"):
+            operator = f"der {operator}"
+        embed_title += f" mit {replace_operators.get(operator, operator)}"
 
     embed = (
         discord.Embed(
@@ -367,7 +375,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             color=color,
         )
         .set_author(
-            name=f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'} unterwegs",
+            name=embed_title,
             icon_url=user.avatar.url,
         )
         .set_footer(text=format_timezone(timezone))

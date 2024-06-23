@@ -282,7 +282,9 @@ def train_presentation(data):
     link = "https://bahn.expert/details"
     # if HAFAS, add journeyid to link to make sure it gets the right one
     if jid := data["train"]["hafasId"] or (data["train"]["id"] if is_hafas else None):
-        jid = jid.replace("#", "%23") # for some reason urlencode doesn't eat the first one???
+        jid = jid.replace(
+            "#", "%23"
+        )  # for some reason urlencode doesn't eat the first one???
         link += f"/0/{data['fromStation']['scheduledTime'] * 1000}/?jid={jid}"
     # if we don't have an hafas jid link it to a station instead to disambiguate
     else:
@@ -730,6 +732,18 @@ def describe_class(uic_id: str):
     if baureihe_subtype in db_classes_subtype:
         return db_classes_subtype[baureihe_subtype]
     return None
+
+
+# shorthand or better sounding names for HAFAS operator
+replace_operators = {
+    "Albtal-Verkehrs-Gesellschaft mbH": "der AVG",
+    "DB Fernverkehr AG": "DB Fernverkehr",
+    "DB Regio AG S-Bahn München": "der S-Bahn München",
+    "Österreichische Bundesbahnen": "den ÖBB",
+    "S-Bahn Hannover (Transdev)": "der S-Bahn Hannover",
+    "Schweizerische Bundesbahnen": "den SBB",
+    "üstra Hannoversche Verkehrsbetriebe AG": "dem ÜMO",
+}
 
 
 # this is specifically because Knielinger Allee/Städt. Klinikum, Karlsruhe is very long and doesn't fit in one line
