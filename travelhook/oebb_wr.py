@@ -160,6 +160,16 @@ match_data = {
         {"lengthOverBuffers": 16.97, "capacitySecondClass": 64},
         {"lengthOverBuffers": 23.38, "capacitySecondClass": 60},
     ],
+    "4110 DB KISS": [
+        {
+            "lengthOverBuffers": 25.36,
+            "capacityFirstClass": 28,
+            "capacitySecondClass": 32,
+        },
+        {"lengthOverBuffers": 24.82, "capacitySecondClass": 85},
+        {"lengthOverBuffers": 24.82, "capacitySecondClass": 79},
+        {"lengthOverBuffers": 25.36, "capacitySecondClass": 71},
+    ],
     # CityShuttle coaches
     "CityShuttle Bmpz-s": [
         {
