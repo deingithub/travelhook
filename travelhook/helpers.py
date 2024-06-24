@@ -737,11 +737,13 @@ def describe_class(uic_id: str):
 # shorthand or better sounding names for HAFAS operator
 replace_operators = {
     "Albtal-Verkehrs-Gesellschaft mbH": "der AVG",
+    "Bayerische Regiobahn": "der bayerischen Regiobahn",
     "DB Fernverkehr AG": "DB Fernverkehr",
     "DB Regio AG S-Bahn München": "der S-Bahn München",
     "Österreichische Bundesbahnen": "den ÖBB",
     "S-Bahn Hannover (Transdev)": "der S-Bahn Hannover",
-    "Schweizerische Bundesbahnen": "den SBB",
+    "SBB GmbH": "der SBB GmbH",
+    "Schweizerische Bundesbahnen": "der SBB",
     "üstra Hannoversche Verkehrsbetriebe AG": "dem ÜMO",
 }
 

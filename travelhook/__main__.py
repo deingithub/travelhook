@@ -1554,7 +1554,6 @@ async def pleasegivemetraintypes(ia):
         + manual
         + austria
         + poland
-        + üstra
         + nürnberg
         + wien
         + hamburg
