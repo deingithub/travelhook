@@ -309,24 +309,25 @@ async def zug(ia, member: typing.Optional[discord.Member]):
         ) as r:
             if r.status == 200:
                 status = await r.json()
+                if status["checkedIn"] and (status["visibility"]["desc"] != "private"):
+                    await handle_status_update(member.id, "update", status)
 
-                if not status["checkedIn"] or (
-                    status["visibility"]["desc"] == "private"
-                ):
-                    await ia.edit_original_response(
-                        embed=discord.Embed().set_author(
-                            name=f"{member.name} ist gerade nicht unterwegs",
-                            icon_url=member.avatar.url,
-                        )
-                    )
-                    return
-
-                await handle_status_update(member.id, "update", status)
-                current_trips = DB.Trip.find_current_trips_for(member.id)
-
+            current_trips = DB.Trip.find_current_trips_for(member.id)
+            if current_trips and (
+                current_trips[-1].status["checkedIn"]
+                or current_trips[-1].status["toStation"]["realTime"]
+                > datetime.utcnow().timestamp()
+            ):
                 await ia.edit_original_response(
                     embed=format_travelynx(bot, member.id, current_trips),
                     view=TripActionsView(current_trips[-1]),
+                )
+            else:
+                await ia.edit_original_response(
+                    embed=discord.Embed().set_author(
+                        name=f"{member.name} ist gerade nicht unterwegs",
+                        icon_url=member.avatar.url,
+                    )
                 )
 
 
