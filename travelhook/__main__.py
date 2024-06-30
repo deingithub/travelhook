@@ -305,7 +305,7 @@ async def zug(ia, member: typing.Optional[discord.Member]):
     await ia.response.defer()
     async with ClientSession() as session:
         async with session.get(
-            f"https://travelynx.de/api/v1/status/{user.token_status}"
+            f"{config['travelynx_instance']}/api/v1/status/{user.token_status}"
         ) as r:
             if r.status == 200:
                 status = await r.json()
@@ -366,7 +366,7 @@ class TripActionsView(discord.ui.View):
                 )
             self.add_item(
                 discord.ui.Button(
-                    label="Copy this checkin", url="https://travelynx.de" + url
+                    label="Copy this checkin", url=config["travelynx_instance"] + url
                 )
             )
 
@@ -377,7 +377,7 @@ class TripActionsView(discord.ui.View):
         user = DB.User.find(discord_id=self.trip.user_id)
         async with ClientSession() as session:
             async with session.get(
-                f"https://travelynx.de/api/v1/status/{user.token_status}"
+                f"{config['travelynx_instance']}/api/v1/status/{user.token_status}"
             ) as r:
                 if r.status == 200:
                     data = await r.json()
@@ -1071,7 +1071,9 @@ async def edit(
             "You can immediately apply these changes or double-check and make further edits with the manual editor "
             "using [TOML](https://toml.io), e.g.:"
             '```toml\nfromStation.name = "Nürnberg Ziegelstein"\ntrain = { type = "U", line = "11" }\n```\n'
-            "For available fields, see [travelynx's API documentation](https://travelynx.de/api).",
+            "For available fields, see [travelynx's API documentation]("
+            + config["travelynx_instance"]
+            + "/api).",
             color=train_type_color["SB"],
         ),
         view=EditTripView(trip, newpatch),
@@ -1576,7 +1578,9 @@ async def register(ia):
             color=train_type_color["SB"],
             description="Thanks for your interest! Using this bot, you can share your public transport journeys "
             "in and around Germany (or in fact, any journey around the world, using the bot's manual checkin feature) "
-            "with your friends and enemies on Discord.\nTo use it, you first need to sign up for **[travelynx](https://travelynx.de)**"
+            "with your friends and enemies on Discord.\nTo use it, you first need to sign up for **[travelynx]("
+            + config["travelynx_instance"]
+            + ")**"
             " to be able to check in into trains, trams, buses and so on. Then you can connect this bot to "
             "your travelynx account.\nFinally, for every server you can decide if *only you* want to share "
             "some of our journeys using the **/zug** command (this is the default), or if you want to let *everyone* "
@@ -1621,7 +1625,9 @@ class RegisterTravelynxStepZero(discord.ui.View):
                 title="Step 1/3: Connect Status API",
                 color=train_type_color["SB"],
                 description="For the first step, you'll need to give the bot read access to your travelynx account. "
-                "To do this, head over to the [**travelynx Account page**](https://travelynx.de/account) "
+                "To do this, head over to the [**travelynx Account page**]("
+                + config["travelynx_instance"]
+                + "/account) "
                 "while signed in, scroll down to «API», and click **Generate** in the table row with «Status».\n"
                 " Copy the token you just generated from the row. Return here, click «I have my token ready.» "
                 "below and enter the token into the pop-up.",
@@ -1679,7 +1685,9 @@ class RegisterTravelynxStepOne(discord.ui.View):
                         color=train_type_color["U1"],
                         description="### ❗ The token doesn't seem to be valid, please check it and try again.\n"
                         "For the first step, you'll need to give the bot read access to your travelynx account. "
-                        "To do this, head over to the [**Account page**](https://travelynx.de/account) "
+                        "To do this, head over to the [**Account page**]("
+                        + config["travelynx_instance"]
+                        + "/account) "
                         "while signed in, scroll down to «API», and click **Generate** in the table row with «Status».\n"
                         " Copy the token you just generated from the row. Return here, click «I have my token ready.» "
                         "below and enter the token into the pop-up.",
@@ -1702,7 +1710,9 @@ class RegisterTravelynxStepTwo(discord.ui.View):
                 "journeys on Discord.\n\nWith the live feed enabled on a server, once your server admins have set up a "
                 "live channel  *that you can see yourself*, the relay bot will automatically post non-private "
                 "checkins and try to keep your journey up to date. To connect travelynx's update webhook "
-                "with the relay bot, you need to head to the [**Account » Webhook page**](https://travelynx.de/account/hooks), "
+                "with the relay bot, you need to head to the [**Account » Webhook page**]("
+                + config["travelynx_instance"]
+                + "/account/hooks), "
                 "check «Aktiv» and enter the following values: \n\n"
                 f"**URL**\n```{config['webhook_url']}```\n"
                 f"**Token**\n```{token}```\n\n"

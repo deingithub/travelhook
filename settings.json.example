@@ -2,6 +2,7 @@
 	"token": "",
 	"database": "travelynx-relay.sqlite3",
 	"register_button_id": "register",
+	"travelynx_instance": "https://travelynx.de",
 	"webhook_url": "http://localhost:6005/travelynx",
 	"shortener_url": "http://localhost:6005/s"
 }

@@ -51,7 +51,9 @@ def parse_manual_time(time, timezone):
 async def is_token_valid(token):
     "check if a status api token actually works"
     async with ClientSession() as session:
-        async with session.get(f"https://travelynx.de/api/v1/status/{token}") as r:
+        async with session.get(
+            f"{config['travelynx_instance']}/api/v1/status/{token}"
+        ) as r:
             try:
                 data = await r.json()
                 if r.status == 200 and not "error" in data:
