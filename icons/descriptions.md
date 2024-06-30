@@ -67,7 +67,7 @@
 <img src="/icons/Ü.png" style="height: 2em;"> | üstra | Hannover, Germany
 <img src="/icons/WB.png" style="height: 2em;width:4em;"> | WESTbahn | Austria
 <img src="/icons/WLB.png" style="height: 2em;"> | Wiener Lokalbahnen | Austria
-<img src="/icons/ZahnR.png" style="height: 2em;"> | ZahnR, rack railway |
+<img src="/icons/generic-zahnr.png" style="height: 2em;"> | ZahnR, rack railway |
 
 Transit System | Line numbers
 ---- | -----
