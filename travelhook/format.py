@@ -18,7 +18,7 @@ from .helpers import (
     train_presentation,
     trip_length,
     replace_city_suffix_with_prefix,
-    replace_operators,
+    decline_operator_with_article,
     zugid,
     format_timezone,
 )
@@ -362,15 +362,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         f"{sum(lengths)/(total_time.total_seconds()/3600):.0f}km/h"
     )
     embed_title = f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
-    if operator := trips[-1].hafas_data.get("operator"):
-        if replaced := replace_operators.get(operator):
-            operator = replaced
-        elif operator.split(" ")[0].casefold().endswith("bahn"):
-            operator = f"der {operator}"
-        elif operator.startswith("DB Regio"):
-            operator = "DB Regio"
-        embed_title += f" mit {operator}"
-
+    embed_title += decline_operator_with_article(trips[-1].hafas_data.get("operator"))
     embed_title += " unterwegs"
 
     embed = (

@@ -740,12 +740,37 @@ replace_operators = {
     "Bayerische Regiobahn": "der bayerischen Regiobahn",
     "DB Fernverkehr AG": "DB Fernverkehr",
     "DB Regio AG S-Bahn München": "der S-Bahn München",
+    "Go-Ahead Baden-Württemberg GmbH": "Go-Ahead",
+    "Go-Ahead Bayern GmbH": "Go-Ahead",
     "Österreichische Bundesbahnen": "den ÖBB",
+    "Ostdeutsche Eisenbahn GmbH": "der ODEG",
     "S-Bahn Hannover (Transdev)": "der S-Bahn Hannover",
-    "SBB GmbH": "der SBB GmbH",
     "Schweizerische Bundesbahnen": "der SBB",
     "üstra Hannoversche Verkehrsbetriebe AG": "dem ÜMO",
 }
+known_operator_pronouns = {
+    "metronom": "dem",
+    "SNCF": "der",
+    "Wiener Linien": "den",
+}
+
+
+def decline_operator_with_article(operator: str):
+    "pick the correct 'mit [der/den/dem]' depending on the operator name"
+    if not operator:
+        return ""
+    if operator in replace_operators:
+        return f" mit {replace_operators[operator]}"
+    if operator in known_operator_pronouns:
+        return f" mit {known_operator_pronouns[operator]} {operator}"
+    if operator.startswith("DB Regio"):
+        return " mit DB Regio"
+    if operator.endswith("mbH"):
+        return f" mit der {operator}"
+    if operator.split(" ")[0].casefold().endswith("bahn"):
+        return f" mit der {operator}"
+
+    return f"mit {operator}"
 
 
 # this is specifically because Knielinger Allee/Städt. Klinikum, Karlsruhe is very long and doesn't fit in one line
