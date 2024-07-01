@@ -28,6 +28,7 @@
 <img src="/icons/KMŁ.png" style="height: 2em;width:4em;"> | Koleje Małopolskie | Polish regional train operator
 <img src="/icons/KS.png" style="height: 2em;width:4em;"> | Koleje Śląskie | Polish regional train operator
 <img src="/icons/L.png" style="height: 2em;width:4em;"> | Local | Belgium. *Listed as R in DB HAFAS*
+<img src="/icons/Lt.png" style="height: 2em;width:4em;"> | Leerfahrt Triebwagen | non-revenue service with multiple unit
 <img src="/icons/manual-auto.png" style="height: 2em;"> | car | for manual checkins only
 <img src="/icons/manual-bike.png" style="height: 2em;"> | bike | for manual checkins only
 <img src="/icons/manual-boat.png" style="height: 2em;"> | boat | for manual checkins only
@@ -45,13 +46,15 @@
 <img src="/icons/REX.png" style="height: 2em;width:4em;"> | Regional-Express | Austria
 <img src="/icons/RJ.png" style="height: 2em;width:4em;"> | Railjet | Austria
 <img src="/icons/RJX.png" style="height: 2em;width:4em;"> | Railjet Xpress | Austria
-<img src="/icons/RS.png" style="height: 2em;"> | Regio-S-Bahn | Bemen, Germany
+<img src="/icons/RS.png" style="height: 2em;width:4em;"> | Regio-S-Bahn | Bemen, Germany
 <img src="/icons/RUF.png" style="height: 2em;"> | Rufbus | call bus
 <img src="/icons/S.png" style="height: 2em;"> | S-Bahn |
 <img src="/icons/S AT.png" style="height: 2em;"> | S-Bahn | Austria
+<img src="/icons/ATStrunk.png" style="height: 2em;"> | S-Bahn | Austria (Vienna Trunk Line)
+<img src="/icons/ATSgreen.png" style="height: 2em;"> | S-Bahn | Austria (Vienna Vorortelinie)
 <img src="/icons/SB.png" style="height: 2em;"> | Standseilbahn | funicular
 <img src="/icons/Schw-B.png" style="height: 2em;"> | Schwebebahn | suspension railway
-<img src="/icons/SE.png" style="height: 2em;width:4em;"> | Stadtexpress | rarest train type - is it better than "alpha"?
+<img src="/icons/SE.png" style="height: 2em;width:4em;"> | Stadtexpress | rarest train type - is it better than <img src="/icons/A.png" style="height: 1.5em;">?
 <img src="/icons/SEV.png" style="height: 2em;width:4em;"> | Schienenersatzverkehr | rail replacement service
 <img src="/icons/S KA.png" style="height: 2em;"> | Stadtbahn | Karlsruhe, Germany
 <img src="/icons/S L.png" style="height: 2em;"> | Léman Express | Switzerland, France

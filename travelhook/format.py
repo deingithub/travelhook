@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 import re
 
 import discord
+import json
+import tomli
 from haversine import haversine
 
 from . import database as DB
@@ -12,10 +14,10 @@ from .helpers import (
     fetch_headsign,
     format_delta,
     format_time,
+    generate_train_link,
     get_train_emoji,
     LineEmoji,
     train_type_color,
-    train_presentation,
     trip_length,
     replace_city_suffix_with_prefix,
     decline_operator_with_article,
@@ -32,6 +34,157 @@ re_station_city = re.compile(
     r"((S-)?Bahnhof |(S-)?Bh?f\.? )?(?P<station>.+), (?P<city>.+)"
 )
 re_u_number = re.compile(r"(?P<station>.+) [\(\[]U\d+[\)\]]")
+
+blanket_replace_train_type = {
+    "EV": "SEV",
+    "RNV": "STR",
+    "O-Bus": "Bus",
+    "Tram": "STR",
+    "EV": "SEV",
+    "SKW": "S",
+    "SVG": "FEX",
+    "west": "WB",
+}
+
+
+train_types_config = {}
+with open("train_types.toml", "rb") as f:
+    train_types_config = tomli.load(f)
+
+emoji_cache = {}
+
+
+def get_network(status):
+    if "network" in status:
+        return status["network"]
+
+    operator = status.get("operator")
+    if not operator:
+        cached = DB.DB.execute(
+            "SELECT hafas_data FROM trips WHERE journey_id = ? AND hafas_data != '{}'",
+            (zugid(status),),
+        ).fetchone()
+        if cached:
+            operator = json.loads(cached["hafas_data"]).get("operator")
+
+    operator = operator or ""
+
+    lat = status["fromStation"]["latitude"]
+    lon = status["fromStation"]["longitude"]
+
+    # network NS: Nederlandse Spoorwegen trains
+    if operator == "Nederlandse Spoorwegen":
+        return "NS"
+
+    # network AVG: Stadtbahn Karlsruhe
+    if operator == "Albtal-Verkehrs-Gesellschaft mbH":
+        return "AVG"
+
+    # network WL: U-Bahn Wien
+    if operator.startswith("Wiener Linien"):
+        return "WL"
+
+    # network SWien: S-Bahn Wien
+    if haversine((lat, lon), (48.21, 16.39)) < 70:
+        return "SWien"
+
+    # network AT: austrian trains
+    if str(status["fromStation"]["uic"]).startswith("81") or str(
+        status["toStation"]["uic"]
+    ).startswith("81"):
+        return "AT"
+
+    # network Ü: Stadtbahn Hannover
+    if operator == "üstra Hannoversche Verkehrsbetriebe AG":
+        return "Ü"
+
+    # network KVB: Stadtbahn Köln/Bonn
+    if (50.62 < lat < 51.04) and (6.72 < lon < 7.26):
+        return "KVB"
+
+    # network BVG: U-Bahn Berlin
+    if haversine((lat, lon), (52.52, 13.41)) < 30:
+        return "BVG"
+
+    # network HHA: U-Bahn Hamburg
+    if haversine((lat, lon), (53.54, 10.01)) < 30:
+        return "HHA"
+
+    # network MVG: U-Bahn München
+    if haversine((lat, lon), (48.15, 11.54)) < 30:
+        return "MVG"
+
+    # network NRW: Stadtbahn Rhein/Ruhr
+    if (51.06 < lat < 51.68) and (6.46 < lon < 7.77):
+        return "NRW"
+
+    # network VAG: U-Bahn Nürnberg
+    if haversine((lat, lon), (49.45, 11.05)) < 10:
+        return "VAG"
+
+    # network VGF: Stadtbahn Frankfurt
+    if haversine((lat, lon), (50.11, 8.68)) < 30:
+        return "VGF"
+
+    # network ST: third-party operators in the netherlands
+    if operator in ("Blauwnet", "Arriva Nederland", "RRReis", "R-net"):
+        return "ST"
+
+
+def get_display(bot, status):
+    type = status["train"]["type"]
+    line = status["train"]["line"]
+    all_types = [t.get("type") for t in train_types_config["train_types"]]
+
+    type = blanket_replace_train_type.get(type, type)
+    # account for "ME RE2" instead of "RE 2"
+    if line and type not in all_types:
+        if len(line) > 2 and line[0:2] in all_types:
+            type = line[0:2]
+            line = line[2:]
+        if line[0] in all_types:
+            type = line[0]
+            line = line[1:]
+
+    if type == "RT":
+        type = "STR"
+        line = "RT" + line
+    if type == "Bus" and get_network(status) == "WL":
+        line = line.replace("A", "ᴀ").replace("B", "ʙ")
+
+    for tt in train_types_config["train_types"]:
+        # { type = "IC", line = "1",  line_startswith = "1", network = "SBB"}
+        if (
+            (not "type" in tt or tt["type"] == type)
+            and (not "line" in tt or tt["line"] == line)
+            and (not "line_startswith" in tt or line.startswith(tt["line_startswith"]))
+            and (not "network" in tt or tt["network"] == get_network(status))
+        ):
+            if "remove_line_startswith" in tt:
+                line = line.removeprefix(tt["line_startswith"])
+            if "fallback" in tt:
+                line = f"{type} {line}"
+
+            # { emoji = "ica,ic1", color = "#ff0404", hide_line_number = true, always_show_train_number = true }
+            return {
+                "emoji": emoji(bot, tt),
+                "color": tt.get("color", "#2e2e7d"),
+                "type": type,
+                "line": line if not tt.get("hide_line_number") else "",
+                "number": status["train"]["no"],
+                "always_show_train_number": tt.get("always_show_train_number", False),
+            }
+
+
+def emoji(bot, tt):
+    global emoji_cache
+    if not emoji_cache:
+        for gid in train_types_config["emoji_server_ids"]:
+            for emoji in bot.get_guild(gid).emojis:
+                emoji_cache[emoji.name] = str(emoji)
+
+    emoji = tt["emoji"].split("|")
+    return "".join([emoji_cache.get(e, f"FIXME `{tt}`") for e in emoji])
 
 
 def merge_names(from_name, to_name):
@@ -143,6 +296,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             train["fromStation"]["realTime"],
             timezone=timezone,
         )
+        display = get_display(bot, train)
         # compact layout for completed trips
         if continue_link and _next(trips, i):
             if not _prev(trips, i):
@@ -156,10 +310,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                 desc += f"{LineEmoji.COMPACT_JOURNEY}{LineEmoji.SPACER}"
 
             # draw only train type and line number in one line
-            train_type, train_line, _ = train_presentation(train)
-            desc += get_train_emoji(train_type)
-            if train_line:
-                desc += f" **{train_line}**"
+            desc += display["emoji"]
+            if display["line"]:
+                desc += f" **{display['line']}**"
             # draw an arrow to the next trip in the compact section until the last one in the section
             if _next(trips, i + 1):
                 desc += " → "
@@ -197,7 +350,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             else:
                 pass
 
-        train_type, train_line, route_link = train_presentation(train)
+        route_link = generate_train_link(train)
         headsign = shortened_name(train["fromStation"]["name"], fetch_headsign(train))
         if fhs := train["train"].get("fakeheadsign"):
             headsign = fhs
@@ -209,24 +362,20 @@ def format_travelynx(bot, userid, trips, continue_link=None):
 
         headsign = "» " + headsign
 
-        desc += LineEmoji.RAIL + LineEmoji.SPACER + get_train_emoji(train_type)
+        desc += LineEmoji.RAIL + LineEmoji.SPACER + display["emoji"]
         if route_link:
             headsign = f"[{headsign}]({route_link})"
         if trip.journey_id.startswith("travelhookfaked"):
             headsign += " ✱"
 
-        if train_line and train_line == train["train"]["no"]:
-            desc += f" {train_line} **{headsign}**"
-        elif train_line:
-            number = ""
-            if train["train"]["no"] and (
-                train_type in ("IC", "ICE", "EC", "ECE", "RJ", "RJX", "D")
-                or DB.User.find(userid).show_train_numbers
-            ):
-                number = f" {train['train']['no']}"
-            desc += f" **{train_line}**{number} **{headsign}**"
-        else:
-            desc += f" **{headsign}**"
+        if display["line"]:
+            desc += f" **{display['line']}**"
+        if display["number"] and (
+            display["always_show_train_number"]
+            or DB.User.find(userid).show_train_numbers
+        ):
+            desc += f" {display['number']}"
+        desc += f" **{headsign}**"
 
         desc += " ●\n" if train["comment"] else "\n"
         arrival = format_time(
@@ -316,7 +465,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     desc += f"{LineEmoji.CHANGE_WALK}{LineEmoji.SPACER}*— {int(change_meters)} m —*\n"
 
         # overwrite last set embed color with the current color
-        color = train_type_color.get(train_type, discord.Color.from_str("#2e2e7d"))
+        color = discord.Color.from_str(display["color"])
 
     # end of format loop, finish up embed
 
@@ -362,7 +511,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         f"{sum(lengths)/(total_time.total_seconds()/3600):.0f}km/h"
     )
     embed_title = f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
-    embed_title += decline_operator_with_article(trips[-1].hafas_data.get("operator"))
+    embed_title += decline_operator_with_article(
+        trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
+    )
     embed_title += " unterwegs"
 
     embed = (
@@ -377,27 +528,27 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         .set_footer(text=format_timezone(timezone))
     )
 
-    embed = sillies(trips, embed)
+    embed = sillies(bot, trips, embed)
 
     return embed
 
 
-def sillies(trips, embed):
+def sillies(bot, trips, embed):
     "do funny things with the embed once it's done"
 
     # sort by "S"+"31", ie train type and line
-    sortkey = lambda tup: tup[0] + tup[1]
-    train_lines = sorted(
-        [train_presentation(trip.status) for trip in trips], key=sortkey
-    )
+    sortkey = lambda d: d["type"] + d["line"]
+    train_lines = sorted([get_display(bot, trip.status) for trip in trips], key=sortkey)
     grouped = []
     for _, group in groupby(train_lines, key=sortkey):
         grouped.append(list(group))
     # get the most used type+line combinations
     grouped = sorted(grouped, key=len, reverse=True)
     if len(grouped[0]) >= 3:
-        train_type, train_line, _ = grouped[0][0]
-        embed.description += f"\n### {len(grouped[0])}× {get_train_emoji(train_type)} {train_line} COMBO!"
+        display = grouped[0][0]
+        embed.description += (
+            f"\n### {len(grouped[0])}× {display['emoji']} {display['line']} COMBO!"
+        )
 
     status = trips[-1].status
     stations = status["fromStation"]["name"] + status["toStation"]["name"]

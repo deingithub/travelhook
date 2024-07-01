@@ -110,177 +110,8 @@ def format_timezone(timezone):
             offset_m *= -1
         return f"{timezone.key} (UTC{'+' if offset > 0 else ''}{offset_h}:{offset_m})"
 
-
-blanket_replace_train_type = {
-    "RNV": "STR",
-    "O-Bus": "Bus",
-    "Tram": "STR",
-    "EV": "SEV",
-    "SKW": "S",
-    "SVG": "FEX",
-    "west": "WB",
-}
-
-
-def train_presentation(data):
-    "do some cosmetic fixes to train type/line and generate a bahn.expert link for it"
+def generate_train_link(data):
     is_hafas = "|" in data["train"]["id"]
-
-    operator = None
-    cached = DB.DB.execute(
-        "SELECT hafas_data FROM trips WHERE journey_id = ? AND hafas_data != '{}'",
-        (zugid(data),),
-    ).fetchone()
-    if cached:
-        operator = json.loads(cached["hafas_data"]).get("operator")
-
-    train_type = blanket_replace_train_type.get(
-        data["train"]["type"], data["train"]["type"]
-    )
-    train_line = data["train"]["line"]
-
-    # account for "ME RE2" instead of "RE  "
-    if train_line and train_type not in train_type_emoji:
-        if len(train_line) > 2 and train_line[0:2] in train_type_emoji:
-            train_type = train_line[0:2]
-            train_line = train_line[2:]
-        if train_line[0] in train_type_emoji:
-            train_type = train_line[0]
-            train_line = train_line[1:]
-
-    if not train_line:
-        train_line = data["train"]["no"]
-
-    if train_type == "S" and operator == "Albtal-Verkehrs-Gesellschaft mbH":
-        train_type = "KAS"
-
-    if train_type == "STB" and operator == "üstra Hannoversche Verkehrsbetriebe AG":
-        train_type = "Ü"
-
-    # the dutch
-    if train_type == "RE" and operator == "Nederlandse Spoorwegen":
-        train_type = "SPR"
-    if not train_type and operator in (
-        "Blauwnet",
-        "Arriva Nederland",
-        "RRReis",
-        "R-net",
-    ):
-        train_type = "ST"
-
-    # special treatment for VAG Nürnberg U-Bahn
-    def is_in_nürnberg(lat, lon):
-        return haversine((lat, lon), (49.45, 11.05)) < 10
-
-    if train_type == "U" and is_in_nürnberg(
-        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
-    ):
-        train_type = f"U{train_line}n"
-        train_line = ""
-
-    # special treatment for Hamburg HOCHBAHN
-    def is_in_hamburg(lat, lon):
-        return haversine((lat, lon), (53.54, 10.01)) < 30
-
-    if train_type == "U" and is_in_hamburg(
-        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
-    ):
-        train_type = f"U{train_line}h"
-        train_line = ""
-
-    # special treatment for Berlin BVG U-Bahn
-    def is_in_berlin(lat, lon):
-        return haversine((lat, lon), (52.52, 13.41)) < 30
-
-    if train_type == "U" and is_in_berlin(
-        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
-    ):
-        train_type = f"U{train_line}b"
-        train_line = ""
-
-    # special treatment for München MVG U-Bahn
-    def is_in_münchen(lat, lon):
-        return haversine((lat, lon), (48.15, 11.54)) < 30
-
-    if train_type == "U" and is_in_münchen(
-        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
-    ):
-        train_type = f"U{train_line}m"
-        train_line = ""
-
-    # special treatment for Frankfurt RMV U-Bahn
-    def is_in_frankfurt(lat, lon):
-        return haversine((lat, lon), (50.11, 8.68)) < 30
-
-    if train_type == "U" and is_in_frankfurt(
-        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
-    ):
-        train_type = f"U{train_line}f"
-        train_line = ""
-
-    # bitte beachten sie das verzehrverbot auf kölner stadtgebiet
-    def is_in_köln(lat, lon):
-        return (50.62 < lat < 51.04) and (6.72 < lon < 7.26)
-
-    if (
-        train_type == "STR"
-        and is_in_köln(
-            data["fromStation"]["latitude"], data["fromStation"]["longitude"]
-        )
-        and train_line not in ("61", "62", "65")
-    ):
-        train_type = "STB"
-
-    # special treatment for stadtbahn rhein-ruhr
-    def is_in_nrw(lat, lon):
-        return (51.06 < lat < 51.68) and (6.46 < lon < 7.77)
-
-    if train_type == "U" and is_in_nrw(
-        data["fromStation"]["latitude"], data["fromStation"]["longitude"]
-    ):
-        train_type = "STB"
-
-    if train_type == "STB":
-        train_line = train_line.removeprefix("U")
-
-    if train_type == "RT":
-        train_type = "STR"
-        train_line = "RT" + train_line
-
-    # special treatment for wien U6 (and the others too i guess)
-    if train_type == "U" and data["fromStation"]["name"].startswith("Wien "):
-        train_type = data["fromStation"]["name"][-3:-1]
-        train_line = ""
-    if train_type == "Bus" and data["fromStation"]["name"].startswith("Wien "):
-        train_line = train_line.replace("A", "ᴀ").replace("B", "ʙ")
-
-    # special treatment for austrian s-bahn
-    if train_type == "S" and (
-        str(data["fromStation"]["uic"]).startswith("81")
-        or str(data["toStation"]["uic"]).startswith("81")
-    ):
-        train_type = "ATS"
-
-    # special treatment for jura
-    if train_type == "U" and train_line.casefold().startswith("m"):
-        train_type = "M"
-    if train_type == "S" and train_line.startswith("L"):
-        train_line = train_line.removeprefix("L")
-        train_type = "SL"
-
-    if train_type == "S" and train_line.startswith("N"):
-        train_type = "SN"
-
-    if train_type == "Bus" and train_line.startswith("N"):
-        train_type = "BusN"
-
-    if "SEV" in train_line or "EV" in train_line:
-        train_type = "SEV"
-
-    if "X" in train_line and train_type == "Bus":
-        train_line = train_line.replace("X", "")
-        train_type = "BusX"
-
     link = "https://bahn.expert/details"
     # if HAFAS, add journeyid to link to make sure it gets the right one
     if jid := data["train"]["hafasId"] or (data["train"]["id"] if is_hafas else None):
@@ -317,8 +148,7 @@ def train_presentation(data):
             DB.Link(short_id=randid, long_url=link).write()
 
         link = config["shortener_url"] + "/" + randid
-
-    return (train_type, train_line, link)
+        return link
 
 
 def format_composition_element(element):
@@ -744,11 +574,15 @@ replace_operators = {
     "DB Regio AG S-Bahn München": "der S-Bahn München",
     "Go-Ahead Baden-Württemberg GmbH": "Go-Ahead",
     "Go-Ahead Bayern GmbH": "Go-Ahead",
+    "Graz-Köflacher Bahn und Busbetrieb GmbH": "der GKB",
     "Österreichische Bundesbahnen": "den ÖBB",
     "Ostdeutsche Eisenbahn GmbH": "der ODEG",
+    "Rhein-Neckar-Verkehr GmbH (Rhein-Haardtbahn)": "dem RNV",
     "S-Bahn Hannover (Transdev)": "der S-Bahn Hannover",
     "Schweizerische Bundesbahnen": "der SBB",
+    "SWEG Südwestdeutsche Landesverkehrs-GmbH": "der SWEG",
     "üstra Hannoversche Verkehrsbetriebe AG": "dem ÜMO",
+    "Wiener Linien GmbH & Co KG": "den Wiener Linien",  # öbb hafas spelling
 }
 known_operator_pronouns = {
     "metronom": "dem",
@@ -759,7 +593,7 @@ known_operator_pronouns = {
 
 def decline_operator_with_article(operator: str):
     "pick the correct 'mit [der/den/dem]' depending on the operator name"
-    if not operator:
+    if not operator or operator == "Nahreisezug":
         return ""
     if operator in replace_operators:
         return f" mit {replace_operators[operator]}"
@@ -767,12 +601,12 @@ def decline_operator_with_article(operator: str):
         return f" mit {known_operator_pronouns[operator]} {operator}"
     if operator.startswith("DB Regio"):
         return " mit DB Regio"
-    if operator.endswith("mbH"):
+    if operator.endswith("mbH") or operator.endswith("AG"):
         return f" mit der {operator}"
     if operator.split(" ")[0].casefold().endswith("bahn"):
         return f" mit der {operator}"
 
-    return f"mit {operator}"
+    return f" mit {operator}"
 
 
 # this is specifically because Knielinger Allee/Städt. Klinikum, Karlsruhe is very long and doesn't fit in one line
@@ -795,13 +629,13 @@ replace_headsign = {
     ("U6", "Wien Floridsdorf Bf (U6)"): "Floridsdorf",
     ("U6", "Wien Siebenhirten (U6)"): "Siebenhirten",
     # Hannover
-    ("STR1", "Laatzen (GVH)"): "Laatzen",
-    ("STR1", "Langenhagen (Hannover) (GVH)"): "Langenhagen",
-    ("STR1", "Sarstedt (Endpunkt GVH)"): "Sarstedt",
-    ("STR2", "Rethen(Leine) Nord, Laatzen"): "Rethen/Nord",
-    ("STR3", "Altwarmbüchen, Isernhagen"): "Altwarmbüchen",
-    ("STR9", "Empelde (Bus/Tram), Ronnenberg"): "Empelde",
-    ("STR13", "Hemmingen (Hannover)"): "Hemmingen",
+    ("STB1", "Laatzen (GVH)"): "Laatzen",
+    ("STB1", "Langenhagen (Hannover) (GVH)"): "Langenhagen",
+    ("STB1", "Sarstedt (Endpunkt GVH)"): "Sarstedt",
+    ("STB2", "Rethen(Leine) Nord, Laatzen"): "Rethen/Nord",
+    ("STB3", "Altwarmbüchen, Isernhagen"): "Altwarmbüchen",
+    ("STB9", "Empelde (Bus/Tram), Ronnenberg"): "Empelde",
+    ("STB13", "Hemmingen (Hannover)"): "Hemmingen",
     # jesus christ KVV please fix this nonsense
     ("S2", "Blankenloch Nord, Stutensee"): "Blankenloch",
     ("S2", "Daxlanden Dornröschenweg, Karlsruhe"): "Rheinstrandsiedlung",
@@ -815,4 +649,5 @@ replace_headsign = {
     # Stuttgart my behated
     ("STBU5", "Leinfelden Bahnhof, Leinfelden-Echterdingen"): "Leinfelden Bf",
     ("STBU6", "Stuttgart Flughafen/Messe, Leinfelden-Echterdingen"): "Flughafen/Messe",
+    ("STBU12", "Neckargröningen Remseck, Remseck am Neckar"): "Neckargröningen Remseck",
 }

@@ -1,4 +1,5 @@
 "contains our bot commands and the incoming webhook handler"
+import itertools
 import json
 import secrets
 import re
@@ -19,12 +20,19 @@ import tomli_w
 
 from . import database as DB
 from . import oebb_wr
-from .format import format_travelynx
+from .format import (
+    blanket_replace_train_type,
+    emoji,
+    format_travelynx,
+    get_display,
+    train_types_config,
+)
 from .helpers import (
     available_tzs,
     format_composition_element,
     format_time,
     get_train_emoji,
+    generate_train_link,
     is_token_valid,
     not_registered_embed,
     train_type_color,
@@ -32,10 +40,8 @@ from .helpers import (
     trip_length,
     zugid,
     tz,
-    train_presentation,
     parse_manual_time,
     fetch_headsign,
-    blanket_replace_train_type,
     OEBB_EMOJI,
 )
 
@@ -150,7 +156,12 @@ async def receive(bot):
                 raise web.HTTPNoContent()
 
             # hopefully debug this mess eventually
-            print(userid, data["reason"], train_presentation(data["status"]))
+            print(
+                userid,
+                data["reason"],
+                get_display(bot, data["status"]),
+                generate_train_link(data["status"]),
+            )
 
             # when checkin is undone, delete its message
             if data["reason"] == "undo" and not data["status"]["checkedIn"]:
@@ -766,7 +777,8 @@ def render_patched_train(trip, patch):
         ).fetchone()["status"]
     )
     user_tz = DB.User.find(trip.user_id).get_timezone()
-    train_type, train_line, link = train_presentation(status)
+    display = get_display(bot, status)
+    link = generate_train_link(status)
     departure = format_time(
         status["fromStation"]["scheduledTime"],
         status["fromStation"]["realTime"],
@@ -778,11 +790,12 @@ def render_patched_train(trip, patch):
         timezone=user_tz,
     )
     headsign = fetch_headsign(status)
-    train_line = f"**{train_line}**" if train_line else ""
-    if "travelhookfaked" in status["train"]["id"]:
-        return f"{get_train_emoji(train_type)} {train_line} » {headsign}\n{status['fromStation']['name']} {departure} → {status['toStation']['name']} {arrival}\n"
+    train_line = f"**{display['line']}**" if display["line"] else ""
+    stations = f"\n{status['fromStation']['name']} {departure} → {status['toStation']['name']} {arrival}\n"
+    if link:
+        return f"{display['emoji']} {train_line} [» {headsign}]({link})" + stations
     else:
-        return f"{get_train_emoji(train_type)} {train_line} [» {headsign}]({link})\n{status['fromStation']['name']} {departure} → {status['toStation']['name']} {arrival}\n"
+        return f"{display['emoji']} {train_line} » {headsign}" + stations
 
 
 @journey.command()
@@ -886,9 +899,10 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
             headers={"Authorization": f"Bearer {user.token_webhook}"},
         ) as r:
             if r.status == 200:
-                train_type, train_line, link = train_presentation(trip.status)
+                display = get_display(bot, trip.status)
+                link = generate_train_link(trip.status)
                 headsign = fetch_headsign(trip.get_unpatched_status())
-                train_line = f"**{train_line}**" if train_line else ""
+                train_line = f"**{display['line']}**" if display["line"] else ""
                 dep_delay = format_time(
                     trip.status["fromStation"]["scheduledTime"],
                     trip.status["fromStation"]["realTime"],
@@ -901,7 +915,7 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
                 )[8:-2]
 
                 embed = discord.Embed(
-                    description=f"{get_train_emoji(train_type)} {train_line} **» {headsign}** "
+                    description=f"{display['emoji']} {train_line} **» {headsign}** "
                     f"is delayed by **{dep_delay or '+0′'}/{arr_delay or '+0′'}**.",
                     color=train_type_color["SB"],
                 ).set_author(
@@ -945,8 +959,26 @@ async def journey_autocomplete(ia, current):
         ][:24]
 
 
+async def network_autocomplete(ia, current):
+    networks = set(
+        [tt["network"] for tt in train_types_config["train_types"] if "network" in tt]
+    )
+    networks = [
+        Choice(
+            name=f"[{network}] " + train_types_config["network_descriptions"][network],
+            value=network,
+        )
+        for network in networks
+        if current.casefold() in network.casefold()
+        or current.casefold() in train_types_config["network_descriptions"][network]
+    ]
+    return sorted(networks, key=lambda c: c.name)[:24]
+
+
 @journey.command()
-@discord.app_commands.autocomplete(journey=journey_autocomplete)
+@discord.app_commands.autocomplete(
+    journey=journey_autocomplete, network=network_autocomplete
+)
 async def edit(
     ia,
     journey: typing.Optional[str],
@@ -962,6 +994,8 @@ async def edit(
     distance: typing.Optional[float],
     composition: typing.Optional[str],
     do_not_format_composition: typing.Optional[bool],
+    network: typing.Optional[str],
+    operator: typing.Optional[str],
 ):
     "manually overwrite some data of a trip. you will be asked to confirm your changes."
     user = DB.User.find(discord_id=ia.user.id)
@@ -1039,6 +1073,10 @@ async def edit(
         prepare_patch["comment"] = comment
     if distance:
         prepare_patch["distance"] = distance
+    if network:
+        prepare_patch["network"] = network
+    if operator:
+        prepare_patch["operator"] = operator
 
     if do_not_format_composition:
         prepare_patch["composition"] = composition
@@ -1293,8 +1331,6 @@ class ScottyView(discord.ui.View):
             self.selected_train["line"] = self.selected_train["line"][1:]
         if self.selected_train["type"] == "WLB":
             self.selected_train["line"] = ""
-        if self.selected_train["type"] == "S":
-            self.selected_train["type"] = "ATS"
 
         self.select_station.disabled = True
         self.select_train.disabled = True
@@ -1332,6 +1368,7 @@ class ScottyView(discord.ui.View):
                         "longitude": self.selected_destination["lon"],
                     },
                     "link": link,
+                    "operator": self.selected_journey["operator"],
                 },
             ).commit.callback(ia)
         except discord.errors.InteractionResponded:
@@ -1461,9 +1498,72 @@ async def walk(
     )
 
 
-@bot.tree.command(guilds=servers)
-async def pleasegivemetraintypes(ia):
-    "print all the train types the bot knows about"
+manual = discord.app_commands.Group(
+    name="explain", description="the relay bot's manual pages"
+)
+
+
+def explain_display(bot, tt, for_variants=False):
+    def has_variants(type):
+        return any(
+            "network" in tt and tt.get("type") == type
+            for tt in train_types_config["train_types"]
+        )
+
+    type = tt.get("type", "…")
+    line = tt.get("line", "")
+    line_startswith = tt.get("line_startswith", "")
+    if line:
+        type += f" {line}"
+    elif line_startswith:
+        type += f" {line_startswith}…"
+
+    variant_indicator = ""
+    if has_variants(tt.get("type", "")) and not (line or line_startswith):
+        variant_indicator = " ✱"
+
+    if for_variants:
+        return f"`{type or '…'}` {emoji(bot, tt)}"
+    else:
+        return f"`{type:>6}` {emoji(bot, tt)}{variant_indicator}"
+
+
+@manual.command()
+async def train_types(ia):
+    "list the train types the relay bot knows about"
+    train_types = train_types_config["train_types"]
+    embed = discord.Embed(
+        color=discord.Color.from_str("#2e2e7d"),
+        title="manual: train types",
+        description=f"the relay bot currently knows **{len(set([tt.get('type') for tt in train_types]))} "
+        "train types**. when you use a supported type of transport, the bot will display a hand-crafted special icon for it!\n"
+        "train types marked with ✱ have additional **display variants** depending on the transit network your journey "
+        "is in. you can find out more about the supported networks by using **/explain train_variants**.",
+    ).add_field(
+        name="type aliases",
+        value="\n".join(
+            [f"`{k:>6}` **→** `{v:<6}`" for k, v in blanket_replace_train_type.items()]
+        ),
+    )
+    sort_by_class = lambda tt: tt.get("class", "other")
+    networkless_train_types = sorted(
+        [tt for tt in train_types if "type" in tt and not "network" in tt],
+        key=sort_by_class,
+    )
+    for key, tts in itertools.groupby(networkless_train_types, sort_by_class):
+        fallback_description = f"\n`     …` {emoji(bot, {'emoji':'sbbzug'})}"
+        embed = embed.add_field(
+            name=key,
+            value="\n".join([explain_display(bot, tt) for tt in tts])
+            + (fallback_description if key == "special" else ""),
+        )
+
+    await ia.response.send_message(embed=embed)
+
+
+@manual.command()
+async def train_variants(ia):
+    "list the train display variants for transit networks the bot knows about"
     fv = [
         "D",
         "EC",
@@ -1512,6 +1612,36 @@ async def pleasegivemetraintypes(ia):
     münchen = ["U1m", "U2m", "U3m", "U4m", "U5m", "U6m", "U7m", "U8m"]
     hamburg = ["U1h", "U2h", "U3h", "U4h"]
     frankfurt = ["U1f", "U2f", "U3f", "U4f", "U5f", "U6f", "U7f", "U8f", "U9f"]
+
+    embed = discord.Embed(
+        color=discord.Color.from_str("#2e2e7d"),
+        title="manual: train display variants",
+        description="the relay bot supports 'native' display variants for a number of transit "
+        "networks. when you check in with travelynx or **/scotty**, the bot will automatically "
+        "try to guess the correct network. if you're checking in manually or the bot makes a "
+        "mistake, you can correct it with **/journey edit network:**",
+    )
+    sortkey = lambda tt: tt.get("network", "")
+    train_types = sorted(train_types_config["train_types"], key=sortkey)
+    for network, types in itertools.groupby(train_types, sortkey):
+        if not network:
+            continue
+        types = list(types)
+        if len(types) > 1 and all(tt.get("type") == "U" for tt in types):
+            embed.description += (
+                f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n> "
+                f"`U 1-{types[-1]['line']}` "
+                + (" | ".join([emoji(bot, tt) for tt in types]))
+            )
+        else:
+            embed.description += (
+                f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n> "
+                + " | ".join(
+                    [explain_display(bot, tt, for_variants=True) for tt in types]
+                )
+            )
+    await ia.response.send_message(embed=embed)
+    return
 
     def render_emojis(train_types):
         return "\n".join([f"`{tt:>6}` {train_type_emoji[tt]}" for tt in train_types])
@@ -1567,6 +1697,9 @@ async def pleasegivemetraintypes(ia):
         embed = embed.add_field(name="uncategorized", value=render_emojis(s))
 
     await ia.response.send_message(embed=embed)
+
+
+bot.tree.add_command(manual, guilds=servers)
 
 
 @bot.tree.command(guilds=servers)
