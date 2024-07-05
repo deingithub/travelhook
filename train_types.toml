@@ -21,6 +21,7 @@ train_types = [
 	{ type = "Fähre", emoji = "Faehre", color = "#00a4db", class="city transit" },
 	{ type = "FEX", emoji = "fex0|fex1", color = "#ff4f00", class="regional" },
 	{ type = "FLX", emoji = "La|Lb", color = "#72d800", always_show_train_number = true, class="long-distance 2" },
+	{ type = "IR", line = "VAE", network = "CH-FV", emoji = "Ia|vae1|vae2|vae3|vae4|vae5", color = "#ff0404", always_show_train_number = true, hide_line_number = true },
 	{ type = "IC", emoji = "ca|cb", color = "#ff0404", always_show_train_number = true, class="long-distance" },
 	{ type = "ICD", emoji = "ca|icd1", color = "#ff0404", class="long-distance 2" },
 	{ type = "ICE", emoji = "ca|Cb", color = "#ff0404", always_show_train_number = true, class="long-distance" },
@@ -105,6 +106,9 @@ train_types = [
 	{ type = "U", line = "8", network = "MVG", emoji = "UM8", color = "#e4692a", hide_line_number = true },
 	# network = "NRW": matches if inside geofence around NRW
 	{ type = "U", network = "NRW", emoji = "STB", color = "#c5161c" },
+	# network = "tl": matches if operator is "Transport publics de la Région Lausannoise"
+	{ type = "U", line = "m1", network = "tl", emoji = "tlm1", color = "#ec008c", hide_line_number = true },
+	{ type = "U", line = "m2", network = "tl", emoji = "tlm2", color = "#ec008c", hide_line_number = true },
 	# network = "VAG": matches if inside geofence around Nürnberg
 	{ type = "U", line = "1", network = "VAG", emoji = "UNbg1", color = "#176fc1", hide_line_number = true },
 	{ type = "U", line = "2", network = "VAG", emoji = "UNbg2", color = "#ed1c24", hide_line_number = true },
@@ -148,6 +152,7 @@ train_types = [
 AT = "S-Bahn in Austria"
 AVG = "Stadtbahn Karlsruhe"
 BVG = "U-Bahn Berlin"
+CH-FV = "Swiss long-distance trains"
 HHA = "U-Bahn Hamburg"
 KVB = "Stadtbahn Köln/Bonn"
 MVG = "U-Bahn Berlin"
@@ -155,6 +160,7 @@ NRW = "Stadtbahn Rhein/Ruhr"
 NS = "Nederlandse Spoorwegen Sprinter"
 ST = "Stoptrein"
 SWien = "S-Bahn Wien"
+tl = "Metro Lausanne"
 VAG = "U-Bahn Nürnberg"
 VGF = "U-Bahn Frankfurt"
 WL = "U-Bahn Wien"

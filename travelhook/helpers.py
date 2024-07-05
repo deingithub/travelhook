@@ -110,6 +110,7 @@ def format_timezone(timezone):
             offset_m *= -1
         return f"{timezone.key} (UTC{'+' if offset > 0 else ''}{offset_h}:{offset_m})"
 
+
 def generate_train_link(data):
     is_hafas = "|" in data["train"]["id"]
     link = "https://bahn.expert/details"
@@ -580,7 +581,9 @@ replace_operators = {
     "Rhein-Neckar-Verkehr GmbH (Rhein-Haardtbahn)": "dem RNV",
     "S-Bahn Hannover (Transdev)": "der S-Bahn Hannover",
     "Schweizerische Bundesbahnen": "der SBB",
+    "Schweizerische Südostbahn (sob)": "der SOB",
     "SWEG Südwestdeutsche Landesverkehrs-GmbH": "der SWEG",
+    "Transport publics de la Région Lausannoise": "tl",
     "üstra Hannoversche Verkehrsbetriebe AG": "dem ÜMO",
     "Wiener Linien GmbH & Co KG": "den Wiener Linien",  # öbb hafas spelling
 }

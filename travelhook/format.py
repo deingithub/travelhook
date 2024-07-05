@@ -41,6 +41,7 @@ blanket_replace_train_type = {
     "O-Bus": "Bus",
     "Tram": "STR",
     "EV": "SEV",
+    "Schiff": "boat",
     "SKW": "S",
     "SVG": "FEX",
     "west": "WB",
@@ -129,6 +130,16 @@ def get_network(status):
     # network ST: third-party operators in the netherlands
     if operator in ("Blauwnet", "Arriva Nederland", "RRReis", "R-net"):
         return "ST"
+
+    if operator in (
+        "Schweizerische Bundesbahnen",
+        "Schweizerische Südostbahn (sob)",
+        "BLS AG",
+    ):
+        return "CH-FV"
+
+    if operator == "Transport publics de la Région Lausannoise":
+        return "tl"
 
 
 def get_display(bot, status):
@@ -537,7 +548,9 @@ def sillies(bot, trips, embed):
     "do funny things with the embed once it's done"
 
     # sort by "S"+"31", ie train type and line
-    sortkey = lambda d: d["type"] + d["line"]
+    # actually sort by emoji+line since the line field is empty on some supported
+    # transit networks, so it would count combos for the same train type and ignore the lines
+    sortkey = lambda d: f"{d['emoji']}{d['line']}"
     train_lines = sorted([get_display(bot, trip.status) for trip in trips], key=sortkey)
     grouped = []
     for _, group in groupby(train_lines, key=sortkey):

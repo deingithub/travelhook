@@ -1564,54 +1564,6 @@ async def train_types(ia):
 @manual.command()
 async def train_variants(ia):
     "list the train display variants for transit networks the bot knows about"
-    fv = [
-        "D",
-        "EC",
-        "ECE",
-        "EN",
-        "EST",
-        "FLX",
-        "IC",
-        "ICD",
-        "ICE",
-        "ICN",
-        "IR",
-        "TGV",
-    ]
-    regio = ["IRE", "L", "MEX", "RB", "RE", "SE", "SPR", "ST", "TER"]
-    sbahn = ["KAS", "SL", "RER", "RS", "S", "SN"]
-    transit = [
-        "AST",
-        "Bus",
-        "BusN",
-        "BusX",
-        "Fähre",
-        "M",
-        "RUF",
-        "Schw-B",
-        "STB",
-        "STR",
-        "U",
-    ]
-    special = ["A", "CB", "FEX", "SB", "SEV", "Ü", "ZahnR"]
-    manual = ["bike", "boat", "car", "coach", "plane", "steam", "walk"]
-    austria = [
-        "ATS",
-        "CJX",
-        "NJ",
-        "R",
-        "REX",
-        "RJ",
-        "RJX",
-        "WB",
-    ]
-    poland = ["EIC", "KM", "KML", "KS", "TLK"]
-    nürnberg = ["U1n", "U2n", "U3n"]
-    wien = ["U1", "U2", "U3", "U4", "U5", "U6", "WLB"]
-    berlin = ["U1b", "U2b", "U3b", "U4b", "U5b", "U6b", "U7b", "U8b", "U9b", "U12b"]
-    münchen = ["U1m", "U2m", "U3m", "U4m", "U5m", "U6m", "U7m", "U8m"]
-    hamburg = ["U1h", "U2h", "U3h", "U4h"]
-    frankfurt = ["U1f", "U2f", "U3f", "U4f", "U5f", "U6f", "U7f", "U8f", "U9f"]
 
     embed = discord.Embed(
         color=discord.Color.from_str("#2e2e7d"),
@@ -1630,7 +1582,7 @@ async def train_variants(ia):
         if len(types) > 1 and all(tt.get("type") == "U" for tt in types):
             embed.description += (
                 f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n> "
-                f"`U 1-{types[-1]['line']}` "
+                f"`U {types[0]['line']}-{types[-1]['line']}` "
                 + (" | ".join([emoji(bot, tt) for tt in types]))
             )
         else:
@@ -1641,62 +1593,7 @@ async def train_variants(ia):
                 )
             )
     await ia.response.send_message(embed=embed)
-    return
 
-    def render_emojis(train_types):
-        return "\n".join([f"`{tt:>6}` {train_type_emoji[tt]}" for tt in train_types])
-
-    transit_lines_a = f"""
-    The following cities' transit lines are automatically detected and get colored icons:
-    **Berlin** (`U1b`…`U12b`) {' '.join([train_type_emoji[tt] for tt in berlin])}
-    **Frankfurt** (`U1f`…`U9f`) {' '.join([train_type_emoji[tt] for tt in frankfurt])}
-    **Hamburg** (`U1h`…`U4h`) {' '.join([train_type_emoji[tt] for tt in hamburg])}
-    """
-    transit_lines_b = f"""
-    **München** (`U1m`…`U8m`) {' '.join([train_type_emoji[tt] for tt in münchen])}
-    **Nürnberg** (`U1n`…`U3n`) {' '.join([train_type_emoji[tt] for tt in nürnberg])}
-    """
-    transit_lines_c = f"""
-    **Wien** (`U1`…`U6`, `WLB`) {' '.join([train_type_emoji[tt] for tt in wien])}
-    """
-
-    embed = (
-        discord.Embed(
-            description=f"**The relay bot currently knows {len(train_type_emoji)} emoji for train types.**\n"
-            f"It also automatically rewrites the following train types:\n{', '.join([f'`{k}` → `{v}`' for k,v in blanket_replace_train_type.items()])}.\n"
-        )
-        .add_field(name="Long-distance", value=render_emojis(fv))
-        .add_field(name="Regional", value=render_emojis(regio))
-        .add_field(name="S-Bahn", value=render_emojis(sbahn))
-        .add_field(name="City transit", value=render_emojis(transit))
-        .add_field(name="Specials", value=render_emojis(special))
-        .add_field(name="For manual checkins", value=render_emojis(manual))
-        .add_field(name="Austria", value=render_emojis(austria))
-        .add_field(name="Poland", value=render_emojis(poland))
-        .add_field(name="Transit line numbers", inline=False, value=transit_lines_a)
-        .add_field(name="… continued", inline=False, value=transit_lines_b)
-        .add_field(name="… continued", inline=False, value=transit_lines_c)
-    )
-
-    if s := set(train_type_emoji.keys()) - set(
-        fv
-        + regio
-        + sbahn
-        + transit
-        + special
-        + manual
-        + austria
-        + poland
-        + nürnberg
-        + wien
-        + hamburg
-        + berlin
-        + münchen
-        + frankfurt
-    ):
-        embed = embed.add_field(name="uncategorized", value=render_emojis(s))
-
-    await ia.response.send_message(embed=embed)
 
 
 bot.tree.add_command(manual, guilds=servers)
