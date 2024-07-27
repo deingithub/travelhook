@@ -160,7 +160,7 @@ def get_display(bot, status):
     if type == "RT":
         type = "STR"
         line = "RT" + line
-    if type == "Bus" and get_network(status) == "WL":
+    if (type == "Bus" and get_network(status) == "WL") or (type == "STR" and line in ("4A", "5A", "6A")):
         line = line.replace("A", "ᴀ").replace("B", "ʙ")
 
     for tt in train_types_config["train_types"]:
@@ -560,7 +560,7 @@ def sillies(bot, trips, embed):
     if len(grouped[0]) >= 3:
         display = grouped[0][0]
         embed.description += (
-            f"\n### {len(grouped[0])}× {display['emoji']} {display['line']} COMBO!"
+            f"\n### {len(grouped[0])}× {display['emoji']} {display['line'] or ''} COMBO!"
         )
 
     status = trips[-1].status
@@ -576,10 +576,12 @@ def sillies(bot, trips, embed):
         return embed.set_image(url="https://i.imgur.com/Gul73tp.png")
     if "Wien Floridsdorf" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/CSBTb0z.gif")
+    if "Bopser, Stuttgart" in stations:
+        return embed.set_image(url="https://i.imgur.com/ynda6jb.png")
     if "Wien Mitte" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/f7dwfpt.gif")
     if "Gumpendorfer Straße" in stations:
-        return embed.set_image(url="https://i.imgur.com/9P15eRQ.png")
+        return embed.set_image(url="https://i.imgur.com/FVuvqBc.png")
     if "Ziegelstein" in stations:
         return embed.set_thumbnail(url="https://i.imgur.com/W3mPNEn.gif")
     if "Erlangen" in status["toStation"]["name"]:
