@@ -147,6 +147,7 @@ in python310Packages.buildPythonPackage {
     mkdir -p $out/bin
     cp $src/*.pl $out/bin
     wrapProgram $out/bin/json-hafas.pl --set PERL5LIB ${hafasperl}
+    wrapProgram $out/bin/json-hafas-db-stationboard.pl --set PERL5LIB ${hafasperl}
     wrapProgram $out/bin/json-hafas-oebb.pl --set PERL5LIB ${hafasperl}
     wrapProgram $out/bin/json-hafas-oebb-stationboard.pl --set PERL5LIB ${hafasperl}
     wrapProgram $out/bin/json-hafas-oebb-stopfinder.pl --set PERL5LIB ${hafasperl}

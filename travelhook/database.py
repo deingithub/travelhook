@@ -512,6 +512,7 @@ class Trip:
             traceback.print_exc()
         if "error_code" in stationboard:
             print(f"hafas sb perl broke:\n{status}")
+            return
 
         for train in stationboard["trains"]:
             if not train["scheduled"] == self.status["fromStation"]["scheduledTime"]:
