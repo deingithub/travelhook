@@ -6,6 +6,7 @@ import random
 import re
 import string
 import traceback
+import urllib
 
 import discord
 from aiohttp import ClientSession
@@ -112,20 +113,27 @@ def format_timezone(timezone):
 
 
 def generate_train_link(data):
-    is_hafas = "|" in data["train"]["id"]
-    link = "https://bahn.expert/details"
-    # if HAFAS, add journeyid to link to make sure it gets the right one
-    if jid := data["train"]["hafasId"] or (data["train"]["id"] if is_hafas else None):
-        jid = jid.replace(
-            "#", "%23"
-        )  # for some reason urlencode doesn't eat the first one???
-        link += f"/0/{data['fromStation']['scheduledTime'] * 1000}/?jid={jid}"
-    # if we don't have an hafas jid link it to a station instead to disambiguate
-    else:
-        link += (
-            f"/{data['train']['type']}%20{data['train']['no']}/"
+    link = None
+    if data["backend"]["type"] == "IRIS-TTS":
+        link = (
+            "https://bahn.expert/details"
+            + f"/{data['train']['type']}%20{data['train']['no']}/"
             + str(data["fromStation"]["scheduledTime"] * 1000)
             + f"/?station={data['fromStation']['uic']}"
+        )
+    elif data["backend"]["name"] == "DB":
+        jid = data["train"]["id"].replace(
+            "#", "%23"
+        )  # for some reason urlencode doesn't eat the first one???
+        link = (
+            "https://bahn.expert/details"
+            + f"/0/{data['fromStation']['scheduledTime'] * 1000}/?jid={jid}"
+        )
+    elif data["backend"]["name"] == "ÖBB":
+        link = (
+            "https://dbf.finalrewind.org/z/"
+            + urllib.parse.quote(data["train"]["id"])
+            + "?hafas=ÖBB"
         )
 
     if "travelhookfaked" in data["train"]["id"]:
@@ -548,7 +556,7 @@ db_classes_subtype = {
 def describe_class(uic_id: str):
     if not len(uic_id) == 12:
         return None
-    # 9x 80 1234 5xx x
+    # given the UIC number 9x 80 1234 5xx x:
     # 234 is commonly reported as "baureihe" in germany, but the register number
     # actually has four digits 1234. sometimes baureihe codes are shared too
     # and you have to determine the actual type by the first digit of the trainset number, 5

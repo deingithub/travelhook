@@ -445,9 +445,25 @@ class Trip:
     def fetch_hafas_data(self, force: bool = False):
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
 
+        hafas_script = None
+        hafas_stationboard = None
+        if self.status["backend"]["name"] == "ÖBB":
+            hafas_script = "json-hafas-oebb.pl"
+            hafas_stationboard = "json-hafas-oebb-stationboard.pl"
+        elif (
+            self.status["backend"]["name"] == "DB"
+            or self.status["backend"]["type"] == "IRIS-TTS"
+        ):
+            hafas_script = "json-hafas.pl"
+            hafas_stationboard = "json-hafas-db-stationboard.pl"
+
+        if not hafas_script:
+            print(f"unsupported backend {self.status['backend']}")
+            return
+
         def write_hafas_data(departureboard_entry):
             hafas = subprocess.run(
-                ["json-hafas.pl", departureboard_entry.id],
+                [hafas_script, departureboard_entry["id"]],
                 capture_output=True,
             )
             status = {}
@@ -465,7 +481,7 @@ class Trip:
                     "UPDATE trips SET hafas_data=?, headsign=? WHERE user_id = ? AND journey_id = ?",
                     (
                         json.dumps(status),
-                        departureboard_entry.direction,
+                        departureboard_entry["direction"],
                         self.user_id,
                         self.journey_id,
                     ),
@@ -480,118 +496,39 @@ class Trip:
         if not jid and "|" in self.status["train"]["id"]:
             jid = self.status["train"]["id"]
 
-        def check_same_train(hafas_name, train):
-            hafas_name = hafas_name.replace(" ", "")
-            train_line = train["type"] + (train["line"] or "").replace(" ", "")
-            train_no = train["type"] + train["no"]
-            return (
-                (hafas_name == train_line)
-                or (hafas_name == train_no)
-                or (hafas_name == train["type"] == "ZahnR")
-            )
-
+        hafas_sb = subprocess.run(
+            [
+                hafas_stationboard,
+                str(self.status["fromStation"]["uic"]),
+                str(self.status["fromStation"]["realTime"]),
+            ],
+            capture_output=True,
+        )
+        stationboard = {}
         try:
-            departure = datetime.fromtimestamp(
-                self.status["fromStation"]["scheduledTime"], tz=tz
-            )
-            candidates = hafas.departures(
-                station=self.status["fromStation"]["uic"], date=departure, duration=10
-            )
-            candidates2 = [
-                c
-                for c in candidates
-                if (jid and c.id == jid)
-                or (
-                    check_same_train(c.name, self.status["train"])
-                    and c.dateTime == departure
-                )
-            ]
-            if len(candidates2) == 1:
-                write_hafas_data(candidates2[0])
-                return
-
-            for candidate in candidates2:
-                trip = hafas.trip(candidate.id)
-                stops = [
-                    Stopover(
-                        stop=trip.destination,
-                        arrival=trip.arrival,
-                        arrival_delay=trip.arrivalDelay,
-                    )
-                ]
-                if trip.stopovers:
-                    stops += trip.stopovers
-                if any(
-                    stop.stop.id == str(self.status["toStation"]["uic"])
-                    and (
-                        stop.arrival
-                        and int(stop.arrival.timestamp())
-                        == self.status["toStation"]["scheduledTime"]
-                    )
-                    for stop in stops
-                ):
-                    write_hafas_data(candidate)
-                    return
-                else:
-                    print_leg = lambda c: f"{c.id} {c.name} {c.direction} {c.dateTime}"
-                    print(
-                        f"can't decide! {self.status['train']['type']} {self.status['train']['line']} {self.status['train']['no']} {departure}",
-                        self.status["fromStation"],
-                        self.status["toStation"],
-                        "cand",
-                        "\n".join([print_leg(c) for c in candidates]),
-                        "cand2",
-                        "\n".join([print_leg(c) for c in candidates2]),
-                        sep="\n",
-                    )
+            stationboard = json.loads(hafas_sb.stdout)
         except:  # pylint: disable=bare-except
-            print("error trying to find train:")
+            print(f"hafas sb perl broke:\n{hafas_sb.stdout} {hafas_sb.stderr}")
             traceback.print_exc()
+        if "error_code" in stationboard:
+            print(f"hafas sb perl broke:\n{status}")
+
+        for train in stationboard["trains"]:
+            if not train["scheduled"] == self.status["fromStation"]["scheduledTime"]:
+                continue
+            if jid == train["id"] or (train["number"] == self.status["train"]["no"]):
+                write_hafas_data(train)
+                break
+        else:
+            print("didn't find a match!")
 
     def fetch_headsign(self):
         if headsign := (self.headsign or self.status["train"].get("fakeheadsign")):
             return headsign
 
-        def get_headsign_from_stationboard(leg):
-            headsign = leg.direction
-            train_key = (
-                (
-                    self.status["train"]["type"]
-                    + (self.status["train"]["line"] or self.status["train"]["no"])
-                ),
-                headsign,
-            )
-            return replace_headsign.get(
-                train_key,
-                headsign,
-            )
-
-        self.headsign = "?"
-        if "id" in self.hafas_data:
-            try:
-                departure = datetime.fromtimestamp(
-                    self.status["fromStation"]["scheduledTime"], tz=tz
-                )
-                candidates = [
-                    c
-                    for c in hafas.departures(
-                        station=self.status["fromStation"]["uic"],
-                        date=departure,
-                        duration=10,
-                    )
-                    if c.id == self.hafas_data["id"]
-                ]
-                if len(candidates) == 1:
-                    self.headsign = get_headsign_from_stationboard(candidates[0])
-
-            except:  # pylint: disable=bare-except
-                print("error trying to fetch headsign:")
-                traceback.print_exc()
-
-        DB.execute(
-            "UPDATE trips SET headsign=? WHERE user_id = ? AND journey_id = ?",
-            (self.headsign, self.user_id, self.journey_id),
-        )
+        if not self.hafas_data:
+            self.fetch_hafas_data()
+        return self.headsign or "?"
 
     def get_db_composition(self):
         if "composition" in self.status:

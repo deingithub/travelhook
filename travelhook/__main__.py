@@ -1595,7 +1595,6 @@ async def train_variants(ia):
     await ia.response.send_message(embed=embed)
 
 
-
 bot.tree.add_command(manual, guilds=servers)
 
 

@@ -143,13 +143,13 @@ def get_network(status):
 
 
 def get_display(bot, status):
-    type = status["train"]["type"]
+    type = status["train"]["type"].strip()
     line = status["train"]["line"]
     all_types = [t.get("type") for t in train_types_config["train_types"]]
 
     type = blanket_replace_train_type.get(type, type)
     # account for "ME RE2" instead of "RE 2"
-    if line and type not in all_types:
+    if line and (type not in all_types or not type):
         if len(line) > 2 and line[0:2] in all_types:
             type = line[0:2]
             line = line[2:]
@@ -157,10 +157,15 @@ def get_display(bot, status):
             type = line[0]
             line = line[1:]
 
+    if not type and line == "BB":
+        type = "WLB"
+        line = ""
     if type == "RT":
         type = "STR"
         line = "RT" + line
-    if (type == "Bus" and get_network(status) == "WL") or (type == "STR" and line in ("4A", "5A", "6A")):
+    if (type == "Bus" and get_network(status) == "WL") or (
+        type == "STR" and line in ("4A", "5A", "6A")
+    ):
         line = line.replace("A", "ᴀ").replace("B", "ʙ")
 
     for tt in train_types_config["train_types"]:
@@ -536,7 +541,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             name=embed_title,
             icon_url=user.avatar.url,
         )
-        .set_footer(text=format_timezone(timezone))
+        .set_footer(
+            text=f"{format_timezone(timezone)} | {trips[-1].status['backend']['name'] or 'DB'} {trips[-1].status['backend']['type']}"
+        )
     )
 
     embed = sillies(bot, trips, embed)
@@ -559,9 +566,7 @@ def sillies(bot, trips, embed):
     grouped = sorted(grouped, key=len, reverse=True)
     if len(grouped[0]) >= 3:
         display = grouped[0][0]
-        embed.description += (
-            f"\n### {len(grouped[0])}× {display['emoji']} {display['line'] or ''} COMBO!"
-        )
+        embed.description += f"\n### {len(grouped[0])}× {display['emoji']} {display['line'] or ''} COMBO!"
 
     status = trips[-1].status
     stations = status["fromStation"]["name"] + status["toStation"]["name"]
