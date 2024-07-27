@@ -206,12 +206,24 @@ match_data = {
         }
     ],
     # IC coaches
-    "ÖBB IC Bmpz": [
+    "Amz": [{"lengthOverBuffers": 26.4, "capacityFirstClass": 54}],
+    "Bmpz70": [
         {"lengthOverBuffers": 26.4, "capacitySecondClass": 78, "capacityBicycle": 1}
     ],
-    "ÖBB IC Bmz": [{"lengthOverBuffers": 26.4, "capacitySecondClass": 66}],
+    "Bmpz73": [
+        {"lengthOverBuffers": 26.4, "capacitySecondClass": 74, "capacityBicycle": 1}
+    ],
+    "Bmz": [{"lengthOverBuffers": 26.4, "capacitySecondClass": 66}],
+    "WRmz": [
+        {
+            "lengthOverBuffers": 26.9,
+            "features": 64,
+            "capacityFirstClass": 0,
+            "capacitySecondClass": 0,
+        }
+    ],
     # likely, according to vagonweb - verify in person
-    "ÖBB IC/NJ Bbmvz": [
+    "Bbmvz": [
         {"lengthOverBuffers": 26.4, "capacitySecondClass": 38, "features": 3}
     ],
     "Wagen": [{}],
