@@ -477,11 +477,20 @@ class Trip:
                 print(f"hafas perl broke:\n{status}")
             else:
                 self.hafas_data = status
+                headsign = departureboard_entry["direction"]
+                train_key = (
+                    (
+                        self.status["train"]["type"]
+                        + (self.status["train"]["line"] or self.status["train"]["no"])
+                    ),
+                    headsign,
+                )
+                headsign = replace_headsign.get(train_key, headsign) or "?"
                 DB.execute(
                     "UPDATE trips SET hafas_data=?, headsign=? WHERE user_id = ? AND journey_id = ?",
                     (
                         json.dumps(status),
-                        departureboard_entry["direction"],
+                        headsign,
                         self.user_id,
                         self.journey_id,
                     ),

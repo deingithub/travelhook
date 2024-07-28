@@ -223,9 +223,7 @@ match_data = {
         }
     ],
     # likely, according to vagonweb - verify in person
-    "Bbmvz": [
-        {"lengthOverBuffers": 26.4, "capacitySecondClass": 38, "features": 3}
-    ],
+    "Bbmvz": [{"lengthOverBuffers": 26.4, "capacitySecondClass": 38, "features": 3}],
     "Wagen": [{}],
 }
 

@@ -629,6 +629,14 @@ async def manual_station_autocomplete(ia, current):
     return [Choice(name=s, value=s) for s in set(suggestions)]
 
 
+async def train_types_autocomplete(ia, current):
+    train_types = train_types_config["train_types"]
+    train_types = set([tt.get("type") for tt in train_types if tt.get("type")])
+    suggestions = sorted([s for s in train_types if current.casefold() in s.casefold()])
+
+    return [Choice(name=s, value=s) for s in suggestions[:25]]
+
+
 re_walk_distance = re.compile(
     r"(?P<type>walk |bike )(?P<number>\d+(?:.\d+)?)(?P<unit>k?m)"
 )
@@ -642,12 +650,13 @@ re_walk_distance = re.compile(
     to_station="the name of the station you will arrive at",
     arrival="HH:MM arrival according to the timetable",
     arrival_delay="minutes of delay",
-    train="train type, line & number like 'S 42', 'walk 1km', 'bike 3km', 'plane LH3999', 'REX 3 #123'",
+    train="train type, line & number, like 'S 42', 'walk', 'plane LH3999', 'REX 3 #123'. see: /explain train_types",
 )
 @discord.app_commands.autocomplete(
     from_station=manual_station_autocomplete,
     to_station=manual_station_autocomplete,
     headsign=manual_station_autocomplete,
+    train=train_types_autocomplete,
 )
 async def manualtrip(
     ia,
@@ -718,6 +727,7 @@ async def manualtrip(
         arrival += timedelta(days=1)
     status = {
         "checkedIn": False,
+        "backend": {"name": "manual", "type": "", "id": -1},
         "comment": comment or "",
         "actionTime": int(datetime.now(tz=tz).timestamp()),
         "fromStation": {
@@ -977,7 +987,9 @@ async def network_autocomplete(ia, current):
 
 @journey.command()
 @discord.app_commands.autocomplete(
-    journey=journey_autocomplete, network=network_autocomplete
+    journey=journey_autocomplete,
+    network=network_autocomplete,
+    train=train_types_autocomplete,
 )
 async def edit(
     ia,
