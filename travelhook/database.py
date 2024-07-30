@@ -449,13 +449,15 @@ class Trip:
         if self.status["backend"]["type"] == "IRIS-TTS":
             backend = "DB"
         elif backend == "ÖBB":
-            backend = bytes([214, 66, 66]) # i REALLY wish i knew what the fuck is wrong with perl
+            backend = bytes(
+                [214, 66, 66]
+            )  # i REALLY wish i knew what the fuck is wrong with perl
         elif backend == "manual":
             return
 
         def write_hafas_data(departureboard_entry):
             hafas = subprocess.run(
-                [ "json-hafas.pl", backend, departureboard_entry["id"]],
+                ["json-hafas.pl", backend, departureboard_entry["id"]],
                 capture_output=True,
             )
             status = {}

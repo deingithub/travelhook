@@ -253,6 +253,7 @@ class LineEmoji:  # pylint: disable=too-few-public-methods
     WARN = "<:warn:1225520405851410614>"
     INFO = "<:info:1225520403670241381>"
 
+
 bus_color = "#a3167e"
 long_distance_color = "#ff0404"
 regional_express_color = "#ff4f00"
@@ -382,7 +383,7 @@ replace_operators = {
     "Rhein-Neckar-Verkehr GmbH (Rhein-Haardtbahn)": "dem RNV",
     "S-Bahn Hannover (Transdev)": "der S-Bahn Hannover",
     "Schweizerische Bundesbahnen": "der SBB",
-    "Schweizerische Bundesbahnen SBB": "der SBB", # bls hafas spelling
+    "Schweizerische Bundesbahnen SBB": "der SBB",  # bls hafas spelling
     "Schweizerische Südostbahn (sob)": "der SOB",
     "SWEG Südwestdeutsche Landesverkehrs-GmbH": "der SWEG",
     "Transport publics de la Région Lausannoise": "tl",

@@ -574,7 +574,7 @@ def sillies(bot, trips, embed):
         return embed.set_image(url="https://i.imgur.com/jGATXUv.jpg")
     if (
         "Wien Floridsdorf" in status["fromStation"]["name"]
-        and status["train"]["type"]+status["train"]["line"] == "U6"
+        and status["train"]["type"] + status["train"]["line"] == "U6"
     ):
         return embed.set_image(url="https://i.imgur.com/Gul73tp.png")
     if "Wien Floridsdorf" in status["toStation"]["name"]:

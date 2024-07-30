@@ -1204,6 +1204,7 @@ class EditTripView(discord.ui.View):
 bot.tree.add_command(configure, guilds=servers)
 bot.tree.add_command(journey, guilds=servers)
 
+
 @bot.tree.command(guilds=servers)
 @discord.app_commands.rename(from_station="from", to_station="to")
 @discord.app_commands.autocomplete(
