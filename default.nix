@@ -16,11 +16,11 @@ let
   hafas-m = with perlPackages;
     buildPerlModule {
       pname = "Travel-Status-DE-DeutscheBahn";
-      version = "6.01";
+      version = "6.03";
       src = fetchurl {
         url =
-          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DeutscheBahn-5.06.tar.gz";
-        hash = "sha256-gmHfubBNkrHz2tZnZIqwrU9Yi00AU55oPT5bMW85M9Q==";
+          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DeutscheBahn-6.03.tar.gz";
+        hash = "sha256-5SEmrdZagl9h0e2F5dpFuwy4KNeh7YsnuuT6WrWpkLE=";
       };
       doCheck = false;
       buildInputs = [ FileSlurp TestCompile TestPod ];
@@ -147,10 +147,7 @@ in python310Packages.buildPythonPackage {
     mkdir -p $out/bin
     cp $src/*.pl $out/bin
     wrapProgram $out/bin/json-hafas.pl --set PERL5LIB ${hafasperl}
-    wrapProgram $out/bin/json-hafas-db-stationboard.pl --set PERL5LIB ${hafasperl}
-    wrapProgram $out/bin/json-hafas-oebb.pl --set PERL5LIB ${hafasperl}
-    wrapProgram $out/bin/json-hafas-oebb-stationboard.pl --set PERL5LIB ${hafasperl}
-    wrapProgram $out/bin/json-hafas-oebb-stopfinder.pl --set PERL5LIB ${hafasperl}
+    wrapProgram $out/bin/json-hafas-stationboard.pl --set PERL5LIB ${hafasperl}
     wrapProgram $out/bin/json-db-composition.pl --set PERL5LIB ${hafasperl}
   '';
 
