@@ -8,7 +8,8 @@ use Travel::Status::DE::HAFAS;
 
 
 my $result = Travel::Status::DE::HAFAS->new(
-	journey => {id => $ARGV[0]},
+	service => $ARGV[0],
+	journey => {id => $ARGV[1]},
 	with_polyline=>1
 );
 if (my $status = $result->result) {

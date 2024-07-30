@@ -10,12 +10,13 @@ use DateTime;
 sub  trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
 
 my $dt = DateTime->now(time_zone=>'Europe/Berlin');
-if ($ARGV[1]) {
-	$dt = DateTime->from_epoch(epoch=>$ARGV[1], time_zone=>'Europe/Berlin');
+if ($ARGV[2]) {
+	$dt = DateTime->from_epoch(epoch=>$ARGV[2], time_zone=>'Europe/Berlin');
 }
 
 my $hafas = Travel::Status::DE::HAFAS->new(
-	station => $ARGV[0],
+	service => $ARGV[0],
+	station => $ARGV[1],
 	datetime => $dt->subtract(minutes=>5)
 );
 if (my @results = $hafas->results) {
