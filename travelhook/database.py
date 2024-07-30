@@ -445,25 +445,17 @@ class Trip:
     def fetch_hafas_data(self, force: bool = False):
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
 
-        hafas_script = None
-        hafas_stationboard = None
-        if self.status["backend"]["name"] == "ÖBB":
-            hafas_script = "json-hafas-oebb.pl"
-            hafas_stationboard = "json-hafas-oebb-stationboard.pl"
-        elif (
-            self.status["backend"]["name"] == "DB"
-            or self.status["backend"]["type"] == "IRIS-TTS"
-        ):
-            hafas_script = "json-hafas.pl"
-            hafas_stationboard = "json-hafas-db-stationboard.pl"
-
-        if not hafas_script:
-            print(f"unsupported backend {self.status['backend']}")
+        backend = self.status["backend"]["name"]
+        if self.status["backend"]["type"] == "IRIS-TTS":
+            backend = "DB"
+        elif backend == "ÖBB":
+            backend = bytes([214, 66, 66]) # i REALLY wish i knew what the fuck is wrong with perl
+        elif backend == "manual":
             return
 
         def write_hafas_data(departureboard_entry):
             hafas = subprocess.run(
-                [hafas_script, departureboard_entry["id"]],
+                [ "json-hafas.pl", backend, departureboard_entry["id"]],
                 capture_output=True,
             )
             status = {}
@@ -507,7 +499,8 @@ class Trip:
 
         hafas_sb = subprocess.run(
             [
-                hafas_stationboard,
+                "json-hafas-stationboard.pl",
+                backend,
                 str(self.status["fromStation"]["uic"]),
                 str(self.status["fromStation"]["realTime"]),
             ],

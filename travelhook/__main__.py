@@ -31,18 +31,15 @@ from .helpers import (
     available_tzs,
     format_composition_element,
     format_time,
-    get_train_emoji,
     generate_train_link,
     is_token_valid,
     not_registered_embed,
     train_type_color,
-    train_type_emoji,
     trip_length,
     zugid,
     tz,
     parse_manual_time,
     fetch_headsign,
-    OEBB_EMOJI,
 )
 
 config = {}

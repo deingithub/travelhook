@@ -15,9 +15,7 @@ from .helpers import (
     format_delta,
     format_time,
     generate_train_link,
-    get_train_emoji,
     LineEmoji,
-    train_type_color,
     trip_length,
     replace_city_suffix_with_prefix,
     decline_operator_with_article,
@@ -542,7 +540,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             icon_url=user.avatar.url,
         )
         .set_footer(
-            text=f"{format_timezone(timezone)} | {trips[-1].status['backend']['name'] or 'DB'} {trips[-1].status['backend']['type']}"
+            text=f"{format_timezone(timezone)} · {trips[-1].status['backend']['name'] or 'DB'} {trips[-1].status['backend']['type']}"
         )
     )
 
@@ -576,7 +574,7 @@ def sillies(bot, trips, embed):
         return embed.set_image(url="https://i.imgur.com/jGATXUv.jpg")
     if (
         "Wien Floridsdorf" in status["fromStation"]["name"]
-        and status["train"]["type"] == "U"
+        and status["train"]["type"]+status["train"]["line"] == "U6"
     ):
         return embed.set_image(url="https://i.imgur.com/Gul73tp.png")
     if "Wien Floridsdorf" in status["toStation"]["name"]:
