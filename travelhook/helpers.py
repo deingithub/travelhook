@@ -387,7 +387,9 @@ replace_operators = {
     "Schweizerische Südostbahn (sob)": "der SOB",
     "SWEG Südwestdeutsche Landesverkehrs-GmbH": "der SWEG",
     "Transport publics de la Région Lausannoise": "tl",
+    "Transports Publics de la Région Lausannoise sa": "tl",  # bls hafas spelling
     "üstra Hannoversche Verkehrsbetriebe AG": "dem ÜMO",
+    "Verkehrsbetriebe der Stadt St.Gallen": "vbsg",
     "Wiener Linien GmbH & Co KG": "den Wiener Linien",  # öbb hafas spelling
 }
 known_operator_pronouns = {

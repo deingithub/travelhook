@@ -136,7 +136,10 @@ def get_network(status):
     ):
         return "CH-FV"
 
-    if operator == "Transport publics de la Région Lausannoise":
+    if operator in (
+        "Transport publics de la Région Lausannoise",
+        "Transports Publics de la Région Lausannoise sa",
+    ):
         return "tl"
 
 
@@ -165,6 +168,10 @@ def get_display(bot, status):
         type == "STR" and line in ("4A", "5A", "6A")
     ):
         line = line.replace("A", "ᴀ").replace("B", "ʙ")
+
+    if status["backend"]["name"] == "BLS":
+        bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}
+        type = bls_replace_train_types.get(type, type)
 
     for tt in train_types_config["train_types"]:
         # { type = "IC", line = "1",  line_startswith = "1", network = "SBB"}
