@@ -168,6 +168,9 @@ def get_display(bot, status):
         type == "STR" and line in ("4A", "5A", "6A")
     ):
         line = line.replace("A", "ᴀ").replace("B", "ʙ")
+    if type == "ICB":
+        type = "coach"
+        line = "Intercitybus"
 
     if status["backend"]["name"] == "BLS":
         bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}
@@ -584,6 +587,8 @@ def sillies(bot, trips, embed):
         and status["train"]["type"] + status["train"]["line"] == "U6"
     ):
         return embed.set_image(url="https://i.imgur.com/Gul73tp.png")
+    if status["train"]["type"].strip() == "ICB":
+        return embed.set_image(url="https://i.imgur.com/gH3PSqi.jpeg")
     if "Wien Floridsdorf" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/CSBTb0z.gif")
     if "Bopser, Stuttgart" in stations:
@@ -596,9 +601,7 @@ def sillies(bot, trips, embed):
         return embed.set_thumbnail(url="https://i.imgur.com/W3mPNEn.gif")
     if "Erlangen" in status["toStation"]["name"]:
         return embed.set_thumbnail(url="https://i.imgur.com/pHp8Sus.png")
-    if status.get("composition") and (
-        "**612**" in status["composition"] or "**628**" in status["composition"]
-    ):
+    if status.get("composition") and ("**612**" in status["composition"]):
         return embed.set_image(url="https://i.imgur.com/2LTmfiW.png")
     if status.get("composition") and (
         "**440**" in status["composition"] or "**441**" in status["composition"]
