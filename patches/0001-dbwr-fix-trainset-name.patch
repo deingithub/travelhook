@@ -1,0 +1,13 @@
+diff --git a/lib/Travel/Status/DE/DBWagenreihung/Group.pm b/lib/Travel/Status/DE/DBWagenreihung/Group.pm
+index 6ac1109..58beaf4 100644
+--- a/lib/Travel/Status/DE/DBWagenreihung/Group.pm
++++ b/lib/Travel/Status/DE/DBWagenreihung/Group.pm
+@@ -84,7 +84,7 @@ sub new {
+ 		carriages   => $opt{carriages},
+ 		destination => $json{transport}{destination}{name},
+ 		train_type  => $json{transport}{category},
+-		name        => $json{transport}{name},
++		name        => $json{name},
+ 		line        => $json{transport}{numberwline},
+ 		train_no    => $json{transport}{number},
+ 	};

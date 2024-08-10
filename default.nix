@@ -77,11 +77,11 @@ let
   TravelStatusDEIRIS = with perlPackages;
     buildPerlModule {
       pname = "Travel-Status-DE-IRIS";
-      version = "1.96";
+      version = "1.98";
       src = fetchurl {
         url =
-          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-IRIS-1.96.tar.gz";
-        hash = "sha256-ncXTqCEF7il1pjX8D4gqmAv//AD0o5MrIiev5aViJcc=";
+          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-IRIS-1.98.tar.gz";
+        hash = "sha256-eIK8N0Duj7G10rzHGSkJK0tbAzN2j5mTDiqJsFMPc9A=";
       };
       buildInputs = [
         FileSlurp
@@ -113,11 +113,11 @@ let
   TravelStatusDEDBWagenreihung = with perlPackages;
     buildPerlModule {
       pname = "Travel-Status-DE-DBWagenreihung";
-      version = "0.12";
+      version = "0.16";
       src = fetchurl {
         url =
-          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DBWagenreihung-0.12.tar.gz";
-        hash = "sha256-vc1cyuL4EjwQG9B34+MbL6AxFUFIyjPKstbPH8rtIk4=";
+          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DBWagenreihung-0.16.tar.gz";
+        hash = "sha256-gvnmmUrg/SPaeQzGHCurKoZWIAZiGpV6ueqAwRwLl7c=";
       };
       buildInputs = [ TestCompile TestPod ];
       propagatedBuildInputs = [ ClassAccessor JSON LWP TravelStatusDEIRIS ];
@@ -126,7 +126,7 @@ let
         license = with lib.licenses; [ artistic1 gpl1Plus ];
       };
       patches = [
-        ./patches/0001-dbwr-add-wagon-groups.patch
+        ./patches/0001-dbwr-fix-trainset-name.patch
       ];
     };
 

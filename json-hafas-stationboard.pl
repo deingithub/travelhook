@@ -17,7 +17,7 @@ if ($ARGV[2]) {
 my $hafas = Travel::Status::DE::HAFAS->new(
 	service => $ARGV[0],
 	station => $ARGV[1],
-	datetime => $dt->subtract(minutes=>5)
+	datetime => $dt
 );
 if (my @results = $hafas->results) {
 	my @trains;

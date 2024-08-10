@@ -545,15 +545,13 @@ class Trip:
         ):
             return
 
-        composition = []
-        departure = datetime.fromtimestamp(
-            self.status["fromStation"]["scheduledTime"], tz=tz
-        )
         db_wr = subprocess.run(
             [
                 "json-db-composition.pl",
+                str(self.status["fromStation"]["scheduledTime"]),
+                str(self.status["fromStation"]["uic"]),
+                self.status["train"]["type"],
                 self.status["train"]["no"],
-                f"{departure:%Y%m%d%H%M}",
             ],
             capture_output=True,
         )
@@ -566,55 +564,61 @@ class Trip:
 
         if "error_string" in status:
             print(f"db_wr perl broke:\n{status}")
-        else:
-            for group_name, group in status["groups"]:
-                # multiple units
-                if all(
-                    wagon["uic_id"] and wagon["uic_id"][0] == "9" for wagon in group
-                ):
-                    group_class = group[0]["uic_id"][5:8]
-                    group_class = db_replace_group_classes.get(group_class, group_class)
-                    group_number = sorted(
-                        [
-                            int(wagon["uic_id"][8:11])
-                            for wagon in group
-                            if wagon["uic_id"][5:8] == group_class
-                        ]
-                    )[0]
-                    trainset_name = describe_class(group[0]["uic_id"]) or ""
-                    if trainname := TrainsetName.find(group_name):
-                        trainset_name += f" {trainname}"
-                    composition.append(
-                        f"{group_class} {group_number:03} {trainset_name}"
-                    )
+            return
 
-                else:
-                    same_type_counter = [0, ""]
-                    for wagon in group:
-                        if wagon["uic_id"] and wagon["uic_id"][0] in ("9", "L"):
-                            if len(wagon["uic_id"]) == 12:
-                                wagon[
-                                    "type"
-                                ] = f"{wagon['uic_id'][4:8]} {wagon['uic_id'][8:11]}-{wagon['uic_id'][11]}"
-                            else:
-                                wagon["type"] = wagon["uic_id"]
+        composition = []
+        for group in status["groups"]:
+            wagons = group["carriages"]
+            # multiple units - all uic ids start with 9…
+            if all(wagon["uic_id"] and wagon["uic_id"][0] == "9" for wagon in wagons):
+                # class number of leading wagon
+                group_class = wagons[0]["uic_id"][5:8]
+                # replace "wrong" class numbers with commonly used ones, eg 812→412
+                group_class = db_replace_group_classes.get(group_class, group_class)
+                # find the lowest wagon number of that class in the whole trainset
+                # this is the number we display after the class number, since the other numbers
+                # in the trainset are usually based on that lowest number +50, +500 etc.
+                group_number = sorted(
+                    [
+                        int(wagon["uic_id"][8:11])
+                        for wagon in wagons
+                        if wagon["uic_id"][5:8] == group_class
+                    ]
+                )[0]
+                # optionally get a name for the class, eg 412→ICE 4
+                trainset_name = describe_class(wagons[0]["uic_id"]) or ""
+                # optionally get a name for the trainset, eg ICE1101→Neustadt an der Weinstraße
+                if trainname := TrainsetName.find(group["name"]):
+                    trainset_name += f" {trainname}"
+                composition.append(f"{group_class} {group_number:03} {trainset_name}")
 
-                        if same_type_counter[1] == wagon["type"]:
-                            same_type_counter[0] += 1
+            else:
+                same_type_counter = [0, ""]
+                for wagon in wagons:
+                    if wagon["uic_id"] and wagon["uic_id"][0] in ("9", "L"):
+                        if len(wagon["uic_id"]) == 12:
+                            wagon[
+                                "type"
+                            ] = f"{wagon['uic_id'][4:8]} {wagon['uic_id'][8:11]}-{wagon['uic_id'][11]}"
                         else:
-                            if same_type_counter[0] == 1:
-                                composition.append(same_type_counter[1])
-                            elif same_type_counter[0]:
-                                composition.append(
-                                    f"{same_type_counter[0]}x {same_type_counter[1]}"
-                                )
-                            same_type_counter = [1, wagon["type"]]
-                    if same_type_counter[0] == 1:
-                        composition.append(same_type_counter[1])
-                    elif same_type_counter[0]:
-                        composition.append(
-                            f"{same_type_counter[0]}x {same_type_counter[1]}"
-                        )
+                            wagon["type"] = wagon["uic_id"]
+
+                    if same_type_counter[1] == wagon["type"]:
+                        same_type_counter[0] += 1
+                    else:
+                        if same_type_counter[0] == 1:
+                            composition.append(same_type_counter[1])
+                        elif same_type_counter[0]:
+                            composition.append(
+                                f"{same_type_counter[0]}x {same_type_counter[1]}"
+                            )
+                        same_type_counter = [1, wagon["type"]]
+                if same_type_counter[0] == 1:
+                    composition.append(same_type_counter[1])
+                elif same_type_counter[0]:
+                    composition.append(
+                        f"{same_type_counter[0]}x {same_type_counter[1]}"
+                    )
 
             composition_text = " + ".join(
                 [format_composition_element(unit) for unit in composition]
