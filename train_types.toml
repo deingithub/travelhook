@@ -65,7 +65,7 @@ train_types = [
 	{ type = "Schw-B", emoji = "SchwB", color = "#014e8d", class="city transit" },
 	{ type = "SEV", emoji = "Sa|Sb", class="special" },
 	# network = "Ü": matches if operator is "üstra Hannoversche Verkehrsbetriebe AG"
-	{ type = "STR", network = "Ü", emoji = "UE", color = "#78b41d" },
+	{ type = "STB", network = "Ü", emoji = "UE", color = "#78b41d" },
 	# fix for Stuttgart Stadtbahn lines having a U prefix in the line
 	{ type = "STB", line_startswith = "U", emoji = "STB", remove_line_startswith = true, color = "#c5161c", class="rapid transit" },
 	{ type = "STB", emoji = "STB", color = "#c5161c", class="rapid transit" },
