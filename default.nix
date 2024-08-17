@@ -16,11 +16,11 @@ let
   hafas-m = with perlPackages;
     buildPerlModule {
       pname = "Travel-Status-DE-DeutscheBahn";
-      version = "6.03";
+      version = "6.08";
       src = fetchurl {
         url =
-          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DeutscheBahn-6.03.tar.gz";
-        hash = "sha256-5SEmrdZagl9h0e2F5dpFuwy4KNeh7YsnuuT6WrWpkLE=";
+          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DeutscheBahn-6.08.tar.gz";
+        hash = "sha256-12B+WazUmvH+eIhO25YERnePoLRnKVAMRCeSB6yq+jU=";
       };
       doCheck = false;
       buildInputs = [ FileSlurp TestCompile TestPod ];
@@ -113,11 +113,11 @@ let
   TravelStatusDEDBWagenreihung = with perlPackages;
     buildPerlModule {
       pname = "Travel-Status-DE-DBWagenreihung";
-      version = "0.16";
+      version = "0.18";
       src = fetchurl {
         url =
-          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DBWagenreihung-0.16.tar.gz";
-        hash = "sha256-gvnmmUrg/SPaeQzGHCurKoZWIAZiGpV6ueqAwRwLl7c=";
+          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DBWagenreihung-0.18.tar.gz";
+        hash = "sha256-EHqIqsjbPUBcN3uFm/aimHyDQnHNty64ld26EZwGhmM=";
       };
       buildInputs = [ TestCompile TestPod ];
       propagatedBuildInputs = [ ClassAccessor JSON LWP TravelStatusDEIRIS ];
@@ -126,7 +126,7 @@ let
         license = with lib.licenses; [ artistic1 gpl1Plus ];
       };
       patches = [
-        ./patches/0001-dbwr-fix-trainset-name.patch
+        #./patches/0001-dbwr-fix-trainset-name.patch
       ];
     };
 

@@ -179,7 +179,7 @@ def get_display(bot, status):
     for tt in train_types_config["train_types"]:
         # { type = "IC", line = "1",  line_startswith = "1", network = "SBB"}
         if (
-            (not "type" in tt or tt["type"] == type)
+            (not "type" in tt or tt["type"].casefold() == type.casefold())
             and (not "line" in tt or tt["line"] == line)
             and (not "line_startswith" in tt or line.startswith(tt["line_startswith"]))
             and (not "network" in tt or tt["network"] == get_network(status))

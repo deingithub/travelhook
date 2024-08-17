@@ -588,8 +588,8 @@ class Trip:
                 # optionally get a name for the class, eg 412→ICE 4
                 trainset_name = describe_class(wagons[0]["uic_id"]) or ""
                 # optionally get a name for the trainset, eg ICE1101→Neustadt an der Weinstraße
-                if trainname := TrainsetName.find(group["name"]):
-                    trainset_name += f" {trainname}"
+                if taufname := group.get("designation"):
+                    trainset_name += f" {taufname}"
                 composition.append(f"{group_class} {group_number:03} {trainset_name}")
 
             else:

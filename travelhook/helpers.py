@@ -375,6 +375,7 @@ replace_operators = {
     "GoAhead - Arverio Baden-Württemberg": "Arverio",
     "GoAhead - Arverio Bayern": "Arverio",
     "Graz-Köflacher Bahn und Busbetrieb GmbH": "der GKB",
+    "Kölner Verkehrs-Betriebe": "der KVB",
     "oberpfalzbahn - Die Länderbahn GmbH DLB": "der oberpfalzbahn",
     "Österreichische Bundesbahnen": "den ÖBB",
     "Ostdeutsche Eisenbahn GmbH": "der ODEG",
