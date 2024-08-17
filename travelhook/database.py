@@ -514,6 +514,7 @@ class Trip:
         except:  # pylint: disable=bare-except
             print(f"hafas sb perl broke:\n{hafas_sb.stdout} {hafas_sb.stderr}")
             traceback.print_exc()
+            return
         if "error_code" in stationboard:
             print(f"hafas sb perl broke:\n{status}")
             return
