@@ -188,21 +188,6 @@ class City:
         return None
 
 
-@dataclass
-class TrainsetName:
-    identifier: str
-    name: str
-
-    @classmethod
-    def find(cls, identifier):
-        row = DB.execute(
-            "SELECT name FROM trainset_names WHERE identifier = ?",
-            (identifier,),
-        ).fetchone()
-        if row:
-            return row["name"]
-        return None
-
 
 @dataclass
 class Trip:
