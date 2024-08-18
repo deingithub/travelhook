@@ -946,6 +946,40 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
                     content=f"{r.status} {await r.text()}",
                 )
 
+@journey.command()
+async def composition(ia, composition: str, do_not_format: bool=False):
+    "quickly add the rolling stock of your journey if it wasn't fetched automatically"
+    user = DB.User.find(discord_id=ia.user.id)
+    if not user:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+        return
+
+    trip = DB.Trip.find_last_trip_for(user.discord_id)
+    if not trip:
+        await ia.response.send_message(
+            "Sorry, but the bot doesn't have a trip saved for you currently.",
+            ephemeral=True,
+        )
+        return
+
+    await ia.response.defer(ephemeral=True)
+
+    prepare_patch = {}
+    if do_not_format:
+        prepare_patch["composition"] = composition
+    else:
+        composition = composition.split("+")
+        prepare_patch["composition"] = " + ".join(
+            [format_composition_element(unit.strip()) for unit in composition]
+        )
+
+    newpatch = DB.DB.execute(
+        "SELECT json_patch(?,?) AS newpatch",
+        (json.dumps(trip.status_patch), json.dumps(prepare_patch)),
+    ).fetchone()["newpatch"]
+    await EditTripView(trip, json.loads(newpatch)).commit.callback(ia)
+
+
 
 async def journey_autocomplete(ia, current):
     def train_name(status, user):
@@ -1158,9 +1192,14 @@ class EditTripView(discord.ui.View):
                     "Authorization": f"Bearer {DB.User.find(self.trip.user_id).token_webhook}"
                 },
             ) as r:
-                await ia.response.edit_message(
-                    content=f"{r.status} {await r.text()}", embed=None, view=None
-                )
+                if ia.response.is_done():
+                    await ia.edit_original_response(
+                        content=f"{r.status} {await r.text()}", embed=None, view=None
+                    )
+                else:
+                    await ia.response.edit_message(
+                        content=f"{r.status} {await r.text()}", embed=None, view=None
+                    )
 
     @discord.ui.button(
         label="Open the manual editor instead.", style=discord.ButtonStyle.grey
