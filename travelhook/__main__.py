@@ -446,9 +446,10 @@ configure = discord.app_commands.Group(
 
 @configure.command()
 @discord.app_commands.describe(
-    level="leave empty to query current level. set to ME to only allow you to use /zug, set to EVERYONE to allow everyone to use /zug and set to LIVE to activate the live feed."
+    level="leave empty to query current level. set to ME to only allow you to use /zug, set to EVERYONE to allow everyone to use /zug and set to LIVE to activate the live feed.",
+    quiet="(default) don't announce your privacy level to everyone in the channel",
 )
-async def privacy(ia, level: typing.Optional[DB.Privacy]):
+async def privacy(ia, level: typing.Optional[DB.Privacy], quiet: bool = True):
     "Query or change your current privacy settings on this server."
 
     def explain(level: typing.Optional[DB.Privacy]):
@@ -461,7 +462,18 @@ async def privacy(ia, level: typing.Optional[DB.Privacy]):
             case DB.Privacy.LIVE:
                 desc += "- Everyone can use the **/zug** command to see your current journey.\n"
                 if live_channel := DB.Server.find(ia.guild.id).live_channel:
-                    desc += f"- Live updates will posted into {bot.get_channel(live_channel).mention} with your entire journey."
+                    if (
+                        not ia.guild.get_channel(live_channel)
+                        .permissions_for(ia.user)
+                        .read_messages
+                    ):
+                        desc += (
+                            "- This server has a live feed channel set up, but you can't see it. "
+                            "The bot will not post live updates with your entire journey there."
+                        )
+                    else:
+                        desc += f"- Live updates will posted into {bot.get_channel(live_channel).mention} with your entire journey."
+
                 else:
                     desc += (
                         "- Live updates with your entire journey can be posted into a dedicated channel.\n"
@@ -474,12 +486,14 @@ async def privacy(ia, level: typing.Optional[DB.Privacy]):
         if level is None:
             level = user.find_privacy_for(ia.guild.id)
             await ia.response.send_message(
-                f"Your privacy level is set to **{level.name}**. {explain(level)}"
+                f"Your privacy level is set to **{level.name}**. {explain(level)}",
+                ephemeral=quiet,
             )
         else:
             user.set_privacy_for(ia.guild_id, level)
             await ia.response.send_message(
-                f"Your privacy level has been set to **{level.name}**. {explain(level)}"
+                f"Your privacy level has been set to **{level.name}**. {explain(level)}",
+                ephemeral=quiet,
             )
     else:
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
@@ -946,8 +960,9 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
                     content=f"{r.status} {await r.text()}",
                 )
 
+
 @journey.command()
-async def composition(ia, composition: str, do_not_format: bool=False):
+async def composition(ia, composition: str, do_not_format: bool = False):
     "quickly add the rolling stock of your journey if it wasn't fetched automatically"
     user = DB.User.find(discord_id=ia.user.id)
     if not user:
@@ -978,7 +993,6 @@ async def composition(ia, composition: str, do_not_format: bool=False):
         (json.dumps(trip.status_patch), json.dumps(prepare_patch)),
     ).fetchone()["newpatch"]
     await EditTripView(trip, json.loads(newpatch)).commit.callback(ia)
-
 
 
 async def journey_autocomplete(ia, current):
@@ -1558,7 +1572,7 @@ class RegisterTravelynxEnableLiveFeed(discord.ui.View):
         label="Enable live feed for this server", style=discord.ButtonStyle.red
     )
     async def doit(self, ia, _):
-        await privacy.callback(ia, DB.Privacy.LIVE)
+        await privacy.callback(ia, DB.Privacy.LIVE, True)
 
 
 def main():
