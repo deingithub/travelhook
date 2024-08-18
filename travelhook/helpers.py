@@ -390,6 +390,7 @@ replace_operators = {
     "Transport publics de la Région Lausannoise": "tl",
     "Transports Publics de la Région Lausannoise sa": "tl",  # bls hafas spelling
     "üstra Hannoversche Verkehrsbetriebe AG": "dem ÜMO",
+    "VBB - Verkehrsbetriebe Burgenland GesmbH": "den Verkehrsbetrieben Burgenland",
     "Verkehrsbetriebe der Stadt St.Gallen": "vbsg",
     "Wiener Linien GmbH & Co KG": "den Wiener Linien",  # öbb hafas spelling
 }

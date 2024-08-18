@@ -341,10 +341,13 @@ async def zug(ia, member: typing.Optional[discord.Member]):
 
 class TripActionsView(discord.ui.View):
     """is attached to embeds, allows users to manually update trip infos
-    (for real trips) and copy the checkin (for now only manual trips)"""
+    (for real trips) and copy the checkin"""
 
     disabled_refresh_button = discord.ui.Button(
         label="Update", style=discord.ButtonStyle.secondary, disabled=True
+    )
+    disabled_map_button = discord.ui.Button(
+        label="Map", style=discord.ButtonStyle.secondary, disabled=True
     )
 
     def __init__(self, trip):
@@ -355,6 +358,7 @@ class TripActionsView(discord.ui.View):
 
         if "travelhookfaked" in trip.journey_id:
             self.add_item(self.disabled_refresh_button)
+            self.add_item(self.disabled_map_button)
             self.add_item(self.manualcopy)
         else:
             status = trip.get_unpatched_status()
@@ -363,26 +367,41 @@ class TripActionsView(discord.ui.View):
             else:
                 self.add_item(self.disabled_refresh_button)
 
-            url = f"/s/{status['fromStation']['uic']}?"
-            if "|" in status["train"]["id"]:
-                url += urllib.parse.urlencode(
-                    {"hafas": 1, "trip_id": status["train"]["id"]}
+            if trip.hafas_data:
+                jid = urllib.parse.quote(trip.hafas_data["id"])
+                from_station = urllib.parse.quote(trip.status["fromStation"]["name"])
+                to_station = urllib.parse.quote(trip.status["toStation"]["name"])
+                hafas = trip.status["backend"]["name"] or "DB"
+                url = (
+                    f"https://dbf.finalrewind.org/map/{jid}/0?hafas={hafas}"
+                    + f"&from={from_station}&to={to_station}"
                 )
+                self.add_item(discord.ui.Button(label="Map", url=url))
             else:
-                url += urllib.parse.urlencode(
-                    {"train": f"{status['train']['type']} {status['train']['no']}"}
+                self.add_item(self.disabled_map_button)
+
+            url = f"{config['travelynx_instance']}/s/{status['fromStation']['uic']}?"
+            if trip.status["backend"]["type"] == "IRIS-TTS":
+                train = urllib.parse.quote(
+                    f"{status['train']['type']} {status['train']['no']}"
                 )
-            self.add_item(
-                discord.ui.Button(
-                    label="Copy this checkin", url=config["travelynx_instance"] + url
+                url += f"train={train}"
+            else:
+                jid = urllib.parse.quote(
+                    trip.status["train"]["hafasId"] or trip.status["train"]["id"]
                 )
-            )
+                url += (
+                    f"hafas={trip.status['backend']['name']}&trip_id={jid}"
+                    + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
+                )
+            self.add_item(discord.ui.Button(label="Copy", url=url))
 
     @discord.ui.button(label="Update", style=discord.ButtonStyle.secondary)
     async def refresh(self, ia, _):
         """refresh real trips from travelynx api. this button is deleted from the view
         and replaced with a disabled button for fake checkins"""
         user = DB.User.find(discord_id=self.trip.user_id)
+        await ia.response.defer()
         async with ClientSession() as session:
             async with session.get(
                 f"{config['travelynx_instance']}/api/v1/status/{user.token_status}"
@@ -392,7 +411,7 @@ class TripActionsView(discord.ui.View):
                     if data["checkedIn"] and self.trip.journey_id == zugid(data):
                         await handle_status_update(self.trip.user_id, "update", data)
                         self.trip.fetch_hafas_data(force=True)
-                        await ia.response.edit_message(
+                        await ia.edit_original_response(
                             embed=format_travelynx(
                                 bot,
                                 self.trip.user_id,
@@ -401,11 +420,11 @@ class TripActionsView(discord.ui.View):
                             view=self,
                         )
                     else:
-                        await ia.response.send_message(
+                        await ia.followup.send(
                             "Die Fahrt ist bereits zu Ende.", ephemeral=True
                         )
 
-    @discord.ui.button(label="Copy this checkin", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Copy", style=discord.ButtonStyle.secondary)
     async def manualcopy(self, ia, _):
         """copy fake trips for yourself. this button is deleted from the view
         and replaced with a link to travelynx for real checkins."""
