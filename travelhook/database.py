@@ -508,7 +508,6 @@ class Trip:
                 continue
             if (
                 jid == train["id"]
-                or jid == train["hafasId"]
                 or (train["number"] == self.status["train"]["no"])
             ):
                 write_hafas_data(train)
