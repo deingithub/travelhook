@@ -188,7 +188,6 @@ class City:
         return None
 
 
-
 @dataclass
 class Trip:
     "user-trips the bot knows about"
