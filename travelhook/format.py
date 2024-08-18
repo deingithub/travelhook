@@ -131,8 +131,10 @@ def get_network(status):
 
     if operator in (
         "Schweizerische Bundesbahnen",
+        "Schweizerische Bundesbahnen SBB",
         "Schweizerische Südostbahn (sob)",
         "BLS AG",
+        "BLS AG (bls)"
     ):
         return "CH-FV"
 
@@ -181,7 +183,7 @@ def get_display(bot, status):
         if (
             (not "type" in tt or tt["type"].casefold() == type.casefold())
             and (not "line" in tt or tt["line"] == line)
-            and (not "line_startswith" in tt or line.startswith(tt["line_startswith"]))
+            and (not "line_startswith" in tt or (line and line.startswith(tt["line_startswith"])))
             and (not "network" in tt or tt["network"] == get_network(status))
         ):
             if "remove_line_startswith" in tt:
@@ -389,8 +391,6 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         desc += LineEmoji.RAIL + LineEmoji.SPACER + display["emoji"]
         if route_link:
             headsign = f"[{headsign}]({route_link})"
-        if trip.journey_id.startswith("travelhookfaked"):
-            headsign += " ✱"
 
         if display["line"]:
             desc += f" **{display['line']}**"
