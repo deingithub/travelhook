@@ -488,7 +488,7 @@ class Trip:
                 "json-hafas-stationboard.pl",
                 backend,
                 str(self.status["fromStation"]["uic"]),
-                str(self.status["fromStation"]["realTime"]),
+                str(self.status["fromStation"]["scheduledTime"]),
             ],
             capture_output=True,
         )
@@ -506,7 +506,11 @@ class Trip:
         for train in stationboard["trains"]:
             if not train["scheduled"] == self.status["fromStation"]["scheduledTime"]:
                 continue
-            if jid == train["id"] or (train["number"] == self.status["train"]["no"]):
+            if (
+                jid == train["id"]
+                or jid == train["hafasId"]
+                or (train["number"] == self.status["train"]["no"])
+            ):
                 write_hafas_data(train)
                 break
         else:
