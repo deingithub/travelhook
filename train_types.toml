@@ -18,9 +18,12 @@ train_types = [
 	{ type = "EIC", emoji = "pia|pib", color = "#ff0404", always_show_train_number = true, class="poland" },
 	{ type = "EN", emoji = "na|nb", color = "#282559", always_show_train_number = true, class="long-distance 2" },
 	{ type = "EST", emoji = "est0|est1", color = "#ff0404", always_show_train_number = true, class="long-distance 2" },
+	{ type = "FA", emoji = "fa0|fa1", color = "#cccccc", always_show_train_number = true, class="long-distance 2" },
 	{ type = "Fähre", emoji = "Faehre", color = "#00a4db", class="city transit" },
+	{ type = "FB", emoji = "fb0|fb1", color = "#ff0404", always_show_train_number = true, class="long-distance 2" },
 	{ type = "FEX", emoji = "fex0|fex1", color = "#ff4f00", class="regional" },
 	{ type = "FLX", emoji = "La|Lb", color = "#72d800", always_show_train_number = true, class="long-distance 2" },
+	{ type = "FR", emoji = "fr0|fr1", color = "#aa0000", always_show_train_number = true, class="long-distance 2" },
 	{ type = "IR", line = "VAE", network = "CH-FV", emoji = "Ia|vae1|vae2|vae3|vae4|vae5", color = "#ff0404", always_show_train_number = true, hide_line_number = true },
 	{ type = "IC", emoji = "ca|cb", color = "#ff0404", always_show_train_number = true, class="long-distance" },
 	{ type = "ICD", emoji = "ca|icd1", color = "#ff0404", class="long-distance 2" },
@@ -65,7 +68,7 @@ train_types = [
 	{ type = "Schw-B", emoji = "SchwB", color = "#014e8d", class="city transit" },
 	{ type = "SEV", emoji = "Sa|Sb", class="special" },
 	# network = "Ü": matches if operator is "üstra Hannoversche Verkehrsbetriebe AG"
-	{ type = "STB", network = "Ü", emoji = "UE", color = "#78b41d" },
+	{ type = "STR", network = "Ü", emoji = "UE", color = "#78b41d" },
 	# fix for Stuttgart Stadtbahn lines having a U prefix in the line
 	{ type = "STB", line_startswith = "U", emoji = "STB", remove_line_startswith = true, color = "#c5161c", class="rapid transit" },
 	{ type = "STB", emoji = "STB", color = "#c5161c", class="rapid transit" },
