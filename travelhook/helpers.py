@@ -122,12 +122,10 @@ def generate_train_link(data):
             + f"/?station={data['fromStation']['uic']}"
         )
     elif data["backend"]["name"] == "DB":
-        jid = data["train"]["id"].replace(
-            "#", "%23"
-        )  # for some reason urlencode doesn't eat the first one???
         link = (
             "https://bahn.expert/details"
-            + f"/0/{data['fromStation']['scheduledTime'] * 1000}/?jid={jid}"
+            + f"/0/{data['fromStation']['scheduledTime'] * 1000}/?jid="
+            + urllib.parse.quote(data["train"]["id"])
         )
     else:
         link = (
@@ -140,24 +138,9 @@ def generate_train_link(data):
         link = None
 
     link = data.get("link", link)
-
     if link:
-        # reuse IDs of previously shortened URLs
-        previd = DB.Link.find_by_long(long_url=link)
-
-        if previd:
-            randid = previd.short_id
-        else:
-            # handle potential collisions
-            while True:
-                randid = random_id()
-                if not DB.Link.find_by_short(short_id=randid):
-                    break
-
-            DB.Link(short_id=randid, long_url=link).write()
-
-        link = config["shortener_url"] + "/" + randid
-        return link
+        link = DB.Link.make(link)
+        return f"{config['shortener_url']}/{link.short_id}"
 
 
 def format_composition_element(element):

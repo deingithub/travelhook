@@ -3,6 +3,7 @@
 from itertools import groupby
 from datetime import datetime, timedelta
 import re
+import urllib
 
 import discord
 import json
@@ -11,12 +12,14 @@ from haversine import haversine
 
 from . import database as DB
 from .helpers import (
+    config,
     fetch_headsign,
     format_delta,
     format_time,
     generate_train_link,
     LineEmoji,
     trip_length,
+    random_id,
     replace_city_suffix_with_prefix,
     decline_operator_with_article,
     zugid,
@@ -192,7 +195,7 @@ def get_display(bot, status):
             if "remove_line_startswith" in tt:
                 line = line.removeprefix(tt["line_startswith"])
             if "fallback" in tt:
-                line = f"{type} {line}"
+                line = f"{type} {line or ''}"
 
             # { emoji = "ica,ic1", color = "#ff0404", hide_line_number = true, always_show_train_number = true }
             return {
@@ -535,26 +538,35 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         f"{LineEmoji.TRIP_SUM} {len(trips)} {'trip' if len(trips) == 1 else 'trips'} · "
         f"{format_delta(total_time)} ({format_delta(journey_time)} in transit) · "
         f"{sum(lengths):.1f}km{'+' if includes_beelines else ''} · "
-        f"{sum(lengths)/(total_time.total_seconds()/3600):.0f}km/h"
+        f"{sum(lengths)/(total_time.total_seconds()/3600):.0f}km/h\n"
     )
+    desc += (
+        f"-# {format_timezone(timezone)} · "
+        + f"{trip.status['backend']['name'] or 'DB'} {trip.status['backend']['type']}"
+    )
+    if trip.hafas_data:
+        jid = urllib.parse.quote(trip.hafas_data["id"])
+        from_station = urllib.parse.quote(trip.status["fromStation"]["name"])
+        to_station = urllib.parse.quote(trip.status["toStation"]["name"])
+        hafas = trip.status["backend"]["name"] or "DB"
+        link = DB.Link.make(
+            f"https://dbf.finalrewind.org/map/{jid}/0?hafas={hafas}"
+            + f"&from={from_station}&to={to_station}"
+        )
+        desc += f" · [Map]({config['shortener_url']}/{link.short_id})"
+
     embed_title = f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
     embed_title += decline_operator_with_article(
         trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
     )
     embed_title += " unterwegs"
 
-    embed = (
-        discord.Embed(
-            description=desc,
-            color=color,
-        )
-        .set_author(
-            name=embed_title,
-            icon_url=user.avatar.url,
-        )
-        .set_footer(
-            text=f"{format_timezone(timezone)} · {trips[-1].status['backend']['name'] or 'DB'} {trips[-1].status['backend']['type']}"
-        )
+    embed = discord.Embed(
+        description=desc,
+        color=color,
+    ).set_author(
+        name=embed_title,
+        icon_url=user.avatar.url,
     )
 
     embed = sillies(bot, trips, embed)

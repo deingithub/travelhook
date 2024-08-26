@@ -38,6 +38,7 @@ from .helpers import (
     trip_length,
     zugid,
     tz,
+    random_id,
     parse_manual_time,
     fetch_headsign,
 )
@@ -346,9 +347,6 @@ class TripActionsView(discord.ui.View):
     disabled_refresh_button = discord.ui.Button(
         label="Update", style=discord.ButtonStyle.secondary, disabled=True
     )
-    disabled_map_button = discord.ui.Button(
-        label="Map", style=discord.ButtonStyle.secondary, disabled=True
-    )
 
     def __init__(self, trip):
         super().__init__()
@@ -358,7 +356,6 @@ class TripActionsView(discord.ui.View):
 
         if "travelhookfaked" in trip.journey_id:
             self.add_item(self.disabled_refresh_button)
-            self.add_item(self.disabled_map_button)
             self.add_item(self.manualcopy)
         else:
             status = trip.get_unpatched_status()
@@ -366,19 +363,6 @@ class TripActionsView(discord.ui.View):
                 self.add_item(self.refresh)
             else:
                 self.add_item(self.disabled_refresh_button)
-
-            if trip.hafas_data:
-                jid = urllib.parse.quote(trip.hafas_data["id"])
-                from_station = urllib.parse.quote(trip.status["fromStation"]["name"])
-                to_station = urllib.parse.quote(trip.status["toStation"]["name"])
-                hafas = trip.status["backend"]["name"] or "DB"
-                url = (
-                    f"https://dbf.finalrewind.org/map/{jid}/0?hafas={hafas}"
-                    + f"&from={from_station}&to={to_station}"
-                )
-                self.add_item(discord.ui.Button(label="Map", url=url))
-            else:
-                self.add_item(self.disabled_map_button)
 
             url = f"{config['travelynx_instance']}/s/{status['fromStation']['uic']}?"
             if trip.status["backend"]["type"] == "IRIS-TTS":
@@ -784,7 +768,7 @@ async def manualtrip(
             "type": train_type,
             "line": train_line,
             "no": train_no,
-            "id": "travelhookfaked" + secrets.token_urlsafe(),
+            "id": "travelhookfaked" + random_id(),
             "hafasId": None,
         },
         "distance": distance,

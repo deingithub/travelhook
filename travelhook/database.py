@@ -20,6 +20,7 @@ from .helpers import (
     zugid,
     hafas,
     tz,
+    random_id,
     replace_headsign,
     format_composition_element,
     db_replace_group_classes,
@@ -506,10 +507,7 @@ class Trip:
         for train in stationboard["trains"]:
             if not train["scheduled"] == self.status["fromStation"]["scheduledTime"]:
                 continue
-            if (
-                jid == train["id"]
-                or (train["number"] == self.status["train"]["no"])
-            ):
+            if jid == train["id"] or (train["number"] == self.status["train"]["no"]):
                 write_hafas_data(train)
                 break
         else:
@@ -750,3 +748,15 @@ class Link:
             "INSERT INTO links(short_id, long_url) VALUES(?,?)",
             (self.short_id, self.long_url),
         )
+
+    @classmethod
+    def make(cls, long_url: str):
+        if exists := cls.find_by_long(long_url):
+            return exists
+        while True:
+            randid = random_id()
+            if cls.find_by_short(randid):
+                continue
+            link = cls(randid, long_url)
+            link.write()
+            return link
