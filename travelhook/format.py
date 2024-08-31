@@ -35,6 +35,7 @@ re_station_city = re.compile(
     r"((S-)?Bahnhof |(S-)?Bh?f\.? )?(?P<station>.+), (?P<city>.+)"
 )
 re_u_number = re.compile(r"(?P<station>.+) [\(\[]U\d+[\)\]]")
+re_decompose_him = re.compile(r"(?P<from>.+) - (?P<to>.+): Information\. (?P<msg>.+)")
 
 blanket_replace_train_type = {
     "EV": "SEV",
@@ -448,7 +449,16 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     if message["type"] == "D":
                         desc += f"{LineEmoji.WARN} {message['text']}\n"
                     elif message["type"] in ("Q", "L"):
-                        desc += f"{LineEmoji.INFO} {message['text']}\n"
+                        if match := re_decompose_him.match(message["text"]):
+                            if (
+                                hafas_data["route"][0]["name"] == match["from"]
+                                and hafas_data["route"][-1]["name"] == match["to"]
+                            ):
+                                desc += f"{LineEmoji.INFO} {match['msg']}\n"
+                            else:
+                                desc += f"{LineEmoji.INFO} {match['from']} – {match['to']}: {match['msg']}\n"
+                        else:
+                            desc += f"{LineEmoji.INFO} {message['text']}\n"
             if comment := trip.status["comment"]:
                 if len(comment) >= 500:
                     comment = comment[0:500] + "…"

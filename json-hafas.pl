@@ -35,8 +35,13 @@ if (my $status = $result->result) {
 			type=>$message->type,
 		});
 	}
+	my @route;
 	my %stop_messages;
 	foreach my $stop ($status->route) {
+		push(@route, {
+			name=>$stop->loc->name,
+			eva=>$stop->loc->eva
+		});
 		my @ret;
 		foreach my $message ($stop->messages) {
 			push(@ret, {
@@ -54,6 +59,7 @@ if (my $status = $result->result) {
 		direction=>$status->direction,
 		polyline=>[@polyline],
 		beeline=>$only_eva,
+		route=>[@route],
 		messages=>[@messages],
 		stop_messages=>{%stop_messages}
 	});
