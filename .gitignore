@@ -2,3 +2,4 @@ __pycache__
 settings.json
 result
 travelynx-relay.sqlite3
+travelynx-relay.sqlite3-journal
