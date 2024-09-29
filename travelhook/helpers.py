@@ -443,4 +443,6 @@ replace_headsign = {
     ("STBU5", "Leinfelden Bahnhof, Leinfelden-Echterdingen"): "Leinfelden Bf",
     ("STBU6", "Stuttgart Flughafen/Messe, Leinfelden-Echterdingen"): "Flughafen/Messe",
     ("STBU12", "Neckargröningen Remseck, Remseck am Neckar"): "Neckargröningen Remseck",
+    # Nuremberg
+    ("U3", "Großreuth _bei Schweinau"): "Großreuth bei Schweinau",
 }
