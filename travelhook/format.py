@@ -626,6 +626,8 @@ def sillies(bot, trips, embed):
         return embed.set_thumbnail(url="https://i.imgur.com/W3mPNEn.gif")
     if "Erlangen" in status["toStation"]["name"]:
         return embed.set_thumbnail(url="https://i.imgur.com/pHp8Sus.png")
+    if "Weinweg, Karlsruhe" in status["toStation"]["name"]:
+        return embed.set_thumbnail(url="https://i.imgur.com/9IAgPLd.png")
     if status.get("composition") and ("**612**" in status["composition"]):
         return embed.set_image(url="https://i.imgur.com/2LTmfiW.png")
     if status.get("composition") and (
