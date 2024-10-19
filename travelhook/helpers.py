@@ -439,6 +439,8 @@ replace_headsign = {
     ("S41", "Ring S41"): "Ring ↻",
     ("S42", "Ring S42"): "Ring ↺",
     ("S45", "Flughafen BER - Terminal 1-2 (S-Bahn)"): "Flughafen BER T 1-2",
+    ("SS41", "Ringbahn S 41"): "Ring ↻",
+    ("SS42", "Ringbahn S 42"): "Ring ↺",
     # Stuttgart my behated
     ("STBU5", "Leinfelden Bahnhof, Leinfelden-Echterdingen"): "Leinfelden Bf",
     ("STBU6", "Stuttgart Flughafen/Messe, Leinfelden-Echterdingen"): "Flughafen/Messe",

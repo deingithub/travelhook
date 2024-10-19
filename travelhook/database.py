@@ -459,8 +459,8 @@ class Trip:
                 headsign = departureboard_entry["direction"]
                 train_key = (
                     (
-                        self.status["train"]["type"]
-                        + (self.status["train"]["line"] or self.status["train"]["no"])
+                        self.status["train"]["type"].strip()
+                        + (self.status["train"]["line"] or self.status["train"]["no"]).strip()
                     ),
                     headsign,
                 )
