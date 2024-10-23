@@ -458,7 +458,7 @@ class Trip:
                 self.hafas_data = status
                 headsign = departureboard_entry["direction"]
                 if not headsign:
-                    headsign = departureboard_entry["route"][-1]["name"]
+                    headsign = status["route"][-1]["name"]
                 train_key = (
                     (
                         self.status["train"]["type"].strip()
