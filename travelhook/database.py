@@ -503,7 +503,7 @@ class Trip:
             traceback.print_exc()
             return
         if "error_code" in stationboard:
-            print(f"hafas sb perl broke:\n{status}")
+            print(f"hafas sb perl broke:\n{stationboard}")
             return
 
         for train in stationboard["trains"]:
