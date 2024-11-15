@@ -362,9 +362,9 @@ replace_operators = {
     "oberpfalzbahn - Die Länderbahn GmbH DLB": "der oberpfalzbahn",
     "Österreichische Bundesbahnen": "den ÖBB",
     "Ostdeutsche Eisenbahn GmbH": "der ODEG",
-    "Rhein-Neckar-Verkehr GmbH": "dem RNV",
-    "Rhein-Neckar-Verkehr GmbH (Oberrheinische Eisenbahn)": "dem RNV",
-    "Rhein-Neckar-Verkehr GmbH (Rhein-Haardtbahn)": "dem RNV",
+    "Rhein-Neckar-Verkehr GmbH": "der RNV",
+    "Rhein-Neckar-Verkehr GmbH (Oberrheinische Eisenbahn)": "der RNV",
+    "Rhein-Neckar-Verkehr GmbH (Rhein-Haardtbahn)": "der RNV",
     "S-Bahn Hannover (Transdev)": "der S-Bahn Hannover",
     "Schweizerische Bundesbahnen": "der SBB",
     "Schweizerische Bundesbahnen SBB": "der SBB",  # bls hafas spelling
