@@ -459,10 +459,14 @@ class Trip:
                 headsign = departureboard_entry["direction"]
                 if not headsign:
                     headsign = status["route"][-1]["name"]
+                if hs := self.maybe_fix_rnv_5(headsign):
+                    headsign = hs
                 train_key = (
                     (
                         self.status["train"]["type"].strip()
-                        + (self.status["train"]["line"] or self.status["train"]["no"]).strip()
+                        + (
+                            self.status["train"]["line"] or self.status["train"]["no"]
+                        ).strip()
                     ),
                     headsign,
                 )
@@ -522,6 +526,35 @@ class Trip:
         if not self.hafas_data:
             self.fetch_hafas_data()
         return self.headsign or "?"
+
+    def maybe_fix_rnv_5(self, headsign):
+        "try to detect which way the line 5 in mannheim is going"
+        if not (
+            self.hafas_data["operator"]
+            == "Rhein-Neckar-Verkehr GmbH (Oberrheinische Eisenbahn)"
+            and self.status["train"]["line"] == "5"
+        ):
+            return
+        stops = [stop["name"] for stop in self.hafas_data["route"]]
+
+        def next_stop(a, b):
+            if i := stops.index(a):
+                return stops[i + 1] == b
+
+        if (
+            next_stop("Hauptbahnhof, Mannheim", "Kunsthalle, Mannheim")
+            or next_stop("Hauptbahnhof, Weinheim", "Alter OEG-Bahnhof, Weinheim")
+            or next_stop("Hauptbahnhof, Heidelberg", "Gneisenaustraße Süd, Heidelberg")
+        ):
+            # mannheim→weinheim
+            return f"{headsign} ↻"
+        elif (
+            next_stop("Hauptbahnhof, Mannheim", "Universität, Mannheim")
+            or next_stop("Hauptbahnhof, Weinheim", "Händelstraße, Weinheim")
+            or next_stop("Hauptbahnhof, Heidelberg", "Stadtwerke, Heidelberg")
+        ):
+            # mannheim→heidelberg
+            return f"{headsign} ↺"
 
     def get_db_composition(self):
         if "composition" in self.status:
