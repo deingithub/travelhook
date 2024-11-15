@@ -421,6 +421,10 @@ replace_headsign = {
     ("U4", "Wien Hütteldorf Bf (U4)"): "Hütteldorf",
     ("U6", "Wien Floridsdorf Bf (U6)"): "Floridsdorf",
     ("U6", "Wien Siebenhirten (U6)"): "Siebenhirten",
+    (
+        "STR30",
+        "Wien Floridsdorf Bahnhof (Schleife Leopold-Ferstl-",
+    ): "Wien Floridsdorf Bahnhof",
     # Hannover
     ("STB1", "Laatzen (GVH)"): "Laatzen",
     ("STB1", "Langenhagen (Hannover) (GVH)"): "Langenhagen",
