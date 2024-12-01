@@ -148,6 +148,9 @@ def get_network(status):
     ):
         return "tl"
 
+    if operator == "CTS":
+        return "CTS"
+
 
 def get_display(bot, status):
     type = status["train"]["type"].strip()

@@ -1654,6 +1654,15 @@ class CTSView(discord.ui.View):
             "",
             0,
         )
+        try:
+            await EditTripView(
+                DB.Trip.find_last_trip_for(ia.user.id),
+                {
+                    "operator": "CTS",
+                },
+            ).commit.callback(ia)
+        except discord.errors.InteractionResponded:
+            pass
 
     async def add_select_destination(self):
         self.stops_after = await cts_journey(self.selected_transport)
@@ -1720,7 +1729,6 @@ async def cts_stationboard(logicalstopcode, request_time):
             resp = deepcopy(shitty_cts_cache[str(sb_params)][1])
         else:
             async with ClientSession() as session:
-                print("http")
                 async with session.get(
                     "https://api.cts-strasbourg.eu/v1/siri/2.0/stop-monitoring",
                     params=sb_params,
@@ -1772,7 +1780,7 @@ async def cts_stationboard(logicalstopcode, request_time):
                 ),
             }
             if trans["line"] in ("A", "B", "C", "D", "E", "F"):
-                trans["type"] = "Tram"
+                trans["type"] = "STR"
             else:
                 trans["type"] = "Bus"
             transports.append(trans)
@@ -1791,11 +1799,9 @@ async def cts_journey(selected_transport):
         cleanup_cache()
         resp = {}
         if str(j_params) in shitty_cts_cache:
-            print("cache")
             resp = deepcopy(shitty_cts_cache[str(j_params)][1])
         else:
             async with ClientSession() as session:
-                print("http")
                 async with session.get(
                     "https://api.cts-strasbourg.eu/v1/siri/2.0/estimated-timetable",
                     params=j_params,

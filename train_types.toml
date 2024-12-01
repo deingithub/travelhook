@@ -67,6 +67,13 @@ train_types = [
 	{ type = "SB", emoji = "SB", color = "#014e8d", class="city transit" },
 	{ type = "Schw-B", emoji = "SchwB", color = "#014e8d", class="city transit" },
 	{ type = "SEV", emoji = "Sa|Sb", class="special" },
+	# network = "CTS": matches if operator is "CTS"
+	{ type = "STR", network = "CTS", line = "A", emoji = "str2|ctsa", color = "#e10d19", hide_line_number = true },
+	{ type = "STR", network = "CTS", line = "B", emoji = "str2|ctsb", color = "#009ee0", hide_line_number = true },
+	{ type = "STR", network = "CTS", line = "C", emoji = "str2|ctsc", color = "#f29400", hide_line_number = true },
+	{ type = "STR", network = "CTS", line = "D", emoji = "str2|ctsd", color = "#009933", hide_line_number = true },
+	{ type = "STR", network = "CTS", line = "E", emoji = "str2|ctse", color = "#9085ba", hide_line_number = true },
+	{ type = "STR", network = "CTS", line = "F", emoji = "str2|ctsf", color = "#97bf0d", hide_line_number = true },
 	# network = "Ü": matches if operator is "üstra Hannoversche Verkehrsbetriebe AG"
 	{ type = "STR", network = "Ü", emoji = "UE", color = "#78b41d" },
 	# fix for Stuttgart Stadtbahn lines having a U prefix in the line
@@ -156,6 +163,7 @@ AT = "S-Bahn in Austria"
 AVG = "Stadtbahn Karlsruhe"
 BVG = "U-Bahn Berlin"
 CH-FV = "Swiss long-distance trains"
+CTS = "Strasbourg trams"
 HHA = "U-Bahn Hamburg"
 KVB = "Stadtbahn Köln/Bonn"
 MVG = "U-Bahn Berlin"

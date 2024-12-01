@@ -378,6 +378,7 @@ replace_operators = {
     "Wiener Linien GmbH & Co KG": "den Wiener Linien",  # öbb hafas spelling
 }
 known_operator_pronouns = {
+    "CTS": "der",
     "metronom": "dem",
     "SNCF": "der",
     "Wiener Linien": "den",
