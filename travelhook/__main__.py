@@ -1,4 +1,5 @@
 "contains our bot commands and the incoming webhook handler"
+import asyncio
 import base64
 import itertools
 import json
@@ -9,7 +10,8 @@ import subprocess
 import traceback
 import typing
 import urllib
-from datetime import datetime, timedelta
+from copy import deepcopy
+from datetime import datetime, timedelta, timezone as dt_tz
 from zoneinfo import ZoneInfo
 
 from aiohttp import ClientSession, web
@@ -1685,7 +1687,23 @@ class CTSView(discord.ui.View):
         self.tz = timezone
 
 
+shitty_cts_lock = asyncio.Lock()
+shitty_cts_cache = {}
+
+
+def cleanup_cache():
+    global shitty_cts_cache
+    now = datetime.now(dt_tz.utc)
+    to_delete = []
+    for k, v in shitty_cts_cache.items():
+        if v[0] < now:
+            to_delete.append(k)
+    for k in to_delete:
+        del shitty_cts_cache[k]
+
+
 async def cts_stationboard(logicalstopcode, request_time):
+    global shitty_cts_lock, shitty_cts_cache
     transports = []
     sb_params = {
         "MonitoringRef": logicalstopcode,
@@ -1695,123 +1713,144 @@ async def cts_stationboard(logicalstopcode, request_time):
         "MaximumStopVisits": "5",
     }
     sb_headers = {"Authorization": config["cts_token"]}
-    async with ClientSession() as session:
-        async with session.get(
-            "https://api.cts-strasbourg.eu/v1/siri/2.0/stop-monitoring",
-            params=sb_params,
-            headers=sb_headers,
-        ) as r:
-            if r.status != 200:
-                print(f"cts stationboard returned {r.status}: {await r.text()}")
-                return []
-            try:
-                resp = await r.json()
-                # TODO properly implement ratelimiting!
-                resp_validuntil = resp["ServiceDelivery"]["StopMonitoringDelivery"][0][
-                    "ValidUntil"
-                ]
-                resp_shortestcycle = resp["ServiceDelivery"]["StopMonitoringDelivery"][
-                    0
-                ]["ShortestPossibleCycle"]
-                if (
-                    not "MonitoredStopVisit"
-                    in resp["ServiceDelivery"]["StopMonitoringDelivery"][0]
-                ):
-                    return []
-                for stop_visit in resp["ServiceDelivery"]["StopMonitoringDelivery"][0][
-                    "MonitoredStopVisit"
-                ]:
-                    mvj = stop_visit["MonitoredVehicleJourney"]
-                    trans = {
-                        "line": mvj["PublishedLineName"],
-                        "line_ref": mvj["LineRef"],
-                        "headsign": mvj["DestinationShortName"],
-                        "direction_ref": mvj["DirectionRef"],
-                        "stop_name": mvj["MonitoredCall"]["StopPointName"],
-                        "dep": datetime.fromisoformat(
-                            mvj["MonitoredCall"]["ExpectedDepartureTime"]
-                        ).timestamp(),
-                        "journey_ref": mvj["FramedVehicleJourneyRef"][
-                            "DatedVehicleJourneySAERef"
-                        ],
-                        "stop_comparison": (
-                            stop_visit["StopCode"],
-                            mvj["MonitoredCall"]["ExpectedDepartureTime"],
-                        ),
-                    }
-                    if trans["line"] in ("A", "B", "C", "D", "E", "F"):
-                        trans["type"] = "Tram"
-                    else:
-                        trans["type"] = "Bus"
-                    transports.append(trans)
+    async with shitty_cts_lock as lock:
+        cleanup_cache()
+        resp = {}
+        if str(sb_params) in shitty_cts_cache:
+            resp = deepcopy(shitty_cts_cache[str(sb_params)][1])
+        else:
+            async with ClientSession() as session:
+                print("http")
+                async with session.get(
+                    "https://api.cts-strasbourg.eu/v1/siri/2.0/stop-monitoring",
+                    params=sb_params,
+                    headers=sb_headers,
+                ) as r:
+                    if r.status != 200:
+                        print(f"cts stationboard returned {r.status}: {await r.text()}")
+                        return []
+                    try:
+                        resp = await r.json()
+                        resp_validuntil = datetime.fromisoformat(
+                            resp["ServiceDelivery"]["StopMonitoringDelivery"][0][
+                                "ValidUntil"
+                            ]
+                        )
+                        shitty_cts_cache[str(sb_params)] = (
+                            resp_validuntil,
+                            deepcopy(resp),
+                        )
+                    except:  # pylint: disable=bare-except
+                        print("error while decoding:")
+                        traceback.print_exc()
+                        print(await r.text())
 
-                return transports
-            except:  # pylint: disable=bare-except
-                print("error while decoding:")
-                traceback.print_exc()
-                print(await r.text())
+        if (
+            not "MonitoredStopVisit"
+            in resp["ServiceDelivery"]["StopMonitoringDelivery"][0]
+        ):
+            return []
+        for stop_visit in resp["ServiceDelivery"]["StopMonitoringDelivery"][0][
+            "MonitoredStopVisit"
+        ]:
+            mvj = stop_visit["MonitoredVehicleJourney"]
+            trans = {
+                "line": mvj["PublishedLineName"],
+                "line_ref": mvj["LineRef"],
+                "headsign": mvj["DestinationShortName"],
+                "direction_ref": mvj["DirectionRef"],
+                "stop_name": mvj["MonitoredCall"]["StopPointName"],
+                "dep": datetime.fromisoformat(
+                    mvj["MonitoredCall"]["ExpectedDepartureTime"]
+                ).timestamp(),
+                "journey_ref": mvj["FramedVehicleJourneyRef"][
+                    "DatedVehicleJourneySAERef"
+                ],
+                "stop_comparison": (
+                    stop_visit["StopCode"],
+                    mvj["MonitoredCall"]["ExpectedDepartureTime"],
+                ),
+            }
+            if trans["line"] in ("A", "B", "C", "D", "E", "F"):
+                trans["type"] = "Tram"
+            else:
+                trans["type"] = "Bus"
+            transports.append(trans)
+
+        return transports
 
 
 async def cts_journey(selected_transport):
+    global shitty_cts_cache, shitty_cts_lock
     j_params = {
         "LineRef": selected_transport["line_ref"],
         "DirectionRef": selected_transport["direction_ref"],
     }
     j_headers = {"Authorization": config["cts_token"]}
-    async with ClientSession() as session:
-        async with session.get(
-            "https://api.cts-strasbourg.eu/v1/siri/2.0/estimated-timetable",
-            params=j_params,
-            headers=j_headers,
-        ) as r:
-            if r.status != 200:
-                print(f"cts timetable returned {r.status}: {await r.text()}")
-                return []
-            try:
-                resp = await r.json()
-                # TODO properly implement ratelimiting!
-                resp_validuntil = resp["ServiceDelivery"]["EstimatedTimetableDelivery"][
-                    0
-                ]["ValidUntil"]
-                resp_shortestcycle = resp["ServiceDelivery"][
-                    "EstimatedTimetableDelivery"
-                ][0]["ShortestPossibleCycle"]
-                journeys = resp["ServiceDelivery"]["EstimatedTimetableDelivery"][0][
-                    "EstimatedJourneyVersionFrame"
-                ][0]["EstimatedVehicleJourney"]
-                journey = [
-                    journey
-                    for journey in journeys
-                    if journey["FramedVehicleJourneyRef"]["DatedVehicleJourneySAERef"]
-                    == selected_transport["journey_ref"]
-                ]
-                if not journey:
-                    print(f"cts: didn't find {selected_transport}")
-                    return None
-                else:
-                    journey = journey[0]
-                calls = journey["EstimatedCalls"]
-                calls_after = []
-                after = False
-                for call in calls:
-                    if (
-                        call["StopPointRef"],
-                        call["ExpectedDepartureTime"],
-                    ) == selected_transport["stop_comparison"]:
-                        after = True
-                        continue
-                    if after:
-                        call["ExpectedArrivalTime"] = datetime.fromisoformat(
-                            call["ExpectedArrivalTime"]
+    async with shitty_cts_lock as lock:
+        cleanup_cache()
+        resp = {}
+        if str(j_params) in shitty_cts_cache:
+            print("cache")
+            resp = deepcopy(shitty_cts_cache[str(j_params)][1])
+        else:
+            async with ClientSession() as session:
+                print("http")
+                async with session.get(
+                    "https://api.cts-strasbourg.eu/v1/siri/2.0/estimated-timetable",
+                    params=j_params,
+                    headers=j_headers,
+                ) as r:
+                    if r.status != 200:
+                        print(f"cts timetable returned {r.status}: {await r.text()}")
+                        return []
+                    try:
+                        resp = await r.json()
+                        resp_validuntil = datetime.fromisoformat(
+                            resp["ServiceDelivery"]["EstimatedTimetableDelivery"][0][
+                                "ValidUntil"
+                            ]
                         )
-                        calls_after.append(call)
+                        shitty_cts_cache[str(j_params)] = (
+                            resp_validuntil,
+                            deepcopy(resp),
+                        )
+                    except:  # pylint: disable=bare-except
+                        print("error while decoding:")
+                        traceback.print_exc()
+                        print(await r.text())
 
-                return calls_after
+        journeys = resp["ServiceDelivery"]["EstimatedTimetableDelivery"][0][
+            "EstimatedJourneyVersionFrame"
+        ][0]["EstimatedVehicleJourney"]
+        journey = [
+            journey
+            for journey in journeys
+            if journey["FramedVehicleJourneyRef"]["DatedVehicleJourneySAERef"]
+            == selected_transport["journey_ref"]
+        ]
+        if not journey:
+            print(f"cts: didn't find {selected_transport}")
+            return None
+        else:
+            journey = journey[0]
+        calls = journey["EstimatedCalls"]
+        calls_after = []
+        after = False
+        for call in calls:
+            if (
+                call["StopPointRef"],
+                call["ExpectedDepartureTime"],
+            ) == selected_transport["stop_comparison"]:
+                after = True
+                continue
+            if after:
+                call["ExpectedArrivalTime"] = datetime.fromisoformat(
+                    call["ExpectedArrivalTime"]
+                )
+                calls_after.append(call)
 
-            except:  # pylint: disable=bare-except
-                print("error while decoding:")
-                traceback.print_exc()
-                print(await r.text())
+        return calls_after
 
 
 async def cts_station_autocomplete(ia, current):
@@ -1834,7 +1873,11 @@ async def cts(
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
     if not request_time:
-        request_time = datetime.now(tz=tz).isoformat()
+        request_time = datetime.now(tz=tz) - timedelta(minutes=5)
+        request_time = request_time - timedelta(
+            seconds=request_time.second, microseconds=request_time.microsecond
+        )
+        request_time = request_time.isoformat()
     await ia.response.defer(ephemeral=True)
     view = CTSView(
         ia,
