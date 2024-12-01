@@ -1,4 +1,5 @@
 "contains our bot commands and the incoming webhook handler"
+import base64
 import itertools
 import json
 import secrets
@@ -46,6 +47,11 @@ from .helpers import (
 config = {}
 with open("settings.json", "r", encoding="utf-8") as f:
     config = json.load(f)
+
+if config["cts_token"]:
+    config["cts_token"] = "Basic " + base64.b64encode(
+        config["cts_token"].encode() + b":"
+    ).decode("utf-8")
 
 DB.connect(config["database"])
 
@@ -1576,6 +1582,272 @@ class RegisterTravelynxEnableLiveFeed(discord.ui.View):
     )
     async def doit(self, ia, _):
         await privacy.callback(ia, DB.Privacy.LIVE, True)
+
+
+class CTSView(discord.ui.View):
+    """attached to the /cts response, select transport then target,
+    then fire off a manual checkin
+    """
+
+    @discord.ui.select(placeholder="select transport to check into")
+    async def select_transport(self, ia, select):
+        await ia.response.defer()
+        self.select_transport.placeholder = [
+            option.label
+            for option in self.select_transport.options
+            if str(option.value) == select.values[0]
+        ][0]
+        self.selected_transport = self.transports[int(select.values[0])]
+        self.remove_item(self.select_destination)
+        await self.add_select_destination()
+        await ia.edit_original_response(view=self)
+
+    async def add_select_transport(self):
+        self.transports = await cts_stationboard(
+            self.logicalstopcode, self.request_time
+        )
+        if not self.transports:
+            print(f"cts: no transports at {self.logicalstopcode} {self.request_time}")
+            self.select_transport.placeholder = "no transports found"
+            self.select_transport.options = [discord.SelectOption(label="-", value="0")]
+            self.select_transport.disabled = True
+        else:
+            self.select_transport.options = [
+                discord.SelectOption(
+                    label=(
+                        f"{format_time(trans['dep'], trans['dep'])} {trans['type']} "
+                        f"{trans['line']} » {trans['headsign']}"
+                    ).replace("**", ""),
+                    value=i,
+                )
+                for (i, trans) in enumerate(self.transports)
+            ][:25]
+        self.add_item(self.select_transport)
+
+    @discord.ui.select(placeholder="select destination")
+    async def select_destination(self, ia, select):
+        await ia.response.defer()
+        destination_index = int(select.values[0][1:])
+        self.selected_destination = self.stops_after[destination_index]
+        self.select_destination.placeholder = [
+            option.label
+            for option in self.select_destination.options
+            if str(option.value) == select.values[0]
+        ][0]
+        departure = datetime.fromtimestamp(self.selected_transport["dep"], tz=self.tz)
+        arrival = self.selected_destination["ExpectedArrivalTime"]
+        self.select_transport.disabled = True
+        self.select_destination.disabled = True
+        await ia.edit_original_response(view=self)
+        await manualtrip.callback(
+            ia,
+            self.selected_transport["stop_name"],
+            departure.isoformat(),
+            self.selected_destination["StopPointName"],
+            arrival.isoformat(),
+            f"{self.selected_transport['type']} {self.selected_transport['line']}",
+            self.selected_transport["headsign"],
+            0,
+            0,
+            "",
+            0,
+        )
+
+    async def add_select_destination(self):
+        self.stops_after = await cts_journey(self.selected_transport)
+        if not self.stops_after:
+            print(f"cts: no route found for {self.selected_transport}")
+            self.select_destination.placeholder = "no route found"
+            self.select_destination.options = [
+                discord.SelectOption(label="-", value="0")
+            ]
+            self.select_destination.disabled = True
+        else:
+            # TODO add a second selector for trips with more stops
+            for i, stop in enumerate(self.stops_after[:25]):
+                if i > 24:
+                    break
+                timestamp = stop["ExpectedArrivalTime"].timestamp()
+                self.select_destination.options.append(
+                    discord.SelectOption(
+                        label=f"({format_time(timestamp, timestamp)[2:-2]}) {stop['StopPointName']}",
+                        value=f"d{i}",
+                    )
+                )
+        self.add_item(self.select_destination)
+
+    def __init__(self, ia, stop, request_time, timezone):
+        super().__init__()
+        self.remove_item(self.select_transport)
+        self.remove_item(self.select_destination)
+        self.logicalstopcode = stop
+        self.request_time = parse_manual_time(request_time, timezone)
+        self.tz = timezone
+
+
+async def cts_stationboard(logicalstopcode, request_time):
+    transports = []
+    sb_params = {
+        "MonitoringRef": logicalstopcode,
+        "VehicleMode": "undefined",
+        "PreviewInterval": "PT60M",
+        "StartTime": request_time.isoformat(),
+        "MaximumStopVisits": "5",
+    }
+    sb_headers = {"Authorization": config["cts_token"]}
+    async with ClientSession() as session:
+        async with session.get(
+            "https://api.cts-strasbourg.eu/v1/siri/2.0/stop-monitoring",
+            params=sb_params,
+            headers=sb_headers,
+        ) as r:
+            if r.status != 200:
+                print(f"cts stationboard returned {r.status}: {await r.text()}")
+                return []
+            try:
+                resp = await r.json()
+                # TODO properly implement ratelimiting!
+                resp_validuntil = resp["ServiceDelivery"]["StopMonitoringDelivery"][0][
+                    "ValidUntil"
+                ]
+                resp_shortestcycle = resp["ServiceDelivery"]["StopMonitoringDelivery"][
+                    0
+                ]["ShortestPossibleCycle"]
+                if (
+                    not "MonitoredStopVisit"
+                    in resp["ServiceDelivery"]["StopMonitoringDelivery"][0]
+                ):
+                    return []
+                for stop_visit in resp["ServiceDelivery"]["StopMonitoringDelivery"][0][
+                    "MonitoredStopVisit"
+                ]:
+                    mvj = stop_visit["MonitoredVehicleJourney"]
+                    trans = {
+                        "line": mvj["PublishedLineName"],
+                        "line_ref": mvj["LineRef"],
+                        "headsign": mvj["DestinationShortName"],
+                        "direction_ref": mvj["DirectionRef"],
+                        "stop_name": mvj["MonitoredCall"]["StopPointName"],
+                        "dep": datetime.fromisoformat(
+                            mvj["MonitoredCall"]["ExpectedDepartureTime"]
+                        ).timestamp(),
+                        "journey_ref": mvj["FramedVehicleJourneyRef"][
+                            "DatedVehicleJourneySAERef"
+                        ],
+                        "stop_comparison": (
+                            stop_visit["StopCode"],
+                            mvj["MonitoredCall"]["ExpectedDepartureTime"],
+                        ),
+                    }
+                    if trans["line"] in ("A", "B", "C", "D", "E", "F"):
+                        trans["type"] = "Tram"
+                    else:
+                        trans["type"] = "Bus"
+                    transports.append(trans)
+
+                return transports
+            except:  # pylint: disable=bare-except
+                print("error while decoding:")
+                traceback.print_exc()
+                print(await r.text())
+
+
+async def cts_journey(selected_transport):
+    j_params = {
+        "LineRef": selected_transport["line_ref"],
+        "DirectionRef": selected_transport["direction_ref"],
+    }
+    j_headers = {"Authorization": config["cts_token"]}
+    async with ClientSession() as session:
+        async with session.get(
+            "https://api.cts-strasbourg.eu/v1/siri/2.0/estimated-timetable",
+            params=j_params,
+            headers=j_headers,
+        ) as r:
+            if r.status != 200:
+                print(f"cts timetable returned {r.status}: {await r.text()}")
+                return []
+            try:
+                resp = await r.json()
+                # TODO properly implement ratelimiting!
+                resp_validuntil = resp["ServiceDelivery"]["EstimatedTimetableDelivery"][
+                    0
+                ]["ValidUntil"]
+                resp_shortestcycle = resp["ServiceDelivery"][
+                    "EstimatedTimetableDelivery"
+                ][0]["ShortestPossibleCycle"]
+                journeys = resp["ServiceDelivery"]["EstimatedTimetableDelivery"][0][
+                    "EstimatedJourneyVersionFrame"
+                ][0]["EstimatedVehicleJourney"]
+                journey = [
+                    journey
+                    for journey in journeys
+                    if journey["FramedVehicleJourneyRef"]["DatedVehicleJourneySAERef"]
+                    == selected_transport["journey_ref"]
+                ]
+                if not journey:
+                    print(f"cts: didn't find {selected_transport}")
+                    return None
+                else:
+                    journey = journey[0]
+                calls = journey["EstimatedCalls"]
+                calls_after = []
+                after = False
+                for call in calls:
+                    if (
+                        call["StopPointRef"],
+                        call["ExpectedDepartureTime"],
+                    ) == selected_transport["stop_comparison"]:
+                        after = True
+                        continue
+                    if after:
+                        call["ExpectedArrivalTime"] = datetime.fromisoformat(
+                            call["ExpectedArrivalTime"]
+                        )
+                        calls_after.append(call)
+
+                return calls_after
+
+            except:  # pylint: disable=bare-except
+                print("error while decoding:")
+                traceback.print_exc()
+                print(await r.text())
+
+
+async def cts_station_autocomplete(ia, current):
+    all_stops = DB.CTSStop.find_all()
+    suggestions = [s for s in all_stops if current.casefold() in s.name.casefold()]
+
+    return [Choice(name=s.name, value=str(s.logicalstopcode)) for s in suggestions][:25]
+
+
+@bot.tree.command(guilds=servers)
+@discord.app_commands.autocomplete(stop=cts_station_autocomplete)
+async def cts(
+    ia,
+    stop: str,
+    request_time: typing.Optional[str],
+):
+    "check into a transit trip in strasbourg"
+    user = DB.User.find(discord_id=ia.user.id)
+    if not user:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+        return
+    if not request_time:
+        request_time = datetime.now(tz=tz).isoformat()
+    await ia.response.defer(ephemeral=True)
+    view = CTSView(
+        ia,
+        stop,
+        request_time,
+        user.get_timezone(),
+    )
+    await view.add_select_transport()
+    cts_name = DB.CTSStop.find_by_logicalstopcode(stop) or "?"
+    await ia.edit_original_response(
+        content=f"### CTS manual check-in at _{cts_name}_",
+        view=view,
+    )
 
 
 def main():

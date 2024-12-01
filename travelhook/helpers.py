@@ -422,7 +422,7 @@ replace_headsign = {
     ("U6", "Wien Floridsdorf Bf (U6)"): "Floridsdorf",
     ("U6", "Wien Siebenhirten (U6)"): "Siebenhirten",
     (
-        "STR30",
+        "Tram30",
         "Wien Floridsdorf Bahnhof (Schleife Leopold-Ferstl-",
     ): "Wien Floridsdorf Bahnhof",
     # Hannover
