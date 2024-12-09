@@ -607,6 +607,10 @@ def sillies(bot, trips, embed):
         display = grouped[0][0]
         embed.description += f"\n### {len(grouped[0])}× {display['emoji']} {display['line'] or ''} COMBO!"
 
+    if (not trips[-1].hafas_data) and trips[-1].status["backend"]["id"] >= 0:
+        embed = embed.set_thumbnail(url="https://i.imgur.com/6pB5Kc6.png")
+        embed.description += "\n-# **» ?**: hafas broke, try to update"
+
     status = trips[-1].status
     stations = status["fromStation"]["name"] + status["toStation"]["name"]
     if "Durlacher Tor" in status["toStation"]["name"]:
