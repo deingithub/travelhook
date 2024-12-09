@@ -637,7 +637,8 @@ def sillies(bot, trips, embed):
     if "Erlangen" in status["toStation"]["name"]:
         return embed.set_thumbnail(url="https://i.imgur.com/pHp8Sus.png")
     if ("Weinweg, Karlsruhe" in status["toStation"]["name"]) or (
-        "Gewerbepark Kagran" in status["toStation"]["name"]
+        "Gewerbepark Kagran" in status["toStation"]["name"]) or (
+        "IKEA" in status["toStation"]["name"].upper()
     ):
         return embed.set_thumbnail(url="https://i.imgur.com/9IAgPLd.png")
     if status.get("composition") and ("**612**" in status["composition"]):
