@@ -1844,10 +1844,7 @@ async def cts_journey(selected_transport):
         calls_after = []
         after = False
         for call in calls:
-            if (
-                call["StopPointRef"],
-                call["ExpectedDepartureTime"],
-            ) == selected_transport["stop_comparison"]:
+            if call["StopPointRef"] == selected_transport["stop_comparison"][0]:
                 after = True
                 continue
             if after:
