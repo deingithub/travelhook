@@ -656,5 +656,7 @@ def sillies(bot, trips, embed):
         return embed.set_image(url="https://i.imgur.com/8deLTcU.png")
     if status["train"]["line"] == "4" and "uniwuni" in embed.author.name:
         return embed.set_image(url="https://i.imgur.com/zKzgXLp.png")
+    if "Homme de fer" in status["toStation"]["name"]:
+        return embed.set_thumbnail(url="https://upload.wikimedia.org/wikipedia/commons/4/4c/Potato_heart_mutation.jpg")
 
     return embed
