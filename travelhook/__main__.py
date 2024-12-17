@@ -1375,7 +1375,7 @@ async def train_variants(ia):
         color=discord.Color.from_str("#2e2e7d"),
         title="manual: train display variants",
         description="the relay bot supports 'native' display variants for a number of transit "
-        "networks. when you check in with travelynx or **/scotty**, the bot will automatically "
+        "networks. when you check in with travelynx or **/cts**, the bot will automatically "
         "try to guess the correct network. if you're checking in manually or the bot makes a "
         "mistake, you can correct it with **/journey edit network:**",
     )
