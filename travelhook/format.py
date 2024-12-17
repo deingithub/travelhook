@@ -79,7 +79,8 @@ def get_network(status):
 
     # network AVG: Stadtbahn Karlsruhe
     if operator == "Albtal-Verkehrs-Gesellschaft mbH" or (
-        status["train"]["type"] + status["train"]["line"] == "S2"
+        hafas_data
+        and status["train"]["type"] + status["train"]["line"] == "S2"
         and any(stop["name"] == "Karlsruhe Entenfang" for stop in hafas_data["route"])
     ):
         return "AVG"
