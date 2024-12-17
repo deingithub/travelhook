@@ -67,6 +67,8 @@ def get_network(status):
     ).fetchone()
     if hafas_data:
         hafas_data = json.loads(hafas_data["hafas_data"])
+    else:
+        hafas_data = {}
 
     operator = status.get("operator", hafas_data.get("operator")) or ""
 
