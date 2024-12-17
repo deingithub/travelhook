@@ -1780,7 +1780,7 @@ async def cts_stationboard(logicalstopcode, request_time):
                 ),
             }
             if trans["line"] in ("A", "B", "C", "D", "E", "F"):
-                trans["type"] = "STR"
+                trans["type"] = "Tram"
             else:
                 trans["type"] = "Bus"
             transports.append(trans)
