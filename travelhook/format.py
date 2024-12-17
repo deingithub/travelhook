@@ -61,16 +61,14 @@ def get_network(status):
     if "network" in status:
         return status["network"]
 
-    operator = status.get("operator")
-    if not operator:
-        cached = DB.DB.execute(
-            "SELECT hafas_data FROM trips WHERE journey_id = ? AND hafas_data != '{}'",
-            (zugid(status),),
-        ).fetchone()
-        if cached:
-            operator = json.loads(cached["hafas_data"]).get("operator")
+    hafas_data = DB.DB.execute(
+        "SELECT hafas_data FROM trips WHERE journey_id = ? AND hafas_data != '{}'",
+        (zugid(status),),
+    ).fetchone()
+    if hafas_data:
+        hafas_data = json.loads(hafas_data["hafas_data"])
 
-    operator = operator or ""
+    operator = status.get("operator", hafas_data.get("operator")) or ""
 
     lat = status["fromStation"]["latitude"]
     lon = status["fromStation"]["longitude"]
@@ -80,7 +78,10 @@ def get_network(status):
         return "NS"
 
     # network AVG: Stadtbahn Karlsruhe
-    if operator == "Albtal-Verkehrs-Gesellschaft mbH":
+    if operator == "Albtal-Verkehrs-Gesellschaft mbH" or (
+        status["train"]["type"] + status["train"]["line"] == "S2"
+        and any(stop["name"] == "Karlsruhe Entenfang" for stop in hafas_data["route"])
+    ):
         return "AVG"
 
     # network WL: U-Bahn Wien
