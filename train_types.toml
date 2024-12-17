@@ -7,6 +7,17 @@ train_types = [
 	# ===== DB HAFAS provided train types =====
 	{ type = "A", emoji = "A_", color = "#f49100", class="special" },
 	{ type = "AST", emoji = "ast", color = "#ffd700", class="city transit" },
+	# network = "CTS": strasbourg high-frequency buses
+	{ type = "Bus", network = "CTS", line = "G", emoji = "Bus2|ctsG", color = "#f6c900", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "H", emoji = "Bus2|ctsH", color = "#a62341", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "C1", emoji = "Bus2|ctsC1", color = "#22ae84", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "C3", emoji = "Bus2|ctsC3", color = "#9fc204", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "C6", emoji = "Bus2|ctsC6", color = "#7d5d9f", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "C7", emoji = "Bus2|ctsC7", color = "#008a27", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "C8", emoji = "Bus2|ctsC8", color = "#88cdd5", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "C9", emoji = "Bus2|ctsC9", color = "#f26640", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "2", emoji = "Bus2|cts2", color = "#e10d19", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "4", emoji = "Bus2|cts4", color = "#cf0d1c", hide_line_number = true },
 	{ type = "Bus", line_startswith = "N", emoji = "BusN", color = "#a3167e", class="city transit" },
 	{ type = "Bus", line_startswith = "X", emoji = "BusX", remove_line_startswith = true, color = "#a3167e", class="city transit" },
 	{ type = "Bus", emoji = "Bus", color = "#a3167e", class="city transit" },
@@ -166,7 +177,7 @@ CH-FV = "Swiss long-distance trains"
 CTS = "Strasbourg trams"
 HHA = "U-Bahn Hamburg"
 KVB = "Stadtbahn Köln/Bonn"
-MVG = "U-Bahn Berlin"
+MVG = "U-Bahn München"
 NRW = "Stadtbahn Rhein/Ruhr"
 NS = "Nederlandse Spoorwegen Sprinter"
 ST = "Stoptrein"
