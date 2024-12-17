@@ -30,7 +30,6 @@ train_types = [
 	{ type = "ICE", emoji = "ca|Cb", color = "#ff0404", always_show_train_number = true, class="long-distance" },
 	{ type = "ICN", emoji = "icn0|icn1", color = "#282559", always_show_train_number = true, class="long-distance 2" },
 	{ type = "IR", emoji = "Ia|db", color = "#ff0404", always_show_train_number = true, class="long-distance" },
-	{ type = "IRE", emoji = "ia|ib", color = "#ff4f00", class="regional" },
 	{ type = "KM", emoji = "ka|kb", color = "#204a87", class="poland" },
 	{ type = "KML", emoji = "kLa|kLb", color = "#204a87", class="poland" },
 	{ type = "KS", emoji = "sa|sb", color = "#204a87", class="poland" },
