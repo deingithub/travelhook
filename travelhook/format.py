@@ -83,7 +83,9 @@ def get_network(status):
     if operator == "Albtal-Verkehrs-Gesellschaft mbH" or (
         hafas_data
         and status["train"]["type"] + status["train"]["line"] == "S2"
-        and any(stop["name"] == "Karlsruhe Entenfang" for stop in hafas_data["route"]) # 🫳🦆
+        and any(
+            stop["name"] == "Karlsruhe Entenfang" for stop in hafas_data["route"]
+        )  # 🫳🦆
     ):
         return "AVG"
 
@@ -657,6 +659,8 @@ def sillies(bot, trips, embed):
     if status["train"]["line"] == "4" and "uniwuni" in embed.author.name:
         return embed.set_image(url="https://i.imgur.com/zKzgXLp.png")
     if "Homme de fer" in status["toStation"]["name"]:
-        return embed.set_thumbnail(url="https://upload.wikimedia.org/wikipedia/commons/4/4c/Potato_heart_mutation.jpg")
+        return embed.set_thumbnail(
+            url="https://upload.wikimedia.org/wikipedia/commons/4/4c/Potato_heart_mutation.jpg"
+        )
 
     return embed
