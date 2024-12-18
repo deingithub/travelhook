@@ -448,6 +448,22 @@ class TripActionsView(discord.ui.View):
             self.trip.status.get("composition"),
             True,
         )
+        if original_patch := self.trip.status_patch:
+            newpatch = {}
+            if operator := original_patch.get("operator"):
+                newpatch["operator"] = operator
+            if network := original_patch.get("network"):
+                newpatch["network"] = network
+            if distance := original_patch.get("distance"):
+                newpatch["distance"] = distance
+            if not newpatch:
+                return
+            try:
+                await EditTripView(
+                    DB.Trip.find_last_trip_for(ia.user.id), newpatch, quiet=True
+                ).commit.callback(ia)
+            except discord.errors.InteractionResponded:
+                pass
 
 
 configure = discord.app_commands.Group(
@@ -1189,9 +1205,10 @@ async def edit(
 class EditTripView(discord.ui.View):
     "provide a button to edit the trip status patch"
 
-    def __init__(self, trip, newpatch):
+    def __init__(self, trip, newpatch, quiet=False):
         self.trip = trip
         self.newpatch = newpatch
+        self.quiet = quiet
         self.modal = self.EnterStatusPatchModal(self, self.trip, self.newpatch)
         super().__init__()
 
@@ -1217,6 +1234,8 @@ class EditTripView(discord.ui.View):
                     "Authorization": f"Bearer {DB.User.find(self.trip.user_id).token_webhook}"
                 },
             ) as r:
+                if self.quiet:
+                    return
                 if ia.response.is_done():
                     await ia.edit_original_response(
                         content=f"{r.status} {await r.text()}", embed=None, view=None
@@ -1654,12 +1673,36 @@ class CTSView(discord.ui.View):
             "",
             0,
         )
+        distance = 0
+        if self.stop_geo:
+            coords = (self.stop_geo.get("latitude"), self.stop_geo.get("longitude"))
+            for i, stop in enumerate(self.stops_after):
+                if not stop.get("latitude"):
+                    distance = None
+                    break
+                if i > destination_index:
+                    break
+                newcoords = (stop["latitude"], stop["longitude"])
+                distance += haversine(coords, newcoords)
+                coords = newcoords
+        else:
+            distance = None
         try:
             await EditTripView(
                 DB.Trip.find_last_trip_for(ia.user.id),
                 {
                     "operator": "CTS",
+                    "distance": distance,
+                    "fromStation": {
+                        "latitude": self.stop_geo.get("latitude"),
+                        "longitude": self.stop_geo.get("longitude"),
+                    },
+                    "toStation": {
+                        "latitude": self.selected_destination.get("latitude"),
+                        "longitude": self.selected_destination.get("longitude"),
+                    },
                 },
+                quiet=True,
             ).commit.callback(ia)
         except discord.errors.InteractionResponded:
             pass
@@ -1692,6 +1735,12 @@ class CTSView(discord.ui.View):
         self.remove_item(self.select_transport)
         self.remove_item(self.select_destination)
         self.logicalstopcode = stop
+        self.stop_geo = {}
+        if db_stop := DB.CTSStop.find_by_logicalstopcode(stop):
+            self.stop_geo = {
+                "latitude": db_stop.latitude,
+                "longitude": db_stop.longitude,
+            }
         self.request_time = parse_manual_time(request_time, timezone)
         self.tz = timezone
 
@@ -1851,6 +1900,12 @@ async def cts_journey(selected_transport):
                 call["ExpectedArrivalTime"] = datetime.fromisoformat(
                     call["ExpectedArrivalTime"]
                 )
+                # logical stop code: stopref without the last letter (the "platform identifier")
+                call["LogicalStopCode"] = int(call["StopPointRef"][:-1])
+                db_stop = DB.CTSStop.find_by_logicalstopcode(call["LogicalStopCode"])
+                if db_stop:
+                    call["latitude"] = db_stop.latitude
+                    call["longitude"] = db_stop.longitude
                 calls_after.append(call)
 
         return calls_after
@@ -1889,9 +1944,11 @@ async def cts(
         user.get_timezone(),
     )
     await view.add_select_transport()
-    cts_name = DB.CTSStop.find_by_logicalstopcode(stop) or "?"
+    cts_name = DB.CTSStop.find_by_logicalstopcode(stop)
+    if cts_name:
+        cts_name = cts_name.name
     await ia.edit_original_response(
-        content=f"### CTS manual check-in at _{cts_name}_",
+        content=f"### CTS manual check-in at _{cts_name or '?'}_",
         view=view,
     )
 

@@ -194,6 +194,8 @@ class CTSStop:
     "cts stops"
     name: str
     logicalstopcode: int
+    latitude: int
+    longitude: int
 
     @classmethod
     def find_all(cls):
@@ -203,10 +205,10 @@ class CTSStop:
     @classmethod
     def find_by_logicalstopcode(cls, logicalstopcode):
         row = DB.execute(
-            "SELECT name FROM cts_stops WHERE logicalstopcode = ?", (logicalstopcode,)
+            "SELECT * FROM cts_stops WHERE logicalstopcode = ?", (logicalstopcode,)
         ).fetchone()
         if row:
-            return row["name"]
+            return cls(**row)
 
 
 @dataclass
