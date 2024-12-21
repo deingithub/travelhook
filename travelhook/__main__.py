@@ -1811,15 +1811,15 @@ async def cts_stationboard(logicalstopcode, request_time):
             "MonitoredStopVisit"
         ]:
             mvj = stop_visit["MonitoredVehicleJourney"]
+            dep = datetime.fromisoformat(mvj["MonitoredCall"]["ExpectedDepartureTime"])
+            dep = dep - timedelta(seconds=dep.second, microseconds=dep.microsecond)
             trans = {
                 "line": mvj["PublishedLineName"],
                 "line_ref": mvj["LineRef"],
-                "headsign": mvj["DestinationShortName"],
+                "headsign": mvj["DestinationName"],
                 "direction_ref": mvj["DirectionRef"],
                 "stop_name": mvj["MonitoredCall"]["StopPointName"],
-                "dep": datetime.fromisoformat(
-                    mvj["MonitoredCall"]["ExpectedDepartureTime"]
-                ).timestamp(),
+                "dep": dep.timestamp(),
                 "journey_ref": mvj["FramedVehicleJourneyRef"][
                     "DatedVehicleJourneySAERef"
                 ],
@@ -1900,6 +1900,10 @@ async def cts_journey(selected_transport):
                 call["ExpectedArrivalTime"] = datetime.fromisoformat(
                     call["ExpectedArrivalTime"]
                 )
+                call["ExpectedArrivalTime"] = call["ExpectedArrivalTime"] - timedelta(
+                    seconds=call["ExpectedArrivalTime"].second,
+                    microseconds=call["ExpectedArrivalTime"].microsecond,
+                )
                 # logical stop code: stopref without the last letter (the "platform identifier")
                 call["LogicalStopCode"] = int(call["StopPointRef"][:-1])
                 db_stop = DB.CTSStop.find_by_logicalstopcode(call["LogicalStopCode"])
@@ -1931,9 +1935,11 @@ async def cts(
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
     if not request_time:
-        request_time = datetime.now(tz=tz) - timedelta(minutes=5)
+        request_time = datetime.now(tz=tz)
         request_time = request_time - timedelta(
-            seconds=request_time.second, microseconds=request_time.microsecond
+            minutes=5,
+            seconds=request_time.second,
+            microseconds=request_time.microsecond,
         )
         request_time = request_time.isoformat()
     await ia.response.defer(ephemeral=True)

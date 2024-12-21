@@ -560,7 +560,7 @@ class Trip:
         stops = [stop["name"] for stop in self.hafas_data["route"]]
 
         def next_stop(a, b):
-            if i := stops.index(a):
+            if (i := stops.index(a)) and i < len(stops):
                 return stops[i + 1] == b
 
         if (
