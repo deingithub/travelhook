@@ -89,6 +89,13 @@ def get_network(status):
     ):
         return "AVG"
 
+    # network RNV: trams in mannheim, ludwigshafen and heidelberg
+    if operator.startswith("Rhein-Neckar-Verkehr") or (
+        (not status["train"]["type"])
+        and haversine((lat, lon), (49.47884, 8.55787)) < 30
+    ):
+        return "RNV"
+
     # network WL: U-Bahn Wien
     if operator.startswith("Wiener Linien"):
         return "WL"
@@ -179,13 +186,13 @@ def get_display(bot, status):
     if type == "RT":
         type = "STR"
         line = "RT" + line
-    if (type == "Bus" and get_network(status) == "WL") or (
-        type == "STR" and line in ("4A", "5A", "6A")
-    ):
+    if type == "Bus" and get_network(status) == "WL":
         line = line.replace("A", "ᴀ").replace("B", "ʙ")
     if type == "ICB":
         type = "coach"
         line = "Intercitybus"
+    if not type and get_network(status) == "RNV":
+        type = "STR"
 
     if status["backend"]["name"] == "BLS":
         bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}

@@ -1,9 +1,9 @@
-emoji_server_ids = [552249406808653836, 1109251867051044994, 1189295652518232155, 1162759875667964005, 1235129674485600276] # emoji will be looked up by name from these servers only
+emoji_server_ids = [552249406808653836, 1109251867051044994, 1189295652518232155, 1162759875667964005, 1235129674485600276, 1323238503940755466] # emoji will be looked up by name from these servers only
 train_types = [
 	# possible options for matching, not provided = matches all
 	# { type = "IC", line = "1",  line_startswith = "1", network = "SBB"}
 	# possible options for display
-	# { emoji = "ica,ic1", color = "#ff0404", hide_line_number = true, always_show_train_number = true }
+	# { emoji = "ica|ic1", color = "#ff0404", hide_line_number = true, always_show_train_number = true }
 	# ===== DB HAFAS provided train types =====
 	{ type = "A", emoji = "A_", color = "#f49100", class="special" },
 	{ type = "AST", emoji = "ast", color = "#ffd700", class="city transit" },
@@ -84,9 +84,28 @@ train_types = [
 	{ type = "STR", network = "CTS", line = "D", emoji = "str2|ctsd", color = "#009933", hide_line_number = true },
 	{ type = "STR", network = "CTS", line = "E", emoji = "str2|ctse", color = "#9085ba", hide_line_number = true },
 	{ type = "STR", network = "CTS", line = "F", emoji = "str2|ctsf", color = "#97bf0d", hide_line_number = true },
-	# network = "Ü": matches if operator is "üstra Hannoversche Verkehrsbetriebe AG"
-	{ type = "STB", network = "Ü", emoji = "UE", color = "#78b41d" },
-	{ type = "STR", network = "Ü", emoji = "UE", color = "#78b41d" },
+	# network = "RNV": matches if operator starts with "Rhein-Neckar-Verkehr"
+	{ type = "STR", network = "RNV", line = "1", emoji = "str2|rnv1", color = "#f39b9b", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "2", emoji = "str2|rnv2", color = "#b10346", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "3", emoji = "str2|rnv3", color = "#d6ad00", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "4", emoji = "str2|rnv4", color = "#e30613", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "4A", emoji = "str2|rnv4a", color = "#e30613", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "5", emoji = "str2|rnv5", color = "#00975f", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "5A", emoji = "str2|rnv5a", color = "#00975f", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "6", emoji = "str2|rnv6", color = "#966c29", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "6A", emoji = "str2|rnv6a", color = "#966c29", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "7", emoji = "str2|rnv7", color = "#ffcc00", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "8", emoji = "str2|rnv8", color = "#e17500", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "9", emoji = "str2|rnv9", color = "#95c23d", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "10", emoji = "str2|rnv10", color = "#a71680", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "15", emoji = "str2|rnv15", color = "#f7ab64", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "16", emoji = "str2|rnv16", color = "#5f6caf", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "21", emoji = "str2|rnv21", color = "#e30613", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "22", emoji = "str2|rnv22", color = "#fdc300", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "23", emoji = "str2|rnv23", color = "#e48f00", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "24", emoji = "str2|rnv24", color = "#8d2176", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "25", emoji = "str2|rnv25", color = "#95c23d", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "26", emoji = "str2|rnv26", color = "#f39b9b", hide_line_number = true  },
 	# fix for Stuttgart Stadtbahn lines having a U prefix in the line
 	{ type = "STB", line_startswith = "U", emoji = "STB", remove_line_startswith = true, color = "#c5161c", class="rapid transit" },
 	{ type = "STB", emoji = "STB", color = "#c5161c", class="rapid transit" },
@@ -180,6 +199,7 @@ KVB = "Stadtbahn Köln/Bonn"
 MVG = "U-Bahn München"
 NRW = "Stadtbahn Rhein/Ruhr"
 NS = "Nederlandse Spoorwegen Sprinter"
+RNV = "Rhein-Neckar-Verkehr MA/LU/HD"
 ST = "Stoptrein"
 SWien = "S-Bahn Wien"
 tl = "Metro Lausanne"

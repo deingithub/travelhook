@@ -1410,6 +1410,30 @@ async def train_variants(ia):
                 f"`U {types[0]['line']}-{types[-1]['line']}` "
                 + (" | ".join([emoji(bot, tt) for tt in types]))
             )
+        elif network in ("CTS") and len(types) > 1:
+            embed.description += f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n"
+            if buses := [type for type in types if type.get("type") == "Bus"]:
+                emojis = [
+                    emoji(bot, tt) if i == 0 else "<" + (emoji(bot, tt).split("><")[1])
+                    for i, tt in enumerate(buses)
+                ]
+                embed.description += (
+                    f"> `Bus {buses[0]['line']}-{buses[-1]['line']}` "
+                    + (" | ".join(emojis))
+                )
+                if len(types) != len(buses):
+                    embed.description += "\n"
+            if trams := [type for type in types if type.get("type") == "STR"]:
+                emojis = [
+                    emoji(bot, tt) if i == 0 else "<" + (emoji(bot, tt).split("><")[1])
+                    for i, tt in enumerate(trams)
+                ]
+                embed.description += (
+                    f"> `STR {trams[0]['line']}-{trams[-1]['line']}` "
+                    + (" | ".join(emojis))
+                )
+        elif network == "RNV":
+            continue  # TODO: fixme
         else:
             embed.description += (
                 f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n> "
@@ -1417,6 +1441,7 @@ async def train_variants(ia):
                     [explain_display(bot, tt, for_variants=True) for tt in types]
                 )
             )
+    embed.description += "\n**The rnv network in Mannheim, Ludwigshafen and Heidelberg has special styling as well, but that's currently too big for this embed. Will fix later.**"
     await ia.response.send_message(embed=embed)
 
 

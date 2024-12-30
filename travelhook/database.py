@@ -26,6 +26,7 @@ from .helpers import (
     db_replace_group_classes,
     describe_class,
 )
+from .format import get_network
 from . import oebb_wr
 
 DB = None
@@ -552,9 +553,7 @@ class Trip:
     def maybe_fix_rnv_5(self, headsign):
         "try to detect which way the line 5 in mannheim is going"
         if not (
-            self.hafas_data["operator"]
-            == "Rhein-Neckar-Verkehr GmbH (Oberrheinische Eisenbahn)"
-            and self.status["train"]["line"] == "5"
+            get_network(self.status) == "RNV" and self.status["train"]["line"] == "5"
         ):
             return
         stops = [stop["name"] for stop in self.hafas_data["route"]]

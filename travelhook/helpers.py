@@ -405,7 +405,14 @@ def decline_operator_with_article(operator: str):
 # but look how maintainable this is, you could add any city you like
 # you could even abbreviate Berlin to B
 # no idea why you would but it's possible now
-replace_city_suffix_with_prefix = {"Karlsruhe": "KA", "Leipzig": "L"}
+replace_city_suffix_with_prefix = {
+    "Karlsruhe": "KA",
+    "Leipzig": "L",
+    "Ludwigsh": "LU",
+    "Ludwigshafen": "LU",
+    "Ludwigshafen am Rhein": "LU",
+    "Mannheim": "MA",
+}
 
 replace_headsign = {
     # Vienna
