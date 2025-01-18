@@ -455,7 +455,7 @@ class Trip:
 
         backend = self.status["backend"]["name"]
         if self.status["backend"]["type"] == "IRIS-TTS":
-            backend = "DB"
+            backend = "VRN"
         elif backend == "ÖBB":
             backend = bytes(
                 [214, 66, 66]
@@ -536,7 +536,14 @@ class Trip:
         for train in stationboard["trains"]:
             if not train["scheduled"] == self.status["fromStation"]["scheduledTime"]:
                 continue
-            if jid == train["id"] or (train["number"] == self.status["train"]["no"]):
+            if (
+                jid == train["id"]
+                or (train["number"] == self.status["train"]["no"])
+                or (
+                    f"{train['type']}{train['line']}"
+                    == f"{self.status['train']['type']}{self.status['train']['line']}"
+                )
+            ):
                 write_hafas_data(train)
                 break
         else:
