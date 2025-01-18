@@ -460,4 +460,33 @@ replace_headsign = {
     ("STBU12", "Neckargröningen Remseck, Remseck am Neckar"): "Neckargröningen Remseck",
     # Nuremberg
     ("U3", "Großreuth _bei Schweinau"): "Großreuth bei Schweinau",
+    # rnv
+    ("STR1", "Schönau Endstelle, Mannheim"): "Schönau",
+    ("STR1", "Rheinau Bahnhof, Mannheim"): "Rheinau Bf",
+    ("STR2", "Feudenheim Endstelle, Mannheim"): "Feudenheim",
+    ("STR3", "Sandhofen Endstelle, Mannheim"): "Sandhofen",
+    ("STR3", "Neckarau Rheingoldhalle, Mannheim"): "Rheingoldhalle",
+    ("RNV4", "Waldhof Waldfriedhof, Mannheim"): "Waldfriedhof",
+    (
+        "RNV4",
+        "Oggersheim Comeniusstr., Ludwigshafen am Rhein",
+    ): "Oggersheim Comeniusstraße",
+    ("RNV4", "Bahnhof, Bad Dürkheim"): "Bad Dürkheim Bf",
+    ("RNV4A", "Käfertal Käfertaler Wald, Mannheim"): "Käfertaler Wald",
+    (
+        "RNV4A",
+        "Oggersheim Comeniusstr., Ludwigshafen am Rhein",
+    ): "Oggersheim Comeniusstraße",
+    ("RNV4A", "Bahnhof, Bad Dürkheim"): "Bad Dürkheim Bf",
+    ("RNV5A", "Bahnhof (RNV), Heddesheim"): "Heddesheim Bf",
+    ("RNV6", "Rheingönheim Neubruch, Ludwigshafen am Rhein"): "Rheingönheim Neubruch",
+    ("RNV6", "Neuostheim Endstelle, Mannheim"): "Neuostheim",
+    ("RNV6", "Neuhermsheim SAP Arena S-Bahnhof, Mannheim"): "SAP-Arena S-Bf",
+    ("RNV6A", "Rheingönheim Neubruch, Ludwigshafen am Rhein"): "Rheingönheim Neubruch",
+    ("RNV6A", "Neuhermsheim SAP Arena S-Bahnhof, Mannheim"): "SAP-Arena S-Bf",
+    ("RNV7", "Vogelstang Endstelle, Mannheim"): "Vogelstang",
+    ("RNV7", "Oppau Fritz-Haber-Str. BASF Tor12+13, Ludwigshafen"): "Oppau",
+    ("RNV9", "Bahnhof, Bad Dürkheim"): "Bad Dürkheim Bf",
+    ("RNV9", "Luisenpark/Technoseum, Mannheim"): "MA Luisenpark/Technoseum",
+    ("RNV9", "Neuostheim Endstelle, Mannheim"): "MA Neuostheim",
 }

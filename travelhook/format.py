@@ -39,6 +39,7 @@ re_decompose_him = re.compile(r"(?P<from>.+) - (?P<to>.+): Information\. (?P<msg
 
 blanket_replace_train_type = {
     "EV": "SEV",
+    "IRE": "RE",
     "RNV": "STR",
     "O-Bus": "Bus",
     "Tram": "STR",
@@ -84,7 +85,8 @@ def get_network(status):
         hafas_data
         and f"{status['train']['type']}{status['train']['line']}" == "S2"
         and any(
-            stop["name"] == "Karlsruhe Entenfang" for stop in hafas_data["route"]
+            stop["name"] in ("Karlsruhe Entenfang", "Entenfang, Karlsruhe")
+            for stop in hafas_data["route"]
         )  # 🫳🦆
     ):
         return "AVG"
