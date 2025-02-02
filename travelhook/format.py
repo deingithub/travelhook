@@ -212,7 +212,10 @@ def get_display(bot, status):
                 not "line_startswith" in tt
                 or (line and line.startswith(tt["line_startswith"]))
             )
-            and (not "network" in tt or tt["network"] == get_network(status))
+            and (
+                not "network" in tt
+                or tt["network"].casefold() == get_network(status).casefold()
+            )
         ):
             if "remove_line_startswith" in tt:
                 line = line.removeprefix(tt["line_startswith"])
