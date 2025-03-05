@@ -710,6 +710,7 @@ async def manualtrip(
     distance: typing.Optional[float] = None,
     composition: typing.Optional[str] = None,
     do_not_format_composition: bool = False,
+    network: typing.Optional[str] = None,
 ):
     "Manually add a check-in not available on HAFAS/IRIS to your journey."
     user = DB.User.find(discord_id=ia.user.id)
@@ -806,6 +807,8 @@ async def manualtrip(
         status["composition"] = " + ".join(
             [format_composition_element(unit.strip()) for unit in composition]
         )
+    if network:
+        status["network"] = network
     webhook = {"reason": "checkout", "status": status}
     async with ClientSession() as session:
         async with session.post(
@@ -1652,6 +1655,12 @@ class CTSView(discord.ui.View):
         self.transports = await cts_stationboard(
             self.logicalstopcode, self.request_time
         )
+        if self.transports is None:
+            # reply 503 -- timeout. let's try again
+            await asyncio.sleep(5)
+            self.transports = await cts_stationboard(
+                self.logicalstopcode, self.request_time
+            )
         if not self.transports:
             print(f"cts: no transports at {self.logicalstopcode} {self.request_time}")
             self.select_transport.placeholder = "no transports found"
@@ -1734,6 +1743,11 @@ class CTSView(discord.ui.View):
 
     async def add_select_destination(self):
         self.stops_after = await cts_journey(self.selected_transport)
+        if self.stops_after is None:
+            # reply 503 -- temporary timeout, let's try again
+            await asyncio.sleep(5)
+            self.stops_after = await cts_journey(self.selected_transport)
+
         if not self.stops_after:
             print(f"cts: no route found for {self.selected_transport}")
             self.select_destination.placeholder = "no route found"
@@ -1808,7 +1822,9 @@ async def cts_stationboard(logicalstopcode, request_time):
                     params=sb_params,
                     headers=sb_headers,
                 ) as r:
-                    if r.status != 200:
+                    if r.status == 503:
+                        return None
+                    elif r.status != 200:
                         print(f"cts stationboard returned {r.status}: {await r.text()}")
                         return []
                     try:
@@ -1881,7 +1897,9 @@ async def cts_journey(selected_transport):
                     params=j_params,
                     headers=j_headers,
                 ) as r:
-                    if r.status != 200:
+                    if r.status == 503:
+                        return None
+                    elif r.status != 200:
                         print(f"cts timetable returned {r.status}: {await r.text()}")
                         return []
                     try:

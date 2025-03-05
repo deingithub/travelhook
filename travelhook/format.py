@@ -202,7 +202,7 @@ def get_display(bot, status):
         bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}
         type = bls_replace_train_types.get(type, type)
 
-    if status["backend"]["name"] in ("VBB", "NAHSH") and type in ("S", "U"):
+    if status["backend"]["name"] in ("VBB", "NAHSH", "BVG") and type in ("S", "U"):
         line = line.removeprefix("S").removeprefix("U")
 
     for tt in train_types_config["train_types"]:

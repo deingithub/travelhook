@@ -454,9 +454,8 @@ class Trip:
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
 
         backend = self.status["backend"]["name"]
-        if self.status["backend"]["type"] == "IRIS-TTS":
-            backend = "VRN"
-        elif backend == "ÖBB":
+        if backend == "ÖBB" or self.status["backend"]["type"] == "IRIS-TTS":
+            # rest in piss DB/VRN hafas -- you were, at best, vaguely adequate
             backend = bytes(
                 [214, 66, 66]
             )  # i REALLY wish i knew what the fuck is wrong with perl
