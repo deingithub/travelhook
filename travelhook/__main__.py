@@ -36,6 +36,7 @@ from .helpers import (
     format_time,
     generate_train_link,
     is_token_valid,
+    is_import_token_valid,
     not_registered_embed,
     train_type_color,
     trip_length,
@@ -540,6 +541,39 @@ async def showtrainnumbers(ia, toggle: bool):
             ),
             ephemeral=True,
         )
+    else:
+        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
+
+
+@configure.command()
+@discord.app_commands.describe(
+    token='the import token. create one on your travelynx user site under "API" in the row "Import"',
+    disable="set to true if you don't want to upload your manual checkins anymore",
+)
+async def import_to_travelynx(
+    ia, token: typing.Optional[str], disable: typing.Optional[bool] = False
+):
+    "Configure if the bot should import manual checkins (only with /checkin) to travelynx."
+    if user := DB.User.find(discord_id=ia.user.id):
+        if disable:
+            user.set_import_token(None)
+            await ia.response.send_message(
+                "Deleted your import token. The **/checkin** command will no longer upload your trips to travelynx.",
+                ephemeral=True,
+            )
+            return
+        token = token.strip()
+        if await is_import_token_valid(token):
+            user.set_import_token(token)
+            await ia.response.send_message(
+                "Updated your import token. The **/checkin** command will now upload your trips to travelynx.",
+                ephemeral=True,
+            )
+        else:
+            await ia.response.send_message(
+                "Could not update your import token because travelynx reports an error. Check if it's valid.",
+                ephemeral=True,
+            )
     else:
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
 

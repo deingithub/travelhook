@@ -66,6 +66,37 @@ async def is_token_valid(token):
                 traceback.print_exc()
 
 
+async def is_import_token_valid(token):
+    "check if a import api token actually works"
+    async with ClientSession() as session:
+        async with session.post(
+            f"{config['travelynx_instance']}/api/v1/import",
+            json={
+                "token": token,
+                "dryRun": True,
+                "train": {
+                    "type": "S",
+                    "line": "6",
+                    "no": "30634",
+                },
+                "fromStation": {"name": "Essen Hbf", "scheduledTime": 1556083680},
+                "toStation": {"name": "Essen Stadtwald", "scheduledTime": 1556083980},
+                "intermediateStops": [
+                    "Essen Süd",
+                ],
+            },
+        ) as r:
+            try:
+                data = await r.json()
+                if r.status == 200 and not "error" in data:
+                    return True
+                print(f"token {token} invalid: {r.status} {data}")
+                return False
+            except:  # pylint: disable=bare-except
+                print(f"error verifying token {token}:")
+                traceback.print_exc()
+
+
 def format_time(sched, actual, relative=False, timezone=tz):
     """render a nice timestamp for arrival/departure that includes delay information.
     relative=True creates a discord relative timestamp that looks like "in 3 minutes"

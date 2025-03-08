@@ -145,6 +145,12 @@ class User:
             (show_train_numbers, self.discord_id),
         )
 
+    def set_import_token(self, token: Optional[str]):
+        DB.execute(
+            "UPDATE users SET token_travel = ? WHERE discord_id = ?",
+            (token, self.discord_id),
+        )
+
     def find_live_channel_ids(self):
         rows = DB.execute(
             "SELECT servers.live_channel FROM servers JOIN privacy on servers.server_id = privacy.server_id "

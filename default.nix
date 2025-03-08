@@ -155,6 +155,7 @@ in python310Packages.buildPythonPackage {
     wrapProgram $out/bin/json-hafas.pl --set PERL5LIB ${hafasperl}
     wrapProgram $out/bin/json-hafas-stationboard.pl --set PERL5LIB ${hafasperl}
     wrapProgram $out/bin/json-db-composition.pl --set PERL5LIB ${hafasperl}
+    wrapProgram $out/bin/json-hafas-dbris-stopfinder.pl --set PERL5LIB ${hafasperl}
   '';
 
   propagatedBuildInputs =
