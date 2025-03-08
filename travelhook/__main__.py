@@ -986,7 +986,7 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
             if r.status == 200:
                 display = get_display(bot, trip.status)
                 link = generate_train_link(trip.status)
-                headsign = fetch_headsign(trip.get_unpatched_status())
+                headsign = trip.fetch_headsign()
                 train_line = f"**{display['line']}**" if display["line"] else ""
                 dep_delay = format_time(
                     trip.status["fromStation"]["scheduledTime"],
@@ -1060,20 +1060,19 @@ async def composition(ia, composition: str, do_not_format: bool = False):
 
 
 async def journey_autocomplete(ia, current):
-    def train_name(status, user):
+    def train_name(trip, user):
+        status = trip.status
         time = format_time(
             status["fromStation"]["scheduledTime"],
             status["fromStation"]["realTime"],
             timezone=user.get_timezone(),
         )[2:-2]
-        headsign = fetch_headsign(status)
-        if fhs := status["train"].get("fakeheadsign"):
-            headsign = fhs
+        headsign = trip.fetch_headsign()
         return f"{time} {status['train']['type']} {status['train']['line'] or ''} » {headsign}"
 
     if user := DB.User.find(ia.user.id):
         return [
-            Choice(name=train_name(trip.status, user), value=trip.journey_id[-100:])
+            Choice(name=train_name(trip, user), value=trip.journey_id[-100:])
             for trip in DB.Trip.find_current_trips_for(user.discord_id)
         ][:24]
 
@@ -2232,7 +2231,7 @@ class ScottyView(discord.ui.View):
                     "name": self.selected_destination["name"],
                     "scheduledTime": arrival.timestamp(),
                     "realTime": (
-                        self.selected_destination["rt_arr"] or departure.timestamp()
+                        self.selected_destination["rt_arr"] or arrival.timestamp()
                     ),
                 },
                 "intermediateStops": [

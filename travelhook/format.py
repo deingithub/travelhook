@@ -13,7 +13,6 @@ from haversine import haversine
 from . import database as DB
 from .helpers import (
     config,
-    fetch_headsign,
     format_delta,
     format_time,
     generate_train_link,
@@ -410,9 +409,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                 pass
 
         route_link = generate_train_link(train)
-        headsign = shortened_name(train["fromStation"]["name"], fetch_headsign(train))
-        if fhs := train["train"].get("fakeheadsign"):
-            headsign = fhs
+        headsign = shortened_name(train["fromStation"]["name"], trip.fetch_headsign())
 
         # all lines in vienna have overly long HAFAS destinations not consistent with the vehicle display
         # like "Wien Winckelmannstraße (Schwendergasse 61)" when it should just be Winckelmannstraße

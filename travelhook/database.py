@@ -462,10 +462,12 @@ class Trip:
         backend = self.status["backend"]["name"]
         if backend == "ÖBB" or self.status["backend"]["type"] == "IRIS-TTS":
             # rest in piss DB/VRN hafas -- you were, at best, vaguely adequate
-            backend = bytes(
-                [214, 66, 66]
-            )  # i REALLY wish i knew what the fuck is wrong with perl
-        elif backend == "manual":
+            # i REALLY wish i knew what the fuck is wrong with perl
+            backend = bytes([214, 66, 66])
+        elif (
+            backend == "manual"
+            or self.status["backend"]["'type'"] == "travelcrab.friz64.de"
+        ):
             return
 
         def write_hafas_data(departureboard_entry):
@@ -489,16 +491,7 @@ class Trip:
                     headsign = status["route"][-1]["name"]
                 if hs := self.maybe_fix_rnv_5(headsign):
                     headsign = hs
-                train_key = (
-                    (
-                        self.status["train"]["type"].strip()
-                        + (
-                            self.status["train"]["line"] or self.status["train"]["no"]
-                        ).strip()
-                    ),
-                    headsign,
-                )
-                headsign = replace_headsign.get(train_key, headsign) or "?"
+
                 DB.execute(
                     "UPDATE trips SET hafas_data=?, headsign=? WHERE user_id = ? AND journey_id = ?",
                     (
@@ -555,12 +548,18 @@ class Trip:
             print("didn't find a match!")
 
     def fetch_headsign(self):
-        if headsign := (self.headsign or self.status["train"].get("fakeheadsign")):
-            return headsign
-
         if not self.hafas_data:
             self.fetch_hafas_data()
-        return self.headsign or "?"
+
+        if headsign := self.status["train"].get("fakeheadsign", self.headsign):
+            return replace_headsign.get(
+                (
+                    f"{self.status['train']['type']}{self.status['train']['line']}".replace(" ", ""),
+                    headsign,
+                ),
+                headsign,
+            )
+        return "?"
 
     def maybe_fix_rnv_5(self, headsign):
         "try to detect which way the line 5 in mannheim is going"
