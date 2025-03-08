@@ -2205,7 +2205,6 @@ class ScottyView(discord.ui.View):
                     stop["name"] for stop in self.stops_after[:destination_index]
                 ],
             }
-            print(api_payload)
             async with ClientSession() as session:
                 async with session.post(
                     f"{config['travelynx_instance']}/api/v1/import", json=api_payload
