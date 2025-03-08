@@ -16,11 +16,11 @@ let
   hafas-m = with perlPackages;
     buildPerlModule {
       pname = "Travel-Status-DE-DeutscheBahn";
-      version = "6.08";
+      version = "6.15";
       src = fetchurl {
         url =
-          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DeutscheBahn-6.08.tar.gz";
-        hash = "sha256-12B+WazUmvH+eIhO25YERnePoLRnKVAMRCeSB6yq+jU=";
+          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DeutscheBahn-6.15.tar.gz";
+        hash = "sha256-0gAnC5LHPaJWbsWUqJ8tP3SYnMFCjrWOzu6La0K1Dd8=";
       };
       doCheck = false;
       buildInputs = [ FileSlurp TestCompile TestPod ];
@@ -38,6 +38,31 @@ let
         license = with lib.licenses; [ artistic1 gpl1Plus ];
       };
     };
+    dbris-m = with perlPackages;
+      buildPerlModule {
+        pname = "Travel-Status-DE-DBRIS";
+        version = "0.06";
+        src = fetchurl {
+          url =
+            "https://finalrewind.org/projects/Travel-Status-DE-DBRIS/Travel-Status-DE-DBRIS-0.06.tar.gz";
+          hash = "sha256-bKVtTVrgyT+dGDZPzUEBwrL3kJzZTp3DSkDTAyC4BMo=";
+        };
+        doCheck = false;
+        buildInputs = [ FileSlurp TestCompile TestPod ];
+        propagatedBuildInputs = [
+          ClassAccessor
+          DateTime
+          DateTimeFormatStrptime
+          JSON
+          LWP
+          LWPProtocolhttps
+          ListMoreUtils
+        ];
+        meta = {
+          description = "Interface to the online arrival/departure";
+          license = with lib.licenses; [ artistic1 gpl1Plus ];
+        };
+      };
   GISDistance = with perlPackages;
     buildPerlModule {
       pname = "GIS-Distance";
@@ -110,22 +135,6 @@ let
         license = with lib.licenses; [ artistic1 gpl1Plus ];
       };
     };
-  TravelStatusDEDBWagenreihung = with perlPackages;
-    buildPerlModule {
-      pname = "Travel-Status-DE-DBWagenreihung";
-      version = "0.18";
-      src = fetchurl {
-        url =
-          "mirror://cpan/authors/id/D/DE/DERF/Travel-Status-DE-DBWagenreihung-0.18.tar.gz";
-        hash = "sha256-EHqIqsjbPUBcN3uFm/aimHyDQnHNty64ld26EZwGhmM=";
-      };
-      buildInputs = [ TestCompile TestPod ];
-      propagatedBuildInputs = [ ClassAccessor JSON LWP TravelStatusDEIRIS ];
-      meta = {
-        description = "Interface to Deutsche Bahn Wagon Order API";
-        license = with lib.licenses; [ artistic1 gpl1Plus ];
-      };
-    };
 
 in python310Packages.buildPythonPackage {
   src = builtins.path {
@@ -139,7 +148,7 @@ in python310Packages.buildPythonPackage {
 
   postFixup = let
     hafasperl = with perlPackages;
-      makeFullPerlPath [ JSON hafas-m TravelStatusDEDBWagenreihung ];
+      makeFullPerlPath [ JSON hafas-m dbris-m ];
   in ''
     mkdir -p $out/bin
     cp $src/*.pl $out/bin
@@ -151,6 +160,6 @@ in python310Packages.buildPythonPackage {
   propagatedBuildInputs =
     (with python310Packages; [ discordpy setuptools haversine tomli tomli-w ])
     ++ [ pyhafas ]
-    ++ [ perl perlPackages.JSON hafas-m TravelStatusDEDBWagenreihung ];
+    ++ [ perl perlPackages.JSON hafas-m dbris-m ];
   format = "pyproject";
 }

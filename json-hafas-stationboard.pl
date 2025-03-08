@@ -5,6 +5,7 @@ use warnings;
 
 use JSON;
 use Travel::Status::DE::HAFAS;
+use Travel::Status::DE::DBRIS;
 use DateTime;
 
 sub  trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
@@ -12,6 +13,49 @@ sub  trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
 my $dt = DateTime->now(time_zone=>'Europe/Berlin');
 if ($ARGV[2]) {
 	$dt = DateTime->from_epoch(epoch=>$ARGV[2], time_zone=>'Europe/Berlin');
+}
+
+if ($ARGV[0] eq 'DBRIS') {
+	my @no_train_number_types = qw(Bus RNV S STB STR U);
+	my $ris = Travel::Status::DE::DBRIS->new(
+		station => {
+			eva => $ARGV[1],
+			id => '@L=' . $ARGV[1] . '@' # ????? what did they mean by this
+		},
+		datetime => $dt
+	);
+	if (my @results = $ris->results) {
+		my @trains;
+		for my $train (@results) {
+			my $dict = {
+				id => $train->id,
+				type => $train->type,
+				line => $train->maybe_line_no,
+				number => $train->maybe_train_no,
+				direction => $train->destination,
+				station => $train->stop_eva,
+				scheduled => $train->sched_dep->epoch,
+				realtime => defined $train->rt_dep ? $train->rt_dep->epoch : JSON::null,
+				delay => $train->delay
+			};
+			if ($dict->{line} eq $dict->{number}) {
+				if ($dict->{type} ~~ @no_train_number_types) {
+					$dict->{number} = JSON::null;
+				} else {
+					$dict->{line} = JSON::null;
+				}
+			}
+			push(@trains, $dict);
+		}
+		print encode_json({
+			trains=>[@trains]
+		});
+	} else {
+		print encode_json({
+			error_string => $ris->errstr
+		});
+	}
+	exit 0;
 }
 
 my $hafas = Travel::Status::DE::HAFAS->new(
