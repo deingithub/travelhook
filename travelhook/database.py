@@ -466,7 +466,7 @@ class Trip:
             backend = bytes([214, 66, 66])
         elif (
             backend == "manual"
-            or self.status["backend"]["'type'"] == "travelcrab.friz64.de"
+            or self.status["backend"]["type"] == "travelcrab.friz64.de"
         ):
             return
 
