@@ -327,7 +327,7 @@ class Trip:
                     >= self.status["fromStation"]["scheduledTime"]
                 ):
                     self.status["toStation"]["scheduledTime"] = stop["sched_arr"]
-                    self.status["toStation"]["realTime"] = stop["rt_arr"]
+                    self.status["toStation"]["realTime"] = stop["rt_arr"] or stop["sched_arr"]
                     self.upsert(self.user_id, self.status)
                     return
 
