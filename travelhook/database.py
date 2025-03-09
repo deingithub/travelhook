@@ -14,6 +14,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 import discord
+from haversine import haversine
 
 from .helpers import (
     zugid,
@@ -342,13 +343,32 @@ class Trip:
             # i REALLY wish i knew what the fuck is wrong with perl
             backend = bytes([214, 66, 66])
         elif (
-            (
-                self.status.get("manual-datasource") == "DBRIS"
-                or self.status["backend"]["type"] == "travelcrab.friz64.de"
+            self.status.get("manual-datasource") == "DBRIS"
+            or self.status["backend"]["type"] == "travelcrab.friz64.de"
+        ) and self.status["train"]["type"] not in (
+            "AST",
+            "Bus",
+            "Fähre",
+            "Ruf",
+            "SB",
+            "Schw-B",
+            "STB",
+            "STR",
+            "U",
+            "ZahnR",
+        ):
+            # exclude karlsruhe S2 (not in ÖBB hafas) -- this is extraordinarily silly
+            train_line = f"{self.status['train']['type']}{self.status['train']['line']}"
+            distance_from_karlsruhe = haversine(
+                (
+                    self.status["fromStation"]["latitude"],
+                    self.status["fromStation"]["longitude"],
+                ),
+                (49.009, 8.417),
             )
-            and self.status["train"]["type"] == "S"
-            and not self.status["train"]["line"] == "2"
-        ):  # TODO: this is very silly
+            if train_line == "S2" and distance_from_karlsruhe < 15.0:
+                return
+
             backend = bytes([214, 66, 66])
         elif backend == "manual":
             return

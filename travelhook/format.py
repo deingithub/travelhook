@@ -80,12 +80,8 @@ def get_network(status):
 
     # network AVG: Stadtbahn Karlsruhe
     if operator == "Albtal-Verkehrs-Gesellschaft mbH" or (
-        hafas_data
-        and f"{status['train']['type']}{status['train']['line']}" == "S2"
-        and any(
-            stop["name"] in ("Karlsruhe Entenfang", "Entenfang, Karlsruhe")
-            for stop in hafas_data["route"]
-        )  # 🫳🦆
+        f"{status['train']['type']}{status['train']['line']}" == "S2"
+        and haversine((lat, lon), (49.009, 8.417)) < 15
     ):
         return "AVG"
 
@@ -111,7 +107,10 @@ def get_network(status):
         return "AT"
 
     # network Ü: Stadtbahn Hannover
-    if operator == "üstra Hannoversche Verkehrsbetriebe AG":
+    if (
+        status["train"]["type"] in ("STR", "STB")
+        and haversine((lat, lon), (52.369, 9.740)) < 20
+    ):
         return "Ü"
 
     # network KVB: Stadtbahn Köln/Bonn
