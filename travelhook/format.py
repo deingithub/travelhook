@@ -1,12 +1,12 @@
 "this module, or rather its function format_travelynx, renders nice embed describing the current journey"
 
 from itertools import groupby
+import json
 from datetime import datetime, timedelta
 import re
 import urllib
 
 import discord
-import json
 import tomli
 from haversine import haversine
 
@@ -42,7 +42,6 @@ blanket_replace_train_type = {
     "RNV": "STR",
     "O-Bus": "Bus",
     "Tram": "STR",
-    "EV": "SEV",
     "Schiff": "boat",
     "SKW": "S",
     "SVG": "FEX",

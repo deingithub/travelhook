@@ -129,7 +129,7 @@ async def handle_status_update(userid, reason, status):
 
     DB.Trip.upsert(userid, status)
     trip = DB.Trip.find(userid, zugid(status))
-    trip.fetch_headsign() # also runs fetch_hafas_data in the background
+    trip.fetch_headsign()  # also runs fetch_hafas_data in the background
     trip.maybe_fix_1970()
     await trip.get_oebb_composition()
     trip.get_db_composition()
@@ -282,7 +282,6 @@ async def receive(bot):
 
         if not link:
             raise web.HTTPNotFound()
-            return
 
         raise web.HTTPFound(link.long_url)
 

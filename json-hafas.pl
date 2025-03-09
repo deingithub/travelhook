@@ -92,7 +92,11 @@ if (my $status = $result->result) {
 	foreach my $stop ($status->route) {
 		push(@route, {
 			name=>$stop->loc->name,
-			eva=>$stop->loc->eva
+			eva=>$stop->loc->eva,
+			sched_arr => defined $stop->{sched_arr} ? $stop->{sched_arr}->epoch : JSON::null,
+			sched_dep => defined $stop->{sched_dep} ? $stop->{sched_dep}->epoch : JSON::null,
+			rt_arr => defined $stop->{rt_arr} ? $stop->{rt_arr}->epoch : JSON::null,
+			rt_dep => defined $stop->{rt_dep} ? $stop->{rt_dep}->epoch : JSON::null,
 		});
 		my @ret;
 		foreach my $message ($stop->messages) {

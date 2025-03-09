@@ -10,9 +10,6 @@ import urllib
 
 import discord
 from aiohttp import ClientSession
-from pyhafas import HafasClient
-from pyhafas.profile import DBProfile
-from pyhafas.types.fptf import Stopover
 from haversine import haversine
 
 from . import database as DB
@@ -31,7 +28,6 @@ def zugid(data):
 # globally used timezone
 tz = ZoneInfo("Europe/Berlin")
 available_tzs = available_timezones()
-hafas = HafasClient(DBProfile())
 
 
 def parse_manual_time(time, timezone):

@@ -14,11 +14,9 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 import discord
-from pyhafas.types.fptf import Stopover
 
 from .helpers import (
     zugid,
-    hafas,
     tz,
     random_id,
     replace_headsign,
@@ -316,49 +314,22 @@ class Trip:
 
     def maybe_fix_1970(self):
         """sometimes the toStation times wind up being unix time 0 instead of the actual time,
-        we can fix that."""
+        we can fix that. call only after fetch_hafas_data()"""
 
         if self.status["toStation"]["realTime"] > 0:
             return
 
-        if self.status["toStation"]["scheduledTime"] > 0:
-            self.status["toStation"]["realTime"] = self.status["toStation"][
-                "scheduledTime"
-            ]
-            self.upsert(self.user_id, self.status)
-            return
-
-        try:
-            this_trip = hafas.trip(
-                self.status["train"]["hafasId"] or self.status["train"]["id"]
-            )
-            stops = [
-                Stopover(
-                    stop=this_trip.destination,
-                    arrival=this_trip.arrival,
-                    arrival_delay=this_trip.arrivalDelay,
-                )
-            ]
-            if this_trip.stopovers:
-                stops += this_trip.stopovers
-
-            for stopover in this_trip.stopovers:
-                if stopover.stop.name == self.status["toStation"]["name"]:
-                    sched = int(stopover.arrival.timestamp())
-                    if (
-                        not sched > self.status["fromStation"]["scheduledTime"]
-                    ):  # might be a ring line too after all
-                        continue
-
-                    self.status["toStation"]["scheduledTime"] = sched
-                    self.status["toStation"]["realTime"] = sched + int(
-                        (stopover.departureDelay or timedelta()).total_seconds()
-                    )
+        if self.hafas_data:
+            for stop in self.hafas_data["route"]:
+                if (
+                    stop["eva"] == self.status["toStation"]["uic"]
+                    and (stop["sched_arr"] or stop["sched_dep"] or 0)
+                    >= self.status["fromStation"]["scheduledTime"]
+                ):
+                    self.status["toStation"]["scheduledTime"] = stop["sched_arr"]
+                    self.status["toStation"]["realTime"] = stop["rt_arr"]
                     self.upsert(self.user_id, self.status)
                     return
-        except:  # pylint: disable=bare-except
-            print("error while running 1970 fixup:")
-            traceback.print_exc()
 
     def fetch_hafas_data(self, force: bool = False):
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
@@ -458,7 +429,9 @@ class Trip:
         if headsign := self.status["train"].get("fakeheadsign", self.headsign):
             return replace_headsign.get(
                 (
-                    f"{self.status['train']['type']}{self.status['train']['line']}".replace(" ", ""),
+                    f"{self.status['train']['type']}{self.status['train']['line']}".replace(
+                        " ", ""
+                    ),
                     headsign,
                 ),
                 headsign,
