@@ -129,10 +129,8 @@ async def handle_status_update(userid, reason, status):
 
     DB.Trip.upsert(userid, status)
     trip = DB.Trip.find(userid, zugid(status))
-    trip.fetch_hafas_data()
-    trip.maybe_fix_circle_line()
+    trip.fetch_headsign() # also runs fetch_hafas_data in the background
     trip.maybe_fix_1970()
-    trip.fetch_headsign()
     await trip.get_oebb_composition()
     trip.get_db_composition()
 
