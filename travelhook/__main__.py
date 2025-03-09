@@ -2194,15 +2194,17 @@ class ScottyView(discord.ui.View):
                 {
                     "train": {"no": self.selected_train["number"] or 0},
                     "fromStation": {
+                        "uic": self.selected_origin["eva"],
                         "latitude": self.selected_origin["lat"],
                         "longitude": self.selected_origin["lon"],
                     },
                     "toStation": {
+                        "uic": self.selected_destination["eva"],
                         "latitude": self.selected_destination["lat"],
                         "longitude": self.selected_destination["lon"],
                     },
                     "link": link,
-                    "operator": self.selected_journey["operator"] or "",
+                    "manual-datasource": "DBRIS",
                 },
                 quiet=True,
             ).commit.callback(ia)

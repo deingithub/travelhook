@@ -327,7 +327,9 @@ class Trip:
                     >= self.status["fromStation"]["scheduledTime"]
                 ):
                     self.status["toStation"]["scheduledTime"] = stop["sched_arr"]
-                    self.status["toStation"]["realTime"] = stop["rt_arr"] or stop["sched_arr"]
+                    self.status["toStation"]["realTime"] = (
+                        stop["rt_arr"] or stop["sched_arr"]
+                    )
                     self.upsert(self.user_id, self.status)
                     return
 
@@ -340,9 +342,15 @@ class Trip:
             # i REALLY wish i knew what the fuck is wrong with perl
             backend = bytes([214, 66, 66])
         elif (
-            backend == "manual"
-            or self.status["backend"]["type"] == "travelcrab.friz64.de"
-        ):
+            (
+                self.status.get("manual-datasource") == "DBRIS"
+                or self.status["backend"]["type"] == "travelcrab.friz64.de"
+            )
+            and self.status["train"]["type"] == "S"
+            and not self.status["train"]["line"] == "2"
+        ):  # TODO: this is very silly
+            backend = bytes([214, 66, 66])
+        elif backend == "manual":
             return
 
         def write_hafas_data(departureboard_entry):
@@ -377,9 +385,7 @@ class Trip:
                     ),
                 )
 
-        if "travelhookfaked" in self.status["train"]["id"] or (
-            "id" in self.hafas_data and not force
-        ):
+        if "id" in self.hafas_data and not force:
             return
 
         jid = self.status["train"]["hafasId"]

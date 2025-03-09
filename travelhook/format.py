@@ -91,8 +91,8 @@ def get_network(status):
 
     # network RNV: trams in mannheim, ludwigshafen and heidelberg
     if operator.startswith("Rhein-Neckar-Verkehr") or (
-        (not status["train"]["type"])
-        and haversine((lat, lon), (49.47884, 8.55787)) < 30
+        (status["train"]["type"] in ("", "STR", "RNV"))
+        and haversine((lat, lon), (49.47884, 8.55787)) < 29
     ):
         return "RNV"
 
