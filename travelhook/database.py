@@ -370,7 +370,7 @@ class Trip:
                 return
 
             backend = bytes([214, 66, 66])
-        elif backend == "manual":
+        elif backend == "manual" or self.status["backend"]["type"] == "travelcrab.friz64.de":
             return
 
         def write_hafas_data(departureboard_entry):

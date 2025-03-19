@@ -199,8 +199,8 @@ def get_display(bot, status):
         bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}
         type = bls_replace_train_types.get(type, type)
 
-    if status["backend"]["name"] in ("VBB", "NAHSH", "BVG") and type in ("S", "U"):
-        line = line.removeprefix("S").removeprefix("U")
+    if status["backend"]["name"] in ("VBB", "NAHSH", "BVG", "AVV") and type in ("S", "U", "RB"):
+        line = line.removeprefix("S").removeprefix("U").removeprefix("RB")
 
     for tt in train_types_config["train_types"]:
         # { type = "IC", line = "1",  line_startswith = "1", network = "SBB"}
@@ -579,7 +579,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         jid = urllib.parse.quote(trip.hafas_data["id"])
         from_station = urllib.parse.quote(trip.status["fromStation"]["name"])
         to_station = urllib.parse.quote(trip.status["toStation"]["name"])
-        hafas = trip.status["backend"]["name"] or "DB"
+        hafas = trip.status["backend"]["name"]
+        if hafas is None or trip.status["backend"]["type"] == "travelcrab.friz64.de":
+            hafas = "ÖBB"
         link = DB.Link.make(
             f"https://dbf.finalrewind.org/map/{jid}/0?hafas={hafas}"
             + f"&from={from_station}&to={to_station}"
