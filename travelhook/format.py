@@ -200,7 +200,7 @@ def get_display(bot, status):
         type = bls_replace_train_types.get(type, type)
 
     # fix "RB RB38", "U U8", … in a lot of regional HAFASes
-    if line.startswith(type):
+    if line and line.startswith(type):
         line = line.removeprefix(type)
 
     for tt in train_types_config["train_types"]:
