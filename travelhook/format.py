@@ -199,8 +199,9 @@ def get_display(bot, status):
         bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}
         type = bls_replace_train_types.get(type, type)
 
-    if status["backend"]["name"] in ("VBB", "NAHSH", "BVG", "AVV") and type in ("S", "U", "RB"):
-        line = line.removeprefix("S").removeprefix("U").removeprefix("RB")
+    # fix "RB RB38", "U U8", … in a lot of regional HAFASes
+    if line.startswith(type):
+        line = line.removeprefix(type)
 
     for tt in train_types_config["train_types"]:
         # { type = "IC", line = "1",  line_startswith = "1", network = "SBB"}
