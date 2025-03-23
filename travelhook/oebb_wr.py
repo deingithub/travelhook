@@ -170,6 +170,15 @@ match_data = {
         {"lengthOverBuffers": 24.82, "capacitySecondClass": 79},
         {"lengthOverBuffers": 25.36, "capacitySecondClass": 71},
     ],
+    "412 ICE 4": [
+        {"lengthOverBuffers": 29.11, "capacityFirstClass": 50},
+        {"lengthOverBuffers": 28.75, "capacityFirstClass": 21},
+        {"lengthOverBuffers": 28.75, "capacitySecondClass": 42},
+        {"lengthOverBuffers": 28.75, "capacitySecondClass": 92},
+        {"lengthOverBuffers": 28.75, "capacitySecondClass": 88},
+        {"lengthOverBuffers": 28.75, "capacitySecondClass": 92},
+        {"lengthOverBuffers": 29.11, "capacitySecondClass": 59},
+    ],
     # CityShuttle coaches
     "CityShuttle Bmpz-s": [
         {

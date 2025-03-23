@@ -2333,10 +2333,8 @@ async def checkin(
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
         return
     if not request_time:
-        request_time = datetime.now(tz=tz) - timedelta(
-            minutes=5
-        )
-        request_time = request_time.isoformat() 
+        request_time = datetime.now(tz=tz) - timedelta(minutes=5)
+        request_time = request_time.isoformat()
 
     await ia.response.defer(ephemeral=True)
     await ia.edit_original_response(
