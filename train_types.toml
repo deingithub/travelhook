@@ -108,6 +108,8 @@ train_types = [
 	{ type = "STR", network = "RNV", line = "26", emoji = "str2|rnv26", color = "#f39b9b", hide_line_number = true  },
 	# fix for Stuttgart Stadtbahn lines having a U prefix in the line
 	{ type = "STB", line_startswith = "U", emoji = "STB", remove_line_startswith = true, color = "#c5161c", class="rapid transit" },
+	# network = "Ü": Stadtbahn Hannover
+	{ type = "STB", network = "Ü", emoji = "UE", color = "#20ac2b", class="rapid transit" },
 	{ type = "STB", emoji = "STB", color = "#c5161c", class="rapid transit" },
 	# network = "KVB": matches if inside geofence around Köln/Bonn
 	# lines 61,62,65 are normal tram lines
