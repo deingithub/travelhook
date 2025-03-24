@@ -28,6 +28,25 @@ def zugid(data):
 # globally used timezone
 tz = ZoneInfo("Europe/Berlin")
 available_tzs = available_timezones()
+train_types_with_realtime_data_on_bahnexpert_maybe_i_hope = (
+    "EC",
+    "ECE",
+    "EN",
+    "EST",
+    "FEX",
+    "FLX",
+    "IC",
+    "ICE",
+    "MEX",
+    "NJ",
+    "RB",
+    "RE",
+    "RS",
+    "RJ",
+    "RJX",
+    "TGV",
+    "WB",
+)
 
 
 def parse_manual_time(time, timezone):
@@ -141,18 +160,29 @@ def format_timezone(timezone):
 
 def generate_train_link(data):
     link = None
-    if data["backend"]["type"] == "IRIS-TTS":
+    if data["backend"]["name"] == "bahn.de":
+        train_no = 0
+        # if train starts in germany and is a "real train" (said in an offensively gatekeepy way. just to be clear.)
+        # bahn.expert may have confirmed realtime data for it -- construct a link with the train number
+        # otherwise, play it safe and keep the number out to prevent ambiguities for local transit
+        if (8000000 < data["fromStation"]["uic"] < 8100000) and any(
+            data["train"]["type"] == tt
+            or (data["train"]["line"]
+            and data["train"]["line"].startswith(tt))
+            for tt in train_types_with_realtime_data_on_bahnexpert_maybe_i_hope
+        ):
+            train_no = data["train"]["no"]
+        link = (
+            "https://bahn.expert/details"
+            + f"/{train_no}/{data['fromStation']['scheduledTime'] * 1000}/?jid="
+            + urllib.parse.quote(data["train"]["id"])
+        )
+    elif data["backend"]["type"] == "IRIS-TTS":
         link = (
             "https://bahn.expert/details"
             + f"/{data['train']['type']}%20{data['train']['no']}/"
             + str(data["fromStation"]["scheduledTime"] * 1000)
             + f"/?station={data['fromStation']['uic']}"
-        )
-    elif data["backend"]["name"] == "DB":
-        link = (
-            "https://bahn.expert/details"
-            + f"/0/{data['fromStation']['scheduledTime'] * 1000}/?jid="
-            + urllib.parse.quote(data["train"]["id"])
         )
     else:
         link = (
