@@ -468,19 +468,28 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     messages += smessages
 
                 for message in messages:
-                    if message["type"] == "D":
-                        desc += f"{LineEmoji.WARN} {message['text']}\n"
-                    elif message["type"] in ("Q", "L"):
-                        if match := re_decompose_him.match(message["text"]):
-                            if (
-                                hafas_data["route"][0]["name"] == match["from"]
-                                and hafas_data["route"][-1]["name"] == match["to"]
-                            ):
-                                desc += f"{LineEmoji.INFO} {match['msg']}\n"
+                    if "type" in message:
+                        # hafas
+                        if message["type"] == "D":
+                            desc += f"{LineEmoji.WARN} {message['text']}\n"
+                        elif message["type"] in ("Q", "L"):
+                            if match := re_decompose_him.match(message["text"]):
+                                if (
+                                    hafas_data["route"][0]["name"] == match["from"]
+                                    and hafas_data["route"][-1]["name"] == match["to"]
+                                ):
+                                    desc += f"{LineEmoji.INFO} {match['msg']}\n"
+                                else:
+                                    desc += f"{LineEmoji.INFO} {match['from']} – {match['to']}: {match['msg']}\n"
                             else:
-                                desc += f"{LineEmoji.INFO} {match['from']} – {match['to']}: {match['msg']}\n"
-                        else:
+                                desc += f"{LineEmoji.INFO} {message['text']}\n"
+                    elif "prioritaet" in message:
+                        # dbris
+                        if message["prioritaet"] == "NIEDRIG":
                             desc += f"{LineEmoji.INFO} {message['text']}\n"
+                        else:
+                            desc += f"{LineEmoji.WARN} {message['text']}\n"
+
             if comment := trip.status["comment"]:
                 if len(comment) >= 500:
                     comment = comment[0:500] + "…"
