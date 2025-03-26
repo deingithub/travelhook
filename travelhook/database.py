@@ -239,6 +239,12 @@ class Trip:
         self.status = json.loads(self.travelynx_status)
         self.status_patch = json.loads(self.status_patch)
         self.hafas_data = json.loads(self.hafas_data)
+        if (
+            (not self.status["train"]["line"])
+            and self.hafas_data
+            and self.hafas_data["line"]
+        ):
+            self.status["train"]["line"] = self.hafas_data["line"]
 
     @classmethod
     def find(cls, user_id, journey_id):
@@ -393,12 +399,20 @@ class Trip:
             if "error_code" in status:
                 print(f"hafas perl broke:\n{status}")
             else:
+                status["line"] = departureboard_entry["line"]
                 self.hafas_data = status
                 headsign = departureboard_entry["direction"]
                 if not headsign:
                     headsign = status["route"][-1]["name"]
                 if hs := self.maybe_fix_rnv_5(headsign):
                     headsign = hs
+
+                if (
+                    (not self.status["train"]["line"])
+                    and self.hafas_data
+                    and self.hafas_data["line"]
+                ):
+                    self.status["train"]["line"] = self.hafas_data["line"]
 
                 DB.execute(
                     "UPDATE trips SET hafas_data=?, headsign=? WHERE user_id = ? AND journey_id = ?",

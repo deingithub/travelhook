@@ -467,7 +467,14 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                 for stop, smessages in hafas_data["stop_messages"].items():
                     messages += smessages
 
+                already = set()
                 for message in messages:
+                    if message["text"] in already or message["text"].startswith(
+                        "Vorankündigung!"
+                    ):
+                        continue
+                    already.add(message["text"])
+
                     if "type" in message:
                         # hafas
                         if message["type"] == "D":
@@ -637,7 +644,11 @@ def sillies(bot, trips, embed):
     grouped = sorted(grouped, key=len, reverse=True)
     if len(grouped[0]) >= 3:
         display = grouped[0][0]
-        embed.description += f"\n### {len(grouped[0])}× {display['emoji']} {display['line'] or ''} COMBO!"
+        if display["line"]:
+            display["line"] += " "
+        embed.description += (
+            f"\n### {len(grouped[0])}× {display['emoji']} {display['line'] or ''}COMBO!"
+        )
 
     if (not trips[-1].hafas_data) and trips[-1].status["backend"]["id"] >= 0:
         embed = embed.set_thumbnail(url="https://i.imgur.com/6pB5Kc6.png")
