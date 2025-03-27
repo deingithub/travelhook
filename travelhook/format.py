@@ -157,6 +157,9 @@ def get_network(status):
     if operator in (
         "Transport publics de la Région Lausannoise",
         "Transports Publics de la Région Lausannoise sa",
+    ) or (
+        haversine((lat, lon), (46.52, 6.63)) < 6
+        and status["train"]["type"] in ("U", "M")
     ):
         return "tl"
 
