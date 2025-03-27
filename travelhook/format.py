@@ -45,6 +45,7 @@ blanket_replace_train_type = {
     "Schiff": "boat",
     "SKW": "S",
     "SVG": "FEX",
+    "Trm": "STR",
     "west": "WB",
 }
 
