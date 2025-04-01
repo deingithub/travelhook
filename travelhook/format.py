@@ -606,7 +606,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         if hafas == "bahn.de":
             # very hacky, force DBF DBRIS access
             # doesn't actually work yet ig? or just sometimes?
-            jid = urllib.parse.quote(trip.status["train"]["hafasId"])
+            jid = urllib.parse.quote(trip.status["train"]["id"])
             hafas = "&efa="
         link = DB.Link.make(
             f"https://dbf.finalrewind.org/map/{jid}/0?hafas={hafas}"
