@@ -37,6 +37,7 @@ from .helpers import (
     generate_train_link,
     is_token_valid,
     is_import_token_valid,
+    LineEmoji,
     not_registered_embed,
     train_type_color,
     trip_length,
@@ -105,6 +106,9 @@ async def handle_status_update(userid, reason, status):
 
         if user.break_journey == DB.BreakMode.FORCE_GLUE:
             user.set_break_mode(DB.BreakMode.NATURAL)
+            return False
+
+        if user.break_journey == DB.BreakMode.FORCE_GLUE_LATCH:
             return False
 
         change_from = old["toStation"]
@@ -250,8 +254,18 @@ async def receive(bot):
                         view=TripActionsView(current_trips[-1]),
                     )
                 else:
+                    embed = format_travelynx(bot, userid, current_trips)
+                    if len(embed) > 4096:
+                        # too long! oops! break the journey and readd our last checkin.
+                        DB.User.find(discord_id=userid).do_break_journey()
+                        await handle_status_update(
+                            userid, data["reason"], data["status"]
+                        )
+                        current_trips = DB.Trip.find_current_trips_for(user.discord_id)
+                        embed = format_travelynx(bot, userid, current_trips)
+
                     message = await channel.send(
-                        embed=format_travelynx(bot, userid, current_trips),
+                        embed=embed,
                         view=TripActionsView(current_trips[-1]),
                     )
                     DB.Message(
@@ -650,6 +664,10 @@ Choice = discord.app_commands.Choice
             name="Force Glue — Always transfer. New checkins never start a new journey.",
             value=int(DB.BreakMode.FORCE_GLUE),
         ),
+        Choice(
+            name="Force Glue Until I Turn It Off — Always transfer. New checkins never start a new journey.",
+            value=int(DB.BreakMode.FORCE_GLUE_LATCH),
+        ),
     ]
 )
 async def _break(ia, break_mode: Choice[int]):
@@ -679,6 +697,15 @@ async def _break(ia, break_mode: Choice[int]):
             await ia.response.send_message(
                 "Your next checkin will **not** start a new journey. "
                 "After your next checkin, this setting will revert to *Natural*.",
+                ephemeral=True,
+            )
+        case DB.BreakMode.FORCE_GLUE_LATCH:
+            await ia.response.send_message(
+                "Your next checkin will **not** start a new journey. "
+                "This setting will **not** revert to *Natural* with your next checkin.\n"
+                f"> {LineEmoji.WARN} Even a new checkin in two weeks on the other side of the "
+                "planet will still be added to your current journey. You will need to manually "
+                "reset this setting to *Natural* using this command to bring the normal behavior back.",
                 ephemeral=True,
             )
 

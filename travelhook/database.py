@@ -71,6 +71,7 @@ class BreakMode(IntEnum):
     NATURAL = 0
     FORCE_BREAK = -10
     FORCE_GLUE = 10
+    FORCE_GLUE_LATCH = 20
 
 
 @dataclass
