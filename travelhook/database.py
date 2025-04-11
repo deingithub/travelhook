@@ -488,7 +488,7 @@ class Trip:
         "try to detect which way the line 5 in mannheim is going"
         if not (
             get_network(self.status) == "RNV" and self.status["train"]["line"] == "5"
-        ):
+        ) or not self.hafas_data:
             return
         stops = [stop["name"] for stop in self.hafas_data["route"]]
 
