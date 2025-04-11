@@ -396,6 +396,7 @@ class Trip:
             except:  # pylint: disable=bare-except
                 print(f"hafas perl broke:\n{hafas.stdout} {hafas.stderr}")
                 traceback.print_exc()
+                return
 
             if not status or "error_code" in status:
                 print(f"hafas perl broke:\n{status}")
