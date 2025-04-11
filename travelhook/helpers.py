@@ -224,7 +224,7 @@ def trip_length(trip):
         return dist
 
     trip_length = 0
-    if trip.hafas_data:
+    if trip.hafas_data and "polyline" in trip.hafas_data:
         trip_started = False
         for i, point in enumerate(trip.hafas_data["polyline"]):
             if (
