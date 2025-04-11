@@ -397,7 +397,7 @@ class Trip:
                 print(f"hafas perl broke:\n{hafas.stdout} {hafas.stderr}")
                 traceback.print_exc()
 
-            if "error_code" in status:
+            if not status or "error_code" in status:
                 print(f"hafas perl broke:\n{status}")
             else:
                 status["line"] = departureboard_entry["line"]
