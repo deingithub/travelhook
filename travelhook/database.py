@@ -381,6 +381,9 @@ class Trip:
                 return
 
             backend = bytes([214, 66, 66])
+        elif backend == "bahn.de":
+            # currently no general service for german local transit available
+            return
         elif (
             backend == "manual"
             or self.status["backend"]["type"] == "travelcrab.friz64.de"
@@ -463,7 +466,7 @@ class Trip:
                 or (train["number"] == self.status["train"]["no"])
                 or (
                     f"{train['type']}{train['line']}"
-                    == f"{self.status['train']['type']}{self.status['train']['line']}"
+                    == f"{self.status['train']['type']}{self.status['train']['line'] or self.status['train']['no']}"
                 )
             ):
                 write_hafas_data(train)
