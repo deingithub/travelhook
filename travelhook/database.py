@@ -349,10 +349,12 @@ class Trip:
             # rest in piss DB/VRN hafas -- you were, at best, vaguely adequate
             # i REALLY wish i knew what the fuck is wrong with perl
             backend = bytes([214, 66, 66])
-        elif backend == "bahn.de" or self.status["backend"]["type"] == "IRIS-TTS":
-            backend = "DBRIS"
+        #elif backend == "bahn.de" or self.status["backend"]["type"] == "IRIS-TTS":
+        #    backend = "DBRIS"
         elif (
-            self.status.get("manual-datasource") == "DBRIS"
+            backend == "bahn.de"
+            or self.status["backend"]["type"] == "IRIS-TTS"
+            or self.status.get("manual-datasource") == "DBRIS"
             or self.status["backend"]["type"] == "travelcrab.friz64.de"
         ) and self.status["train"]["type"] not in (
             "AST",
