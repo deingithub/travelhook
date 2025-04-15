@@ -224,9 +224,9 @@ def trip_length(trip):
         return dist
 
     trip_length = 0
-    if trip.hafas_data:
+    if polyline := trip.hafas_data.get("polyline"):
         trip_started = False
-        for i, point in enumerate(trip.hafas_data["polyline"]):
+        for i, point in enumerate(polyline):
             if (
                 point["eva"] == trip.status["fromStation"]["uic"]
                 or point["name"] == trip.status["fromStation"]["name"]
@@ -235,15 +235,15 @@ def trip_length(trip):
             if (
                 point["eva"] == trip.status["toStation"]["uic"]
                 or point["name"] == trip.status["toStation"]["name"]
-                or i + 1 == len(trip.hafas_data["polyline"])
+                or i + 1 == len(polyline)
             ):
                 break
             if trip_started:
                 trip_length += haversine(
                     (point["lat"], point["lon"]),
                     (
-                        trip.hafas_data["polyline"][i + 1]["lat"],
-                        trip.hafas_data["polyline"][i + 1]["lon"],
+                        polyline[i + 1]["lat"],
+                        polyline[i + 1]["lon"],
                     ),
                 )
 

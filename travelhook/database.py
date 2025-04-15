@@ -240,12 +240,8 @@ class Trip:
         self.status = json.loads(self.travelynx_status)
         self.status_patch = json.loads(self.status_patch)
         self.hafas_data = json.loads(self.hafas_data)
-        if (
-            (not self.status["train"]["line"])
-            and self.hafas_data
-            and self.hafas_data["line"]
-        ):
-            self.status["train"]["line"] = self.hafas_data["line"]
+        if (not self.status["train"]["line"]) and (line := self.hafas_data.get("line")):
+            self.status["train"]["line"] = line
 
     @classmethod
     def find(cls, user_id, journey_id):
@@ -327,8 +323,8 @@ class Trip:
         if self.status["toStation"]["realTime"] > 0:
             return
 
-        if self.hafas_data:
-            for stop in self.hafas_data["route"]:
+        if route := self.hafas_data.get("route"):
+            for stop in route:
                 if (
                     stop["eva"] == self.status["toStation"]["uic"]
                     and (stop["sched_arr"] or stop["sched_dep"] or 0)
@@ -349,7 +345,7 @@ class Trip:
             # rest in piss DB/VRN hafas -- you were, at best, vaguely adequate
             # i REALLY wish i knew what the fuck is wrong with perl
             backend = bytes([214, 66, 66])
-        #elif backend == "bahn.de" or self.status["backend"]["type"] == "IRIS-TTS":
+        # elif backend == "bahn.de" or self.status["backend"]["type"] == "IRIS-TTS":
         #    backend = "DBRIS"
         elif (
             backend == "bahn.de"
@@ -382,8 +378,7 @@ class Trip:
 
             backend = bytes([214, 66, 66])
         elif backend == "bahn.de":
-            # currently no general service for german local transit available
-            return
+            backend = "DBRIS"
         elif (
             backend == "manual"
             or self.status["backend"]["type"] == "travelcrab.friz64.de"
@@ -398,38 +393,38 @@ class Trip:
             status = {}
             try:
                 status = json.loads(hafas.stdout)
+                if "error_string" in status:
+                    print(f"hafas perl broke:\n{status}")
             except:  # pylint: disable=bare-except
-                print(f"hafas perl broke:\n{hafas.stdout} {hafas.stderr}")
-                traceback.print_exc()
-                return
+                if not backend == "DBRIS":
+                    # /shrugs/ doesn't work on my machine
+                    print(f"hafas perl broke:\n{hafas.stdout} {hafas.stderr}")
+                    traceback.print_exc()
 
-            if "error_string" in status:
-                print(f"hafas perl broke:\n{status}")
-            else:
-                status["line"] = departureboard_entry["line"]
-                self.hafas_data = status
-                headsign = departureboard_entry["direction"]
-                if not headsign:
-                    headsign = status["route"][-1]["name"]
-                if hs := self.maybe_fix_rnv_5(headsign):
-                    headsign = hs
+            headsign = departureboard_entry["direction"]
+            if (not headsign) and (route := status.get("route")):
+                headsign = route[-1]["name"]
+            if hs := self.maybe_fix_rnv_5(headsign):
+                headsign = hs
 
-                if (
-                    (not self.status["train"]["line"])
-                    and self.hafas_data
-                    and self.hafas_data["line"]
-                ):
-                    self.status["train"]["line"] = self.hafas_data["line"]
+            status.update(
+                line=departureboard_entry["line"],
+                headsign=headsign,
+            )
 
-                DB.execute(
-                    "UPDATE trips SET hafas_data=?, headsign=? WHERE user_id = ? AND journey_id = ?",
-                    (
-                        json.dumps(status),
-                        headsign,
-                        self.user_id,
-                        self.journey_id,
-                    ),
-                )
+            self.hafas_data = status
+            if not self.status["train"]["line"]:
+                self.status["train"]["line"] = departureboard_entry["line"]
+
+            DB.execute(
+                "UPDATE trips SET hafas_data=?, headsign=? WHERE user_id = ? AND journey_id = ?",
+                (
+                    json.dumps(status),
+                    headsign,
+                    self.user_id,
+                    self.journey_id,
+                ),
+            )
 
         if "id" in self.hafas_data and not force:
             return
@@ -494,7 +489,7 @@ class Trip:
         "try to detect which way the line 5 in mannheim is going"
         if not (
             get_network(self.status) == "RNV" and self.status["train"]["line"] == "5"
-        ) or not self.hafas_data:
+        ) or not self.hafas_data.get("route"):
             return
         stops = [stop["name"] for stop in self.hafas_data["route"]]
 

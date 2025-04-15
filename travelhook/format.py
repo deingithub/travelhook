@@ -465,11 +465,12 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     f"{(length/(trip_time.total_seconds()/3600)):.0f}km/h"
                 )
             desc += "\n"
-            if hafas_data := trip.hafas_data:
-                messages = hafas_data["messages"].copy()
+            if messages := trip.hafas_data.get("messages"):
+                messages = messages.copy()
 
-                for stop, smessages in hafas_data["stop_messages"].items():
-                    messages += smessages
+                if stop_messages := trip.hafas_data.get("stop_messages"):
+                    for stop, smessages in stop_messages.items():
+                        messages += smessages
 
                 already = set()
                 for message in messages:
@@ -485,9 +486,10 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                             desc += f"{LineEmoji.WARN} {message['text']}\n"
                         elif message["type"] in ("Q", "L"):
                             if match := re_decompose_him.match(message["text"]):
-                                if (
-                                    hafas_data["route"][0]["name"] == match["from"]
-                                    and hafas_data["route"][-1]["name"] == match["to"]
+                                if "route" in trip.hafas_data and (
+                                    trip.hafas_data["route"][0]["name"] == match["from"]
+                                    and trip.hafas_data["route"][-1]["name"]
+                                    == match["to"]
                                 ):
                                     desc += f"{LineEmoji.INFO} {match['msg']}\n"
                                 else:
@@ -596,8 +598,8 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         f"-# {format_timezone(timezone)} · "
         + f"{trip.status['backend']['name'] or 'DB'} {trip.status['backend']['type']}"
     )
-    if trip.hafas_data:
-        jid = urllib.parse.quote(trip.hafas_data["id"])
+    if jid := trip.hafas_data.get("id"):
+        jid = urllib.parse.quote(jid)
         from_station = urllib.parse.quote(trip.status["fromStation"]["name"])
         to_station = urllib.parse.quote(trip.status["toStation"]["name"])
         hafas = trip.status["backend"]["name"]
