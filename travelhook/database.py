@@ -340,6 +340,16 @@ class Trip:
     def fetch_hafas_data(self, force: bool = False):
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
 
+        # sometimes, just sometimes, ÖBB hafas has a station in germany but under a different ID
+        # of course this mostly happens in fucking karlsruhe
+        translate_for_öbb_hafas = {
+            501001: 4668246,  # Durlacher Tor/KIT Campus Süd, Karlsruhe
+            301001: 4668246,  # also Durlacher Tor/KIT Campus Süd, Karlsruhe
+            363449: 4628893,  # Mühlburger Tor, Karlsruhe
+            721836: 4628893,  # also Mühlburger Tor, Karlsruhe
+        }
+
+        station_id = self.status["fromStation"]["uic"]
         backend = self.status["backend"]["name"]
         if backend == "ÖBB":
             # rest in piss DB/VRN hafas -- you were, at best, vaguely adequate
@@ -357,6 +367,7 @@ class Trip:
             "Bus",
             "Fähre",
             "Ruf",
+            "RNV",
             "SB",
             "Schw-B",
             "STB",
@@ -375,6 +386,8 @@ class Trip:
             )
             if train_line == "S2" and distance_from_karlsruhe < 15.0:
                 return
+
+            station_id = translate_for_öbb_hafas.get(station_id) or station_id
 
             backend = bytes([214, 66, 66])
         elif backend == "bahn.de":
@@ -437,7 +450,7 @@ class Trip:
             [
                 "json-hafas-stationboard.pl",
                 backend,
-                str(self.status["fromStation"]["uic"]),
+                str(station_id),
                 str(self.status["fromStation"]["scheduledTime"]),
             ],
             capture_output=True,
