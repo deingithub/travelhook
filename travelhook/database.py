@@ -8,7 +8,7 @@ import shlex
 import subprocess
 import traceback
 from dataclasses import dataclass, astuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from typing import Optional
 from zoneinfo import ZoneInfo
@@ -17,6 +17,7 @@ import discord
 from haversine import haversine
 
 from .helpers import (
+    config,
     zugid,
     tz,
     random_id,
@@ -350,6 +351,10 @@ class Trip:
         }
 
         station_id = self.status["fromStation"]["uic"]
+        if station_id == 0:
+            # new backend träwelling data via travelcrab. no chance here sorry
+            return
+
         backend = self.status["backend"]["name"]
         if backend == "ÖBB":
             # rest in piss DB/VRN hafas -- you were, at best, vaguely adequate
@@ -577,6 +582,10 @@ class Trip:
                 )[0]
                 # optionally get a name for the class, eg 412→ICE 4
                 trainset_name = describe_class(wagons[0]["uic_id"]) or ""
+                if trainset_name in ("ICE 4", "ICE-T") or trainset_name.startswith(
+                    "FLIRT"
+                ):
+                    trainset_name += f" ({len(wagons)} Wagen)"
                 # optionally get a name for the trainset, eg ICE1101→Neustadt an der Weinstraße
                 if taufname := group.get("designation"):
                     trainset_name += f" {taufname}"
@@ -613,10 +622,27 @@ class Trip:
             composition_text = " + ".join(
                 [format_composition_element(unit) for unit in composition]
             )
+            departure = (
+                datetime.fromtimestamp(
+                    self.status["fromStation"]["scheduledTime"], tz=tz
+                )
+                .astimezone(timezone.utc)
+                .replace(tzinfo=None)
+            )
+            link = Link.make(
+                f"https://dbf.finalrewind.org/carriage-formation?number={self.status['train']['no']}"
+                f"&category={self.status['train']['type']}&administrationId=80"
+                f"&evaNumber={self.status['fromStation']['uic']}&date={departure:%Y-%m-%d}"
+                f"&time={departure.isoformat()}Z"
+            )
             newpatch = DB.execute(
                 "SELECT json_patch(?,?) AS newpatch",
                 (
-                    json.dumps({"composition": composition_text}),
+                    json.dumps(
+                        {
+                            "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
+                        }
+                    ),
                     json.dumps(self.status_patch),
                 ),
             ).fetchone()["newpatch"]
@@ -663,11 +689,23 @@ class Trip:
             composition_text = " + ".join(
                 [format_composition_element(unit) for unit in composition]
             )
+            departure = datetime.fromtimestamp(
+                self.status["fromStation"]["scheduledTime"], tz=tz
+            )
+            link = Link.make(
+                f"https://live.oebb.at/train-info?trainNr={self.status['train']['no']}"
+                f"&date={departure:%Y-%m-%d}&station={self.status['fromStation']['uic']}"
+                f"&time={departure:%H%%3A%M}"
+            )
 
             newpatch = DB.execute(
                 "SELECT json_patch(?,?) AS newpatch",
                 (
-                    json.dumps({"composition": composition_text}),
+                    json.dumps(
+                        {
+                            "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
+                        }
+                    ),
                     json.dumps(self.status_patch),
                 ),
             ).fetchone()["newpatch"]
