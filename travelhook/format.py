@@ -167,6 +167,43 @@ def get_network(status):
     if operator == "CTS":
         return "CTS"
 
+    if (
+        (
+            not status["train"]["type"]
+            and status["train"]["line"]
+            in (
+                "Bakerloo",
+                "Central",
+                "Circle",
+                "District",
+                "Hammersmith & City",
+                "Jubilee",
+                "Metropolitan",
+                "Northern",
+                "Piccadilly",
+                "Victoria",
+                "Waterloo & City",
+            )
+        )
+        or (
+            not status["train"]["type"]
+            and status["train"]["line"]
+            in ("Lioness", "Mildmay", "Windrush", "Weaver", "Suffragette", "Liberty")
+        )
+        or (
+            (f"{status['train']['type']} {status['train']['line']}").strip()
+            in (
+                "Elizabeth line",
+                "STR DLR",
+                "TransPennine Express",
+                "Thameslink",
+                "LNER",
+                "Southeastern",
+            )
+        )
+    ):
+        return "UK"
+
     return ""
 
 
@@ -176,6 +213,33 @@ def get_display(bot, status):
     all_types = [t.get("type") for t in train_types_config["train_types"]]
 
     type = blanket_replace_train_type.get(type, type)
+
+    if get_network(status) == "UK":
+        if not type and line in (
+            "Lioness",
+            "Mildmay",
+            "Windrush",
+            "Weaver",
+            "Suffragette",
+            "Liberty",
+        ):
+            type = "Overground"
+        elif not type and line not in (
+            "Bakerloo",
+            "Central",
+            "Circle",
+            "District",
+            "Hammersmith & City",
+            "Jubilee",
+            "Metropolitan",
+            "Northern",
+            "Piccadilly",
+            "Victoria",
+            "Waterloo & City",
+        ):
+            line = (type + " " + line).strip()
+            type = "NationalRail"
+
     # account for "ME RE2" instead of "RE 2"
     if line and (type not in all_types or not type):
         if len(line) > 2 and line[0:2] in all_types:
