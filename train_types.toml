@@ -19,6 +19,7 @@ train_types = [
 	{ network = "UK", line = "Victoria", emoji = "tflvictoria", color = "#00a0df", class = "britain" },
 	{ network = "UK", line = "Waterloo & City", emoji = "tflwc", color = "#6bcdb2", class = "britain" },
 	{ network = "UK", type = "Overground", emoji = "tfloverground", color = "#ee7623", class = "britain" },
+	{ network = "UK", fallback = true, emoji = "br0|br1", color = "#ff0000", class = "britain" },
 	# ===== DB HAFAS provided train types =====
 	{ type = "A", emoji = "A_", color = "#f49100", class="special" },
 	{ type = "AST", emoji = "ast", color = "#ffd700", class="city transit" },

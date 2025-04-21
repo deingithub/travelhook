@@ -1450,59 +1450,74 @@ async def train_types(ia):
 async def train_variants(ia):
     "list the train display variants for transit networks the bot knows about"
 
-    embed = discord.Embed(
-        color=discord.Color.from_str("#2e2e7d"),
-        title="manual: train display variants",
-        description="the relay bot supports 'native' display variants for a number of transit "
-        "networks. when you check in with travelynx or **/cts**, the bot will automatically "
-        "try to guess the correct network. if you're checking in manually or the bot makes a "
-        "mistake, you can correct it with **/journey edit network:**",
-    )
+    embeds = [
+        discord.Embed(
+            color=discord.Color.from_str("#2e2e7d"),
+            title="manual: train display variants",
+            description="the relay bot supports 'native' display variants for a number of transit "
+            "networks. when you check in with travelynx or **/cts**, the bot will automatically "
+            "try to guess the correct network. if you're checking in manually or the bot makes a "
+            "mistake, you can correct it with **/journey edit network:**",
+        ),
+        discord.Embed(color=discord.Color.from_str("#2e2e7d"), description=""),
+    ]
     sortkey = lambda tt: tt.get("network", "")
     train_types = sorted(train_types_config["train_types"], key=sortkey)
     for network, types in itertools.groupby(train_types, sortkey):
+        description = ""
         if not network:
             continue
         types = list(types)
         if len(types) > 1 and all(tt.get("type") == "U" for tt in types):
-            embed.description += (
+            description = (
                 f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n> "
                 f"`U {types[0]['line']}-{types[-1]['line']}` "
                 + (" | ".join([emoji(bot, tt) for tt in types]))
             )
-        elif network in ("CTS") and len(types) > 1:
-            embed.description += f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n"
+        elif network in ("CTS", "RNV") and len(types) > 1:
+            description = f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n"
             if buses := [type for type in types if type.get("type") == "Bus"]:
                 emojis = [
                     emoji(bot, tt) if i == 0 else "<" + (emoji(bot, tt).split("><")[1])
                     for i, tt in enumerate(buses)
                 ]
-                embed.description += (
-                    f"> `Bus {buses[0]['line']}-{buses[-1]['line']}` "
-                    + (" | ".join(emojis))
+                description += f"> `Bus {buses[0]['line']}-{buses[-1]['line']}` " + (
+                    " | ".join(emojis)
                 )
                 if len(types) != len(buses):
-                    embed.description += "\n"
+                    description += "\n"
             if trams := [type for type in types if type.get("type") == "STR"]:
                 emojis = [
                     emoji(bot, tt) if i == 0 else "<" + (emoji(bot, tt).split("><")[1])
                     for i, tt in enumerate(trams)
                 ]
-                embed.description += (
-                    f"> `STR {trams[0]['line']}-{trams[-1]['line']}` "
-                    + (" | ".join(emojis))
+                description += f"> `STR {trams[0]['line']}-{trams[-1]['line']}` " + (
+                    " | ".join(emojis)
                 )
-        elif network == "RNV":
-            continue  # TODO: fixme
+        elif network == "UK":
+            description = f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n> `Underground` "
+            tube = [tt for tt in types if not (tt.get("type") or tt.get("fallback"))]
+            description += " | ".join(emoji(bot, tt) for tt in tube)
+            description += f"\n> " + " | ".join(
+                [
+                    explain_display(bot, tt, for_variants=True)
+                    for tt in types
+                    if tt.get("type") or tt.get("fallback")
+                ]
+            )
         else:
-            embed.description += (
+            description = (
                 f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n> "
                 + " | ".join(
                     [explain_display(bot, tt, for_variants=True) for tt in types]
                 )
             )
-    embed.description += "\n**The rnv network in Mannheim, Ludwigshafen and Heidelberg has special styling as well, but that's currently too big for this embed. Will fix later.**"
-    await ia.response.send_message(embed=embed)
+        if len(embeds[-1]) + len(description) > 4096:
+            embeds.append(
+                discord.Embed(color=discord.Color.from_str("#2e2e7d"), description="")
+            )
+        embeds[-1].description += description
+    await ia.response.send_message(embeds=embeds)
 
 
 bot.tree.add_command(manual, guilds=servers)

@@ -28,11 +28,11 @@ let
     dbris-m = with perlPackages;
       buildPerlModule {
         pname = "Travel-Status-DE-DBRIS";
-        version = "0.06";
+        version = "0.10";
         src = fetchurl {
           url =
-            "https://finalrewind.org/projects/Travel-Status-DE-DBRIS/Travel-Status-DE-DBRIS-0.06.tar.gz";
-          hash = "sha256-bKVtTVrgyT+dGDZPzUEBwrL3kJzZTp3DSkDTAyC4BMo=";
+            "https://finalrewind.org/projects/Travel-Status-DE-DBRIS/Travel-Status-DE-DBRIS-0.10.tar.gz";
+          hash = "sha256-iZ5MtqaQhY/aBqgTurg3gLW/Z/ad+Ff4drIZm7rLRHg=";
         };
         doCheck = false;
         buildInputs = [ FileSlurp TestCompile TestPod ];
@@ -130,7 +130,7 @@ in python310Packages.buildPythonPackage {
   };
 
   pname = "travelhook";
-  version = "0.13.3";
+  version = "0.28.4";
   nativeBuildInputs = [ makeWrapper ];
 
   postFixup = let
