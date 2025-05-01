@@ -481,6 +481,12 @@ class Trip:
                     f"{train['type']}{train['line']}"
                     == f"{self.status['train']['type']}{self.status['train']['line'] or self.status['train']['no']}"
                 )
+                or (
+                    self.status["backend"]["type"] == "travelcrab.friz64.de"
+                    and f"{train['type']}{train['line']}".endswith(
+                        self.status["train"]["line"]
+                    )
+                )
             ):
                 write_hafas_data(train)
                 break

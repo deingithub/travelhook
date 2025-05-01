@@ -81,7 +81,10 @@ def get_network(status):
 
     # network KVV: Stadtbahn Karlsruhe
     if operator == "Albtal-Verkehrs-Gesellschaft mbH" or (
-        (status["train"]["type"] == "STR" or f"{status['train']['type']}{status['train']['line']}" == "S2")
+        (
+            status["train"]["type"] == "STR"
+            or f"{status['train']['type']}{status['train']['line']}" == "S2"
+        )
         and haversine((lat, lon), (49.009, 8.417)) < 15
     ):
         return "KVV"
@@ -552,7 +555,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                         # hafas
                         if message["type"] == "D":
                             desc += f"{LineEmoji.WARN} {message['text']}\n"
-                        elif message["type"] in ("Q", "L"):
+                        elif (
+                            message["type"] in ("Q", "L") or message.get("code") == "ZN"
+                        ):
                             if match := re_decompose_him.match(message["text"]):
                                 if "route" in trip.hafas_data and (
                                     trip.hafas_data["route"][0]["name"] == match["from"]
@@ -666,7 +671,15 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         f"-# {format_timezone(timezone)} · "
         + f"{trip.status['backend']['name'] or 'DB'} {trip.status['backend']['type']}"
     )
-    if jid := trip.hafas_data.get("id"):
+
+    # hafas id can come from:
+    # - travelynx directly, good
+    # - öbb hafas workaround for IRIS-TTS & bahn.de checkins, good
+    # - öbb hafas workaround for travelcrab checkins, good
+    # - travelcrab directly, bad. no good. contains "DELFI" and is useless for us. ignore that.
+    if (
+        jid := trip.hafas_data.get("id", trip.status["train"]["hafasId"])
+    ) and not "DELFI" in jid:
         jid = urllib.parse.quote(jid)
         from_station = urllib.parse.quote(trip.status["fromStation"]["name"])
         to_station = urllib.parse.quote(trip.status["toStation"]["name"])

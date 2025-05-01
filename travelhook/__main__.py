@@ -671,7 +671,7 @@ Choice = discord.app_commands.Choice
     ]
 )
 async def _break(ia, break_mode: Choice[int]):
-    "Control whether your next checkin should start a new journey or if it's just a transfer."
+    'Control whether your next checkin should start a new journey ("break") or if it\'s just a transfer ("glue").'
     user = DB.User.find(discord_id=ia.user.id)
     if not user:
         await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
@@ -1499,8 +1499,9 @@ async def train_variants(ia):
                     emoji(bot, tt) if i == 0 else "<" + (emoji(bot, tt).split("><")[1])
                     for i, tt in enumerate(tramtrains)
                 ]
-                description += f"\n> `S {tramtrains[0]['line']}-{tramtrains[-1]['line']}` " + (
-                    " | ".join(emojis)
+                description += (
+                    f"\n> `S {tramtrains[0]['line']}-{tramtrains[-1]['line']}` "
+                    + (" | ".join(emojis))
                 )
         elif network == "UK":
             description = f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n> `Underground` "

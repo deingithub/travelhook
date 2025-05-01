@@ -160,40 +160,35 @@ def format_timezone(timezone):
 
 def generate_train_link(data):
     link = None
-    if (
-        data["backend"]["name"] == "bahn.de"
-        or data["backend"]["type"] == "travelcrab.friz64.de"
-    ):
-        train_no = 0
-        # if train starts in germany and is a "real train" (said in an offensively gatekeepy way. just to be clear.)
-        # bahn.expert may have confirmed realtime data for it -- construct a link with the train number
-        # otherwise, play it safe and keep the number out to prevent ambiguities for local transit
-        if (8000000 < data["fromStation"]["uic"] < 8100000) and any(
+    # if train starts in germany and is a "real train" (said in an offensively gatekeepy way. just to be clear.)
+    # bahn.expert may have confirmed realtime data for it -- construct a link with the train number
+    # otherwise, play it safe and keep the number out to prevent ambiguities for local transit
+    if data["backend"]["type"] == "IRIS-TTS" or (
+        data["train"]["no"]
+        and (8000000 < data["fromStation"]["uic"] < 8100000)
+        and any(
             data["train"]["type"] == tt
             or (data["train"]["line"] and data["train"]["line"].startswith(tt))
             for tt in train_types_with_realtime_data_on_bahnexpert_maybe_i_hope
-        ):
-            train_no = data["train"]["no"]
-        link = (
-            "https://bahn.expert/details"
-            + f"/{train_no}/{data['fromStation']['scheduledTime'] * 1000}/?jid="
-            + urllib.parse.quote(data["train"]["id"])
         )
-    elif data["backend"]["type"] == "IRIS-TTS":
+    ):
         link = (
             "https://bahn.expert/details"
             + f"/{data['train']['type']}%20{data['train']['no']}/"
             + str(data["fromStation"]["scheduledTime"] * 1000)
             + f"/?station={data['fromStation']['uic']}"
         )
-    else:
+    # TODO get hafas_data here for better link coverage
+    elif (jid := data["train"]["hafasId"]) and not "DELFI" in jid:
+        hafas = data["backend"]["name"]
+        if hafas == "bahn.de":
+            hafas = "&dbris=bahn.de"
         link = (
             "https://dbf.finalrewind.org/z/"
-            + urllib.parse.quote(data["train"]["id"])
-            + f"?hafas={data['backend']['name']}"
+            + urllib.parse.quote(jid)
+            + f"?hafas={hafas}"
         )
-
-    if "travelhookfaked" in data["train"]["id"]:
+    else:
         link = None
 
     link = data.get("link", link)
