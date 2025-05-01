@@ -1474,7 +1474,7 @@ async def train_variants(ia):
                 f"`U {types[0]['line']}-{types[-1]['line']}` "
                 + (" | ".join([emoji(bot, tt) for tt in types]))
             )
-        elif network in ("CTS", "RNV") and len(types) > 1:
+        elif network in ("CTS", "RNV", "KVV") and len(types) > 1:
             description = f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n"
             if buses := [type for type in types if type.get("type") == "Bus"]:
                 emojis = [
@@ -1492,6 +1492,14 @@ async def train_variants(ia):
                     for i, tt in enumerate(trams)
                 ]
                 description += f"> `STR {trams[0]['line']}-{trams[-1]['line']}` " + (
+                    " | ".join(emojis)
+                )
+            if tramtrains := [type for type in types if type.get("type") == "S"]:
+                emojis = [
+                    emoji(bot, tt) if i == 0 else "<" + (emoji(bot, tt).split("><")[1])
+                    for i, tt in enumerate(tramtrains)
+                ]
+                description += f"\n> `S {tramtrains[0]['line']}-{tramtrains[-1]['line']}` " + (
                     " | ".join(emojis)
                 )
         elif network == "UK":

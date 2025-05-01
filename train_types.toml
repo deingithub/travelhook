@@ -1,4 +1,4 @@
-emoji_server_ids = [552249406808653836, 1109251867051044994, 1189295652518232155, 1162759875667964005, 1235129674485600276, 1323238503940755466] # emoji will be looked up by name from these servers only
+emoji_server_ids = [552249406808653836, 1109251867051044994, 1189295652518232155, 1162759875667964005, 1235129674485600276, 1323238503940755466, 1367446239515381893] # emoji will be looked up by name from these servers only
 train_types = [
 	# possible options for matching, not provided = matches all
 	# { type = "IC", line = "1",  line_startswith = "1", network = "SBB"}
@@ -32,31 +32,31 @@ train_types = [
 	{ type = "Bus", network = "CTS", line = "C7", emoji = "Bus2|ctsC7", color = "#008a27", hide_line_number = true },
 	{ type = "Bus", network = "CTS", line = "C8", emoji = "Bus2|ctsC8", color = "#88cdd5", hide_line_number = true },
 	{ type = "Bus", network = "CTS", line = "C9", emoji = "Bus2|ctsC9", color = "#f26640", hide_line_number = true },
-	{ type = "Bus", network = "CTS", line = "2", emoji = "Bus2|cts2", color = "#e10d19", hide_line_number = true },
-	{ type = "Bus", network = "CTS", line = "4", emoji = "Bus2|cts4", color = "#cf0d1c", hide_line_number = true },
 	{ type = "Bus", line_startswith = "N", emoji = "BusN", color = "#a3167e", class="city transit" },
 	{ type = "Bus", line_startswith = "X", emoji = "BusX", remove_line_startswith = true, color = "#a3167e", class="city transit" },
 	{ type = "Bus", emoji = "Bus", color = "#a3167e", class="city transit" },
 	{ type = "CB", emoji = "cbc", color = "#c91432", class="special" },
 	{ type = "CJX", emoji = "Ja|Jb", color = "#ff4f00", class="regional" },
-	{ type = "D", emoji = "da|db", color = "#ff0404", always_show_train_number = true, class="long-distance" },
+	{ type = "D", emoji = "da|db", color = "#ff0404", always_show_train_number = true, class="long-distance 2" },
 	{ type = "EC", emoji = "eca|ecb", color = "#ff0404", always_show_train_number = true, class="long-distance" },
-	{ type = "ECE", emoji = "eca|ece", color = "#ff0404", always_show_train_number = true, class="long-distance" },
+	{ type = "ECE", emoji = "eca|ece", color = "#ff0404", always_show_train_number = true, class="long-distance 2" },
 	{ type = "EIC", emoji = "pia|pib", color = "#ff0404", always_show_train_number = true, class="poland" },
-	{ type = "EN", emoji = "na|nb", color = "#282559", always_show_train_number = true, class="long-distance 2" },
-	{ type = "EST", emoji = "est0|est1", color = "#ff0404", always_show_train_number = true, class="long-distance 2" },
+	{ type = "EN", emoji = "na|nb", color = "#282559", always_show_train_number = true, class="night trains" },
+	{ type = "EST", emoji = "est0|est1", color = "#ff0404", always_show_train_number = true, class="private operators" },
+	{ type = "Ex", emoji = "ex0|ex1", color = "#ff0404", class = "czechia" },
 	{ type = "FA", emoji = "fa0|fa1", color = "#cccccc", always_show_train_number = true, class="long-distance 2" },
 	{ type = "Fähre", emoji = "Faehre", color = "#00a4db", class="city transit" },
 	{ type = "FB", emoji = "fb0|fb1", color = "#ff0404", always_show_train_number = true, class="long-distance 2" },
 	{ type = "FEX", emoji = "fex0|fex1", color = "#ff4f00", class="regional" },
-	{ type = "FLX", emoji = "La|Lb", color = "#72d800", always_show_train_number = true, class="long-distance 2" },
+	{ type = "FLX", emoji = "La|Lb", color = "#72d800", always_show_train_number = true, class="private operators" },
 	{ type = "FR", emoji = "fr0|fr1", color = "#aa0000", always_show_train_number = true, class="long-distance 2" },
 	{ type = "IR", line = "VAE", network = "CH-FV", emoji = "Ia|vae1|vae2|vae3|vae4|vae5", color = "#ff0404", always_show_train_number = true, hide_line_number = true },
 	{ type = "IC", emoji = "ca|cb", color = "#ff0404", always_show_train_number = true, class="long-distance" },
 	{ type = "ICD", emoji = "ca|icd1", color = "#ff0404", class="long-distance 2" },
 	{ type = "ICE", emoji = "ca|Cb", color = "#ff0404", always_show_train_number = true, class="long-distance" },
-	{ type = "ICN", emoji = "icn0|icn1", color = "#282559", always_show_train_number = true, class="long-distance 2" },
+	{ type = "ICN", emoji = "icn0|icn1", color = "#282559", always_show_train_number = true, class="night trains" },
 	{ type = "IR", emoji = "Ia|db", color = "#ff0404", always_show_train_number = true, class="long-distance" },
+	{ type = "IRN", emoji = "irn0|irn1", color = "#282559", always_show_train_number = true, class="night trains" },
 	{ type = "KM", emoji = "ka|kb", color = "#204a87", class="poland" },
 	{ type = "KML", emoji = "kLa|kLb", color = "#204a87", class="poland" },
 	{ type = "KS", emoji = "sa|sb", color = "#204a87", class="poland" },
@@ -64,14 +64,19 @@ train_types = [
 	{ type = "Lt", emoji = "lt0|lt1", class="special" },
 	{ type = "M", emoji = "metro", color = "#014e8d", class="rapid transit" },
 	{ type = "MEX", emoji = "m0|m1", color = "#204a87", class="regional" },
-	{ type = "NJ", emoji = "Na|Nb", color = "#282559", always_show_train_number = true, class="long-distance 2" },
-	{ type = "R", emoji = "Ra|Rb", color = "#204a87", class="regional" },
+	{ type = "NJ", emoji = "Na|Nb", color = "#282559", always_show_train_number = true, class="night trains" },
+	{ type = "OGV", emoji = "ogv0|ogv1", color = "#ff0404", always_show_train_number = true, class="private operators" },
+	{ type = "Os", emoji = "os0|os1", color = "#204a87", class="czechia" },
+	{ type = "OTC", emoji = "otc0|otc1", color = "#ff0404", always_show_train_number = true, class="private operators" },
+	{ type = "R", emoji = "Rcz0|db", color = "#ff0404", class = "czechia" },
+	{ type = "R", emoji = "Ra|Rb", color = "#204a87", network = "AT" },
 	{ type = "RB", emoji = "Ba|Bb", color = "#204a87", class="regional" },
 	# network = "NS": matches if operator is "Nederlandse Spoorwegen"
 	{ type = "RE", network = "NS", emoji = "ns0|ns1", color = "#204a87" },
 	{ type = "RE", emoji = "Ea|Eb", color = "#ff4f00", class="regional" },
 	{ type = "RER", emoji = "RER", color = "#2c8e4e", class="rapid transit" },
 	{ type = "REX", emoji = "Ea|EXb", color = "#ff4f00", class="regional" },
+	{ type = "RGJ", emoji = "rgj0|rgj1", color = "#fabb00", always_show_train_number = true, class="private operators" },
 	{ type = "RJ", emoji = "2a|2b", color = "#c63131", always_show_train_number = true, class="long-distance" },
 	{ type = "RJX", emoji = "1a|1b", color = "#c63131", always_show_train_number = true, class="long-distance" },
 	{ type = "RS", emoji = "rs0|rs1", color = "#2c8e4e", class="regional" },
@@ -85,14 +90,32 @@ train_types = [
 	{ type = "S", network = "SWien", line = "7", emoji = "ATStrunk", color = "#fe90b5" },
 	{ type = "S", network = "SWien", line = "45", emoji = "ATSgreen", color = "#bed643" },
 	{ type = "S", network = "SWien", emoji = "ATS", color = "#0096d8" },
-	# network = "AVG": matches if operator is "Albtal-Verkehrs-Gesellschaft mbH"
-	{ type = "S", network = "AVG", emoji = "KAS", color = "#c5161c" },
+	# network = "KVV": matches for stadtbahn karlsruhe
+	{ type = "S", network = "KVV", line = "1", emoji = "KAS2|KAs1", color = "#00a76d", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "11", emoji = "KAS2|KAs11", color = "#00a76d", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "12", emoji = "KAS2|KAs12", color = "#00a76d", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "2", emoji = "KAS2|KAs2", color = "#a066aa", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "31", emoji = "KAS2|KAs31", color = "#00a99d", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "32", emoji = "KAS2|KAs32", color = "#00a99d", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "4", emoji = "KAS2|KAs4", color = "#9f184c", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "41", emoji = "KAS2|KAs41", color = "#bed730", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "42", emoji = "KAS2|KAs42", color = "#0097bb", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "5", emoji = "KAS2|KAs5", color = "#f69795", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "51", emoji = "KAS2|KAs51", color = "#f69795", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "52", emoji = "KAS2|KAs52", color = "#f69795", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "6", emoji = "KAS2|KAs6", color = "#282268", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "7", emoji = "KAS2|KAs7", color = "#fff200", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "71", emoji = "KAS2|KAs71", color = "#fff200", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "8", emoji = "KAS2|KAs8", color = "#6e692a", hide_line_number = true },
+	{ type = "S", network = "KVV", line = "81", emoji = "KAS2|KAs81", color = "#6e692a", hide_line_number = true },
 	{ type = "S", line_startswith = "L", emoji = "SL", remove_line_startswith = true, color = "#c5161c", class="special" },
 	{ type = "S", line_startswith = "N", emoji = "SN", color = "#c5161c", class="special" },
 	{ type = "S", emoji = "SBahn", color = "#2c8e4e", class="rapid transit" },
 	{ type = "SB", emoji = "SB", color = "#014e8d", class="city transit" },
+	{ type = "SC", emoji = "sc0|sc1", color = "#ff0404", always_show_train_number = true, class = "czechia" },
 	{ type = "Schw-B", emoji = "SchwB", color = "#014e8d", class="city transit" },
 	{ type = "SEV", emoji = "Sa|Sb", class="special" },
+	{ type = "Sp", emoji = "sp0|sp1", color = "#ff4f00", always_show_train_number = true, class = "czechia" },
 	# network = "CTS": matches if operator is "CTS"
 	{ type = "STR", network = "CTS", line = "A", emoji = "str2|ctsa", color = "#e10d19", hide_line_number = true },
 	{ type = "STR", network = "CTS", line = "B", emoji = "str2|ctsb", color = "#009ee0", hide_line_number = true },
@@ -100,6 +123,13 @@ train_types = [
 	{ type = "STR", network = "CTS", line = "D", emoji = "str2|ctsd", color = "#009933", hide_line_number = true },
 	{ type = "STR", network = "CTS", line = "E", emoji = "str2|ctse", color = "#9085ba", hide_line_number = true },
 	{ type = "STR", network = "CTS", line = "F", emoji = "str2|ctsf", color = "#97bf0d", hide_line_number = true },
+	# network = "KVV": matches for stadtbahn karlsruhe
+	{ type = "STR", network = "KVV", line = "1", emoji = "KASTR|KA1", color = "#ed1c24", hide_line_number = true },
+	{ type = "STR", network = "KVV", line = "2", emoji = "KASTR|KA2", color = "#0071bc", hide_line_number = true },
+	{ type = "STR", network = "KVV", line = "3", emoji = "KASTR|KA3", color = "#947139", hide_line_number = true },
+	{ type = "STR", network = "KVV", line = "4", emoji = "KASTR|KA4", color = "#ffcb04", hide_line_number = true },
+	{ type = "STR", network = "KVV", line = "5", emoji = "KASTR|KA5", color = "#00c0f3", hide_line_number = true },
+	{ type = "STR", network = "KVV", line = "9", emoji = "KASTR|KA9", color = "#b6a9a6", hide_line_number = true },
 	# network = "RNV": matches if operator starts with "Rhein-Neckar-Verkehr"
 	{ type = "STR", network = "RNV", line = "1", emoji = "str2|rnv1", color = "#f39b9b", hide_line_number = true  },
 	{ type = "STR", network = "RNV", line = "2", emoji = "str2|rnv2", color = "#b10346", hide_line_number = true  },
@@ -122,6 +152,7 @@ train_types = [
 	{ type = "STR", network = "RNV", line = "24", emoji = "str2|rnv24", color = "#8d2176", hide_line_number = true  },
 	{ type = "STR", network = "RNV", line = "25", emoji = "str2|rnv25", color = "#95c23d", hide_line_number = true  },
 	{ type = "STR", network = "RNV", line = "26", emoji = "str2|rnv26", color = "#f39b9b", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "E", emoji = "str2|rnvE", color = "#e200e2", hide_line_number = true  },
 	# fix for Stuttgart Stadtbahn lines having a U prefix in the line
 	{ type = "STB", line_startswith = "U", emoji = "STB", remove_line_startswith = true, color = "#c5161c", class="rapid transit" },
 	# network = "Ü": Stadtbahn Hannover
@@ -148,6 +179,10 @@ train_types = [
 	{ type = "U", line = "8", network = "BVG", emoji = "UBerlin8", color = "#224f86", hide_line_number = true },
 	{ type = "U", line = "9", network = "BVG", emoji = "UBerlin9", color = "#f3791d", hide_line_number = true },
 	{ type = "U", line = "12", network = "BVG", emoji = "UBerlin12", color = "#7dad4c", hide_line_number = true },
+	# network = "DPP": matches if inside geofence around Praha
+	{ type = "U", line = "A", network = "DPP", emoji = "M2|dppA", color = "#029b52", hide_line_number = true },
+	{ type = "U", line = "B", network = "DPP", emoji = "M2|dppB", color = "#ffbd0e", hide_line_number = true },
+	{ type = "U", line = "C", network = "DPP", emoji = "M2|dppC", color = "#df002c", hide_line_number = true },
 	# network = "HHA": matches if inside geofence around Hamburg
 	{ type = "U", line = "1", network = "HHA", emoji = "UHH1", color = "#0073c0", hide_line_number = true },
 	{ type = "U", line = "2", network = "HHA", emoji = "UHH2", color = "#ff2e17", hide_line_number = true },
@@ -190,7 +225,7 @@ train_types = [
 	{ type = "U", line = "6", network = "WL", emoji = "UWien6", color = "#926131", hide_line_number = true },
 	{ type = "U", line_startswith = "m", emoji = "metro", remove_line_startswith = true, color = "#c5161c", class="rapid transit" },
 	{ type = "U", emoji = "U_", color = "#014e8d", class="rapid transit" },
-	{ type = "WB", emoji = "wa|wb", color = "#2e86ce", class="long-distance 2" },
+	{ type = "WB", emoji = "wa|wb", color = "#2e86ce", class="private operators" },
 	{ type = "WLB", emoji = "wlb", color = "#175a97", class="special" },
 	{ type = "ZahnR", emoji = "zahnr", class="city transit" },
 	# network = "ST": matches if operator any of "Blauwnet", "Arriva Nederland", "RRReis", "R-net"
@@ -207,13 +242,14 @@ train_types = [
 	{ emoji = "sbbzug", fallback = true }
 ]
 [network_descriptions]
-AT = "S-Bahn in Austria"
-AVG = "Stadtbahn Karlsruhe"
+AT = "Trains in Austria"
 BVG = "U-Bahn Berlin"
 CH-FV = "Swiss long-distance trains"
 CTS = "Strasbourg trams"
+DPP = "Praha metro"
 HHA = "U-Bahn Hamburg"
 KVB = "Stadtbahn Köln/Bonn"
+KVV = "Stadtbahn Karlsruhe"
 MVG = "U-Bahn München"
 NRW = "Stadtbahn Rhein/Ruhr"
 NS = "Nederlandse Spoorwegen Sprinter"

@@ -79,12 +79,12 @@ def get_network(status):
     if operator == "Nederlandse Spoorwegen":
         return "NS"
 
-    # network AVG: Stadtbahn Karlsruhe
+    # network KVV: Stadtbahn Karlsruhe
     if operator == "Albtal-Verkehrs-Gesellschaft mbH" or (
-        f"{status['train']['type']}{status['train']['line']}" == "S2"
+        (status["train"]["type"] == "STR" or f"{status['train']['type']}{status['train']['line']}" == "S2")
         and haversine((lat, lon), (49.009, 8.417)) < 15
     ):
-        return "AVG"
+        return "KVV"
 
     # network RNV: trams in mannheim, ludwigshafen and heidelberg
     if operator.startswith("Rhein-Neckar-Verkehr") or (
@@ -100,6 +100,10 @@ def get_network(status):
     # network SWien: S-Bahn Wien
     if haversine((lat, lon), (48.21, 16.39)) < 70:
         return "SWien"
+
+    # network DPP: Praha metro
+    if haversine((lat, lon), (50.08, 14.42)) < 12:
+        return "DPP"
 
     # network AT: austrian trains
     if str(status["fromStation"]["uic"]).startswith("81") or str(
