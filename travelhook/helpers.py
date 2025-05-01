@@ -159,12 +159,21 @@ def format_timezone(timezone):
 
 
 def generate_train_link(data):
+    hafas_data = DB.DB.execute(
+        "SELECT hafas_data FROM trips WHERE journey_id = ? AND hafas_data != '{}'",
+        (zugid(data),),
+    ).fetchone()
+    if hafas_data:
+        hafas_data = json.loads(hafas_data["hafas_data"])
+    else:
+        hafas_data = {}
+
     link = None
     # if train starts in germany and is a "real train" (said in an offensively gatekeepy way. just to be clear.)
     # bahn.expert may have confirmed realtime data for it -- construct a link with the train number
     # otherwise, play it safe and keep the number out to prevent ambiguities for local transit
     if data["backend"]["type"] == "IRIS-TTS" or (
-        data["train"]["no"]
+        (data["train"]["no"] or hafas_data.get("no"))
         and (8000000 < data["fromStation"]["uic"] < 8100000)
         and any(
             data["train"]["type"] == tt
@@ -174,15 +183,18 @@ def generate_train_link(data):
     ):
         link = (
             "https://bahn.expert/details"
-            + f"/{data['train']['type']}%20{data['train']['no']}/"
+            + f"/{data['train']['type']}%20{data['train']['no'] or hafas_data.get('no')}/"
             + str(data["fromStation"]["scheduledTime"] * 1000)
             + f"/?station={data['fromStation']['uic']}"
         )
-    # TODO get hafas_data here for better link coverage
-    elif (jid := data["train"]["hafasId"]) and not "DELFI" in jid:
+    elif (jid := hafas_data.get("id", data["train"]["hafasId"])) and (
+        "#" in jid or "|" in jid
+    ):
         hafas = data["backend"]["name"]
         if hafas == "bahn.de":
             hafas = "&dbris=bahn.de"
+        elif data["backend"]["type"] == "travelcrab.friz64.de":
+            hafas = "ÖBB"
         link = (
             "https://dbf.finalrewind.org/z/"
             + urllib.parse.quote(jid)

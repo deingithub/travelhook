@@ -113,6 +113,7 @@ if (my $status = $result->result) {
 		id=>$status->id,
 		operator=>$status->operator,
 		direction=>$status->direction,
+		no=>$status->number,
 		polyline=>[@polyline],
 		beeline=>$only_eva,
 		route=>[@route],
