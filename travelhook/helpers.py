@@ -187,7 +187,7 @@ def generate_train_link(data):
             + str(data["fromStation"]["scheduledTime"] * 1000)
             + f"/?station={data['fromStation']['uic']}"
         )
-    elif (jid := hafas_data.get("id", data["train"]["hafasId"])) and (
+    elif (jid := hafas_data.get("id", data["train"]["id"])) and (
         "#" in jid or "|" in jid
     ):
         hafas = data["backend"]["name"]
