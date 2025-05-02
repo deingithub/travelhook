@@ -678,7 +678,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
     # - öbb hafas workaround for travelcrab checkins, good
     # - travelcrab directly, bad. no good. MOTIS data, ignore that.
     #   hafas IDs have a # or a | in them, MOTIS ids don't (hopefully?), use that as a heuristic for now
-    if (jid := trip.hafas_data.get("id", trip.status["train"]["hafasId"])) and (
+    if (jid := trip.hafas_data.get("id", trip.status["train"]["id"])) and (
         "#" in jid or "|" in jid
     ):
         jid = urllib.parse.quote(jid)
