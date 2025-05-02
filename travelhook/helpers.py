@@ -514,6 +514,7 @@ replace_headsign = {
     ("S2", "Hagsfeld Reitschulschlag (Schleife), Karlsruhe"): "Reitschulschlag",
     ("S2", "Mörsch Bach-West, Rheinstetten"): "Rheinstetten",
     ("S2", "Spöck Richard-Hecht-Schule, Stutensee"): "Spöck",
+    ("STR5", "Karlsruhe Bh West (Gleis 55)"): "Rheinhafen",
     # 48 stunden ringbahn challenge
     ("S41", "Ring S41"): "Ring ↻",
     ("S42", "Ring S42"): "Ring ↺",
@@ -548,6 +549,7 @@ replace_headsign = {
     ("STR6", "Rheingönheim Neubruch, Ludwigshafen am Rhein"): "Rheingönheim Neubruch",
     ("STR6", "Neuostheim Endstelle, Mannheim"): "Neuostheim",
     ("STR6", "Neuhermsheim SAP Arena S-Bahnhof, Mannheim"): "SAP-Arena S-Bf",
+    ("STR6", "Berliner Platz Bahnhof LU Mitte, Ludwigshafen am R"): "Berliner Platz",
     ("STR6A", "Rheingönheim Neubruch, Ludwigshafen am Rhein"): "Rheingönheim Neubruch",
     ("STR6A", "Neuhermsheim SAP Arena S-Bahnhof, Mannheim"): "SAP-Arena S-Bf",
     ("RNV7", "Vogelstang Endstelle, Mannheim"): "Vogelstang",
