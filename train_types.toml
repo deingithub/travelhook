@@ -168,6 +168,8 @@ train_types = [
 	{ type = "TER", emoji = "ta|tb", color = "#204a87", class="regional" },
 	{ type = "TGV", emoji = "Ta|Tb", color = "#ff0404", always_show_train_number = true, class="long-distance" },
 	{ type = "TLK", emoji = "tla|tlb", color = "#ff0404", always_show_train_number = true, class="poland" },
+	# network = "CZ": matches the regional train type U inside czechia
+	{ type = "U", network = "CZ", emoji = "ucz0|Rb", color = "#204a87" },
 	# network = "BVG": matches if inside geofence around Berlin
 	{ type = "U", line = "1", network = "BVG", emoji = "UBerlin1", color = "#7dad4c", hide_line_number = true },
 	{ type = "U", line = "2", network = "BVG", emoji = "UBerlin2", color = "#da421e", hide_line_number = true },
@@ -246,6 +248,7 @@ AT = "Trains in Austria"
 BVG = "U-Bahn Berlin"
 CH-FV = "Swiss long-distance trains"
 CTS = "Strasbourg trams"
+CZ = "Regional trains in Czechia"
 DPP = "Praha metro"
 HHA = "U-Bahn Hamburg"
 KVB = "Stadtbahn Köln/Bonn"

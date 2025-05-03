@@ -104,15 +104,27 @@ def get_network(status):
     if haversine((lat, lon), (48.21, 16.39)) < 70:
         return "SWien"
 
+    # network CZ: regional trains in czechia
+    if (
+        status["train"]["type"] == "U"
+        and (
+            5400000 < status["fromStation"]["uic"] < 5500000
+            or 5400000 < status["toStation"]["uic"] < 5500000
+        )
+        and not any(status["fromStation"]["name"].endswith(suffix) for suffix in ("(M)", "(M-A)", "(M-B)", "(M-C)"))
+    ):
+        return "CZ"
+
+    # network AT: austrian trains
+    if (
+        8100000 < status["fromStation"]["uic"] < 8200000
+        or 8100000 < status["toStation"]["uic"] < 8200000
+    ):
+        return "AT"
+
     # network DPP: Praha metro
     if haversine((lat, lon), (50.08, 14.42)) < 12:
         return "DPP"
-
-    # network AT: austrian trains
-    if str(status["fromStation"]["uic"]).startswith("81") or str(
-        status["toStation"]["uic"]
-    ).startswith("81"):
-        return "AT"
 
     # network Ü: Stadtbahn Hannover
     if (
@@ -672,12 +684,8 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         + f"{trip.status['backend']['name'] or 'DB'} {trip.status['backend']['type']}"
     )
 
-    # hafas id can come from:
-    # - travelynx directly, good
-    # - öbb hafas workaround for IRIS-TTS & bahn.de checkins, good
-    # - öbb hafas workaround for travelcrab checkins, good
-    # - travelcrab directly, bad. no good. MOTIS data, ignore that.
-    #   hafas IDs have a # or a | in them, MOTIS ids don't (hopefully?), use that as a heuristic for now
+    map_link = None
+    # hafas id, either from travelynx backend directly or via our own hafas data
     if (jid := trip.hafas_data.get("id", trip.status["train"]["id"])) and (
         "#" in jid or "|" in jid
     ):
@@ -687,15 +695,28 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         hafas = trip.status["backend"]["name"]
         if hafas is None or trip.status["backend"]["type"] == "travelcrab.friz64.de":
             hafas = "ÖBB"
+
+        # DBRIS
         if hafas == "bahn.de":
-            # very hacky, force DBF DBRIS access
             jid = urllib.parse.quote(trip.status["train"]["id"])
             hafas = "&dbris=bahn.de"
-        link = DB.Link.make(
+
+        map_link = DB.Link.make(
             f"https://dbf.finalrewind.org/map/{jid}/0?hafas={hafas}"
             + f"&from={from_station}&to={to_station}"
         )
-        desc += f" · [Map]({config['shortener_url']}/{link.short_id})"
+    # travelcrab backend - motis id
+    elif trip.status["backend"]["type"] == "travelcrab.friz64.de":
+        motis_id = urllib.parse.quote(trip.status["train"]["id"])
+        from_station = urllib.parse.quote(trip.status["fromStation"]["name"])
+        to_station = urllib.parse.quote(trip.status["toStation"]["name"])
+        map_link = DB.Link.make(
+            f"https://dbf.finalrewind.org/map/{motis_id}/0?motis=transitous"
+            + f"&from={from_station}&to={to_station}"
+        )
+
+    if map_link:
+        desc += f" · [Map]({config['shortener_url']}/{map_link.short_id})"
 
     embed_title = f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
     embed_title += decline_operator_with_article(

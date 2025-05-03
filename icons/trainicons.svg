@@ -30,15 +30,15 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="2"
-     inkscape:cx="752.5"
-     inkscape:cy="429.25"
+     inkscape:zoom="1"
+     inkscape:cx="1244"
+     inkscape:cy="587.5"
      inkscape:window-width="1920"
      inkscape:window-height="1008"
      inkscape:window-x="0"
      inkscape:window-y="35"
      inkscape:window-maximized="1"
-     inkscape:current-layer="g172"><inkscape:grid
+     inkscape:current-layer="layer1"><inkscape:grid
        type="xygrid"
        id="grid132"
        units="mm"
@@ -1693,7 +1693,7 @@
 <g
    id="g2566"
    inkscape:label="SB"
-   transform="translate(-173.19701,33.587257)"
+   transform="translate(-173.25059,33.583259)"
    inkscape:export-filename="SB.png"
    inkscape:export-xdpi="508.00003"
    inkscape:export-ydpi="508.00003"><circle
@@ -1716,7 +1716,7 @@
    style="fill:#ffffff" />
 	<polygon
    fill="#ffffff"
-   points="80,309.69 80,320.002 319.999,260.002 319.999,249.69 "
+   points="80,320.002 319.999,260.002 319.999,249.69 80,309.69 "
    id="polygon2514"
    style="fill:#ffffff" />
 	<path
@@ -5622,4 +5622,154 @@
        style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:9px;font-family:'Concourse OT';-inkscape-font-specification:'Concourse OT Bold Italic';fill:#ffffff;stroke-width:0.264583"
        x="101.49873"
        y="28.0375"
-       id="tspan172">R</tspan></text></g></g></svg>
+       id="tspan172">R</tspan></text></g><g
+   id="g23"
+   inkscape:label="U cz"
+   transform="translate(2.7148437e-7,180)"
+   inkscape:export-filename="U cz.png"
+   inkscape:export-xdpi="325.12"
+   inkscape:export-ydpi="325.12"><rect
+     style="fill:#204a87;fill-opacity:1;stroke-width:0.255315;stroke-linecap:round"
+     id="rect15"
+     width="20"
+     height="10"
+     x="85"
+     y="10"
+     rx="1.5"
+     ry="1.5"
+     inkscape:export-filename="2x/2xLpng"
+     inkscape:export-xdpi="325.12"
+     inkscape:export-ydpi="325.12" /><text
+     xml:space="preserve"
+     style="font-size:9px;line-height:1.25;font-family:'Concourse OT';-inkscape-font-specification:'Concourse OT, Normal';font-variant-ligatures:none;fill:#ffffff;stroke-width:0.264583"
+     x="86.005981"
+     y="18.0375"
+     id="text17"><tspan
+       sodipodi:role="line"
+       id="tspan17"
+       style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:9px;font-family:'Concourse OT';-inkscape-font-specification:'Concourse OT Semi-Bold';fill:#ffffff;stroke-width:0.264583"
+       x="86.005981"
+       y="18.0375">U</tspan></text></g><g
+   id="g5-6"
+   inkscape:label="Schw-B"
+   transform="translate(102.47333,225.04345)"
+   inkscape:export-filename="Schw-B.png"
+   inkscape:export-xdpi="508.00003"
+   inkscape:export-ydpi="508.00003"><rect
+   style="fill:#014e8d;fill-opacity:1;stroke-width:0.255315;stroke-linecap:round"
+   id="rect5-2"
+   width="10"
+   height="10"
+   x="228.14343"
+   y="36.725197"
+   rx="1.5"
+   ry="1.5"
+   inkscape:export-filename="rect2016.png"
+   inkscape:export-xdpi="325.12"
+   inkscape:export-ydpi="325.12" /><g
+   id="g4-9"
+   transform="matrix(0.03125,0,0,-0.03125,226.89343,48.928556)">
+	
+	
+	
+	
+	
+	
+	<rect
+   x="80"
+   y="310"
+   fill="#ffffff"
+   width="240"
+   height="10"
+   id="rect3-1" />
+	<path
+   fill="#ffffff"
+   d="m 312.295,156.73 c -0.882,-9.584 -4.851,-15.715 -16.022,-15.715 H 224.13 80 v 64.7016 h 32.015 c 2.763,0 5.002,2.241 5.002,5 v 74.115 c 0,2.759 -2.239,4.998 -5.002,4.998 H 80 v 10.1734 h 231.56887 c 2.761,0 5.07836,-2.24011 5,-5 z M 142.842,282.299 c 0,4.249 -3.448,7.7 -7.699,7.7 -4.248,0 -7.7,-3.45 -7.7,-7.7 V 156.722 c 0,-4.251 3.452,-7.699 7.7,-7.699 4.251,0 7.699,3.448 7.699,7.699 z m 25.825,0 c 0,4.249 -3.448,7.7 -7.699,7.7 -4.248,0 -7.7,-3.45 -7.7,-7.7 V 156.722 c 0,-4.251 3.452,-7.699 7.7,-7.699 4.251,0 7.699,3.448 7.699,7.699 z m 71.063,2.5326 c 0,2.759 -2.239,4.998 -4.999,4.998 h -50.637 c -2.763,0 -5.002,-2.239 -5.002,-4.998 v -74.115 c 0,-2.76 2.239,-5 5.002,-5 h 50.637 c 2.759,0 4.999,2.241 4.999,5 z m 63.44667,4.20404 -49.65167,0.429 c -2.763,0 -5.002,-2.239 -5.002,-4.998 v -74.115 c 0,-2.76 2.239,-5 5.002,-5 h 46.186 c 2.759,0 4.646,1.776 4.999,5 l 3.06467,73.731 c 0.1204,2.89667 -1.838,4.953 -4.598,4.953 z"
+   id="path4-2"
+   sodipodi:nodetypes="cscccssssccsccsssssssssssssssssssssssccsssscsc" />
+</g>
+
+
+</g><g
+   id="g28"
+   inkscape:label="SB"
+   transform="translate(116.02746,225.04345)"
+   inkscape:export-filename="Schw-B.png"
+   inkscape:export-xdpi="508.00003"
+   inkscape:export-ydpi="508.00003"><rect
+   style="fill:#014e8d;fill-opacity:1;stroke-width:0.255315;stroke-linecap:round"
+   id="rect23"
+   width="10"
+   height="10"
+   x="228.14343"
+   y="36.725197"
+   rx="1.5"
+   ry="1.5"
+   inkscape:export-filename="rect2016.png"
+   inkscape:export-xdpi="325.12"
+   inkscape:export-ydpi="325.12" />
+
+
+<g
+   id="content-5-0"
+   transform="matrix(0.02916679,0,0,0.02916679,227.31009,35.88761)"
+   style="fill:#ffffff">
+	
+	<path
+   fill="#ffffff"
+   d="m 84.999,268.597 c 0.41,0 0.816,-0.052 1.212,-0.152 v 0 l 230.001,-57.498 c 2.226,-0.555 3.786,-2.556 3.786,-4.851 V 91.288 c 0,-6.073 -4.926,-11 -10.997,-11 -0.92,0 -1.833,0.114 -2.722,0.341 v 0 L 88.28,136.233 C 83.409,137.477 80,141.866 80,146.892 v 116.703 c 0,2.76 2.239,5.002 4.999,5.002 z M 262.5,107.002 c 0,-2.76 2.239,-4.999 4.999,-4.999 h 37.499 c 2.763,0 5.003,2.239 5.003,4.999 v 60 c 0,2.759 -2.239,4.998 -5.003,4.998 H 267.5 c -2.76,0 -4.999,-2.239 -4.999,-4.998 v -60 z m -57.498,14.686 c 0,-2.76 2.239,-5.002 4.999,-5.002 h 37.5 c 2.76,0 4.999,2.243 4.999,5.002 v 60 c 0,2.76 -2.239,4.999 -4.999,4.999 h -37.5 c -2.759,0 -4.999,-2.239 -4.999,-4.999 z m -57.503,14.645 c 0,-2.759 2.239,-5.002 5.001,-5.002 h 37.501 c 2.76,0 4.999,2.243 4.999,5.002 v 60 c 0,2.76 -2.239,4.999 -4.999,4.999 H 152.5 c -2.761,0 -5.001,-2.239 -5.001,-4.999 z m -57.5,14.669 c 0,-2.76 2.24,-5.002 4.999,-5.002 h 37.5 c 2.761,0 5.003,2.243 5.003,5.002 v 59.996 c 0,2.759 -2.241,5.002 -5.003,5.002 h -37.5 c -2.759,0 -4.999,-2.243 -4.999,-5.002 z"
+   id="path2512-9"
+   style="fill:#ffffff" />
+	<polygon
+   fill="#ffffff"
+   points="80,309.69 80,320.002 319.999,260.002 319.999,249.69 "
+   id="polygon2514-3"
+   style="fill:#ffffff" />
+	<path
+   fill="#ffffff"
+   d="m 135.713,271.98 c 0,8.003 6.498,14.501 14.501,14.501 8.005,0 14.501,-6.498 14.501,-14.501 0,-8.006 -6.496,-14.5 -14.501,-14.5 -8.003,0 -14.501,6.494 -14.501,14.5 z"
+   id="path2516-6"
+   style="fill:#ffffff" />
+	<path
+   fill="#ffffff"
+   d="m 99.643,281.751 c 0,8.006 6.498,14.5 14.501,14.5 8.005,0 14.5,-6.494 14.5,-14.5 0,-8.003 -6.496,-14.497 -14.5,-14.497 -8.003,-0.001 -14.501,6.494 -14.501,14.497 z"
+   id="path2518-0"
+   style="fill:#ffffff" />
+	<path
+   fill="#ffffff"
+   d="m 234.908,247.172 c 0,8.006 6.494,14.501 14.501,14.501 8.002,0 14.499,-6.494 14.499,-14.501 0,-8.003 -6.498,-14.501 -14.499,-14.501 -8.007,0 -14.501,6.498 -14.501,14.501 z"
+   id="path2520-6"
+   style="fill:#ffffff" />
+	<path
+   fill="#ffffff"
+   d="m 271.729,238.149 c 0,8.006 6.494,14.504 14.501,14.504 8.003,0 14.499,-6.497 14.499,-14.504 0,-7.999 -6.497,-14.497 -14.499,-14.497 -8.007,0 -14.501,6.498 -14.501,14.497 z"
+   id="path2522-2"
+   style="fill:#ffffff" />
+</g></g><g
+   id="g30"
+   inkscape:label="M"
+   inkscape:export-filename="./U.png"
+   inkscape:export-xdpi="325.12"
+   inkscape:export-ydpi="325.12"
+   transform="translate(181.98229,51.948928)"><rect
+     style="fill:#014e8d;fill-opacity:1;stroke-width:0.255315;stroke-linecap:round"
+     id="rect28"
+     width="10"
+     height="10"
+     x="175.74274"
+     y="210.13217"
+     rx="1.5"
+     ry="1.5"
+     inkscape:export-filename="rect2016.png"
+     inkscape:export-xdpi="325.12"
+     inkscape:export-ydpi="325.12" /><text
+     xml:space="preserve"
+     style="font-size:8.81944px;line-height:1.25;font-family:'Concourse OT';-inkscape-font-specification:'Concourse OT, Normal';font-variant-ligatures:none;fill:#ffffff;stroke-width:0.426296"
+     x="176.90628"
+     y="218.13078"
+     id="text28"><tspan
+       sodipodi:role="line"
+       id="tspan28"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:8.81944px;font-family:'Concourse OT';-inkscape-font-specification:'Concourse OT Bold';fill:#ffffff;fill-opacity:1;stroke-width:0.426296"
+       x="176.90628"
+       y="218.13078">M</tspan></text></g></g></svg>
