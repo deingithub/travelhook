@@ -29,6 +29,10 @@ from .helpers import (
 from .format import get_network
 from . import oebb_wr
 
+import requests
+from bs4 import BeautifulSoup
+import re
+
 DB = None
 
 
@@ -653,6 +657,129 @@ class Trip:
                 ),
             ).fetchone()["newpatch"]
             self.write_patch(json.loads(newpatch))
+
+    def get_vagonweb_composition(self):
+        if "composition" in self.status:
+            return
+        if not self.status["train"]["no"]:
+            return
+        vagonweboperatorcode = None
+        if self.hafas_data["operator"] == "ARRIVA vlaky":
+            vagonweboperatorcode = "ARV"
+        elif self.hafas_data["operator"] == "Regiojet a.s.":
+            vagonweboperatorcode = "RJ"
+        elif self.hafas_data["operator"] == "GW Train Regio":
+            vagonweboperatorcode = "GWTR"
+        elif self.hafas_data["operator"] == "Leo Express Tenders s.r.o":
+            vagonweboperatorcode = "LE"
+        elif self.hafas_data["operator"] == "GySEV":
+            vagonweboperatorcode = "GySEV"
+        elif (
+            self.hafas_data["operator"]
+            == "Bulgarische Staatsbahnen Balgarski Darzavni Zeleznici"
+        ):
+            vagonweboperatorcode = "BDŽ"
+        elif self.hafas_data["operator"] == "Dänische Staatsbahnen":
+            vagonweboperatorcode = "DSB"
+        elif self.hafas_data["operator"] == "SJ":
+            vagonweboperatorcode = "SJ"
+        elif self.hafas_data["operator"] == "VR":
+            vagonweboperatorcode = "VR"
+        elif self.hafas_data["operator"] == "Koleje Mazowieckie":
+            vagonweboperatorcode = "KM"
+        elif self.hafas_data["operator"] == "Koleje Slaskie":
+            vagonweboperatorcode = "KŚ"
+        elif self.hafas_data["operator"] == "SKPL Cargo Sp. z o. o.":
+            vagonweboperatorcode = "SKPL"
+        elif self.hafas_data["operator"] == "Polregio":
+            vagonweboperatorcode = "PREG"
+        elif (self.hafas_data["operator"] == "Nahreisezug") and (
+            5100000 < self.status["fromStation"]["uic"] < 5200000
+        ):
+            vagonweboperatorcode = "PKPIC"
+        elif (self.hafas_data["operator"] == "Nahreisezug") and (
+            5300000 < self.status["fromStation"]["uic"] < 5400000
+        ):
+            vagonweboperatorcode = "CFR"
+        elif (self.hafas_data["operator"] == "Nahreisezug") and (
+            5400000 < self.status["fromStation"]["uic"] < 5500000
+        ):
+            vagonweboperatorcode = "CD"
+        elif (self.hafas_data["operator"] == "Nahreisezug") and (
+            5500000 < self.status["fromStation"]["uic"] < 5600000
+        ):
+            vagonweboperatorcode = "MÁV"
+        elif (self.hafas_data["operator"] == "Nahreisezug") and (
+            5600000 < self.status["fromStation"]["uic"] < 5700000
+        ):
+            vagonweboperatorcode = "ZSSK"
+        elif (self.hafas_data["operator"] == "Nahreisezug") and (
+            7900000 < self.status["fromStation"]["uic"] < 8000000
+        ):
+            vagonweboperatorcode = "SŽ"
+
+        nr = self.status["train"]["no"]
+        year = datetime.now().year
+        url = f"https://www.vagonweb.cz/razeni/vlak.php?zeme={vagonweboperatorcode}&cislo={nr}&rok={year}&lang=de"
+
+        # Vagonweb / vaz hosting blocks python-requests user agent
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+        }
+
+        try:
+            res = requests.get(url, headers=headers)
+            soup = BeautifulSoup(res.content, "html.parser")
+            plan_nodes = soup.select("#planovane_razeni table")
+        except:
+            print(f"vagonweb request broke")
+            traceback.print_exc()
+            return
+        if plan_nodes:
+            try:
+                carriage_nodes = plan_nodes[0].select(
+                    "td.bunka_vozu a", title=re.compile(r"^Züge mit Wagen:")
+                )
+                if carriage_nodes:
+                    carriages = []
+                    composition = []
+                    same_type_counter = [0, ""]
+                    for node in carriage_nodes:
+                        if "Züge mit Wagen:" in node["title"]:
+                            wagentyp = node["title"].replace("Züge mit Wagen: ", "")
+                            carriages.append(wagentyp)
+                            if same_type_counter[1] == wagentyp:
+                                same_type_counter[0] += 1
+                            else:
+                                if same_type_counter[0] == 1:
+                                    composition.append(same_type_counter[1])
+                                elif same_type_counter[0]:
+                                    composition.append(
+                                        f"{same_type_counter[0]}x {same_type_counter[1]}"
+                                    )
+                                same_type_counter = [1, wagentyp]
+                    if same_type_counter[0] == 1:
+                        composition.append(same_type_counter[1])
+                    elif same_type_counter[0]:
+                        composition.append(
+                            f"{same_type_counter[0]}x {same_type_counter[1]}"
+                        )
+                    composition_text = " + ".join(composition)
+                link = Link.make(url)
+                newpatch = DB.execute(
+                    "SELECT json_patch(?,?) AS newpatch",
+                    (
+                        json.dumps(
+                            {
+                                "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
+                            }
+                        ),
+                        json.dumps(self.status_patch),
+                    ),
+                ).fetchone()["newpatch"]
+                self.write_patch(json.loads(newpatch))
+            except:
+                print("vagonweb parsing went wrong")
 
     async def get_oebb_composition(self):
         if "composition" in self.status:
