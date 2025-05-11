@@ -426,8 +426,6 @@ class Trip:
             headsign = departureboard_entry["direction"]
             if (not headsign) and (route := status.get("route")):
                 headsign = route[-1]["name"]
-            if hs := self.maybe_fix_rnv_5(headsign):
-                headsign = hs
 
             status.update(
                 line=departureboard_entry["line"],
@@ -513,36 +511,10 @@ class Trip:
             )
         return "?"
 
-    def maybe_fix_rnv_5(self, headsign):
-        "try to detect which way the line 5 in mannheim is going"
-        if not (
-            get_network(self.status) == "RNV" and self.status["train"]["line"] == "5"
-        ) or not self.hafas_data.get("route"):
-            return
-        stops = [stop["name"] for stop in self.hafas_data["route"]]
-
-        def next_stop(a, b):
-            if (i := stops.index(a)) and i < len(stops):
-                return stops[i + 1] == b
-
-        if (
-            next_stop("Hauptbahnhof, Mannheim", "Kunsthalle, Mannheim")
-            or next_stop("Hauptbahnhof, Weinheim", "Alter OEG-Bahnhof, Weinheim")
-            or next_stop("Hauptbahnhof, Heidelberg", "Gneisenaustraße Süd, Heidelberg")
-        ):
-            # mannheim→weinheim
-            return f"{headsign} ↻"
-        elif (
-            next_stop("Hauptbahnhof, Mannheim", "Universität, Mannheim")
-            or next_stop("Hauptbahnhof, Weinheim", "Händelstraße, Weinheim")
-            or next_stop("Hauptbahnhof, Heidelberg", "Stadtwerke, Heidelberg")
-        ):
-            # mannheim→heidelberg
-            return f"{headsign} ↺"
-
     def get_db_composition(self):
-        if "composition" in self.status:
+        if "composition" in self.status or "failedcomposition-db" in self.status:
             return
+
         if not self.status["train"]["no"]:
             return
         if not self.status["fromStation"]["uic"] or not (
@@ -567,7 +539,17 @@ class Trip:
             print(f"db_wr perl broke:\n{db_wr.stdout} {db_wr.stderr}")
             traceback.print_exc()
 
-        if "error_string" in status:
+        if status.get("error_string") == "404 Not Found":
+            newpatch = DB.execute(
+                "SELECT json_patch(?,?) AS newpatch",
+                (
+                    '{"failedcomposition-db": true}',
+                    json.dumps(self.status_patch),
+                ),
+            ).fetchone()["newpatch"]
+            self.write_patch(json.loads(newpatch))
+            return
+        elif "error_string" in status:
             print(f"db_wr perl broke:\n{status}")
             return
 
