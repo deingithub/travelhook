@@ -104,16 +104,6 @@ def get_network(status):
     if haversine((lat, lon), (48.21, 16.39)) < 70:
         return "SWien"
 
-    # network CZ: regional trains in czechia
-    if (
-        status["train"]["type"] == "U"
-        and (
-            5400000 < status["fromStation"]["uic"] < 5500000
-            or 5400000 < status["toStation"]["uic"] < 5500000
-        )
-        and not any(status["fromStation"]["name"].endswith(suffix) for suffix in ("(M)", "(M-A)", "(M-B)", "(M-C)"))
-    ):
-        return "CZ"
 
     # network AT: austrian trains
     if (
