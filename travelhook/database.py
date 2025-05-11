@@ -661,66 +661,47 @@ class Trip:
     def get_vagonweb_composition(self):
         if "composition" in self.status:
             return
-        if not self.status["train"]["no"]:
+        if not self.status["train"]["no"] or not "operator" in self.hafas_data:
             return
-        vagonweboperatorcode = None
-        if self.hafas_data["operator"] == "ARRIVA vlaky":
-            vagonweboperatorcode = "ARV"
-        elif self.hafas_data["operator"] == "Regiojet a.s.":
-            vagonweboperatorcode = "RJ"
-        elif self.hafas_data["operator"] == "GW Train Regio":
-            vagonweboperatorcode = "GWTR"
-        elif self.hafas_data["operator"] == "Leo Express Tenders s.r.o":
-            vagonweboperatorcode = "LE"
-        elif self.hafas_data["operator"] == "GySEV":
-            vagonweboperatorcode = "GySEV"
-        elif (
-            self.hafas_data["operator"]
-            == "Bulgarische Staatsbahnen Balgarski Darzavni Zeleznici"
-        ):
-            vagonweboperatorcode = "BDŽ"
-        elif self.hafas_data["operator"] == "Dänische Staatsbahnen":
-            vagonweboperatorcode = "DSB"
-        elif self.hafas_data["operator"] == "SJ":
-            vagonweboperatorcode = "SJ"
-        elif self.hafas_data["operator"] == "VR":
-            vagonweboperatorcode = "VR"
-        elif self.hafas_data["operator"] == "Koleje Mazowieckie":
-            vagonweboperatorcode = "KM"
-        elif self.hafas_data["operator"] == "Koleje Slaskie":
-            vagonweboperatorcode = "KŚ"
-        elif self.hafas_data["operator"] == "SKPL Cargo Sp. z o. o.":
-            vagonweboperatorcode = "SKPL"
-        elif self.hafas_data["operator"] == "Polregio":
-            vagonweboperatorcode = "PREG"
-        elif (self.hafas_data["operator"] == "Nahreisezug") and (
-            5100000 < self.status["fromStation"]["uic"] < 5200000
-        ):
-            vagonweboperatorcode = "PKPIC"
-        elif (self.hafas_data["operator"] == "Nahreisezug") and (
-            5300000 < self.status["fromStation"]["uic"] < 5400000
-        ):
-            vagonweboperatorcode = "CFR"
-        elif (self.hafas_data["operator"] == "Nahreisezug") and (
-            5400000 < self.status["fromStation"]["uic"] < 5500000
-        ):
-            vagonweboperatorcode = "CD"
-        elif (self.hafas_data["operator"] == "Nahreisezug") and (
-            5500000 < self.status["fromStation"]["uic"] < 5600000
-        ):
-            vagonweboperatorcode = "MÁV"
-        elif (self.hafas_data["operator"] == "Nahreisezug") and (
-            5600000 < self.status["fromStation"]["uic"] < 5700000
-        ):
-            vagonweboperatorcode = "ZSSK"
-        elif (self.hafas_data["operator"] == "Nahreisezug") and (
-            7900000 < self.status["fromStation"]["uic"] < 8000000
-        ):
-            vagonweboperatorcode = "SŽ"
+        vagonweb_operatorcode = None
+        vagonweb_operatorcodes = {
+            "ARRIVA vlaky": "ARV",
+            "Regiojet a.s.": "RJ",
+            "GW Train Regio": "GWTR",
+            "Leo Express Tenders s.r.o": "LE",
+            "GySEV": "GySEV",
+            "Bulgarische Staatsbahnen Balgarski Darzavni Zeleznici": "BDŽ",
+            "Dänische Staatsbahnen": "DSB",
+            "SJ": "SJ",
+            "VR": "VR",
+            "Koleje Mazowieckie": "KM",
+            "Koleje Slaskie": "KŚ",
+            "SKPL Cargo Sp. z o. o.": "SKPL",
+            "Polregio": "PREG",
+        }
+        if self.hafas_data.get("operator") in vagonweb_operatorcodes:
+            vagonweb_operatorcode = vagonweb_operatorcodes.get(
+                self.hafas_data["operator"]
+            )
+        elif self.hafas_data.get("operator") == "Nahreisezug":
+            if 5100000 < self.status["fromStation"]["uic"] < 5200000:
+                vagonweb_operatorcode = "PKPIC"
+            elif 5300000 < self.status["fromStation"]["uic"] < 5400000:
+                vagonweb_operatorcode = "CFR"
+            elif 5400000 < self.status["fromStation"]["uic"] < 5500000:
+                vagonweb_operatorcode = "CD"
+            elif 5500000 < self.status["fromStation"]["uic"] < 5600000:
+                vagonweb_operatorcode = "MÁV"
+            elif 5600000 < self.status["fromStation"]["uic"] < 5700000:
+                vagonweb_operatorcode = "ZSSK"
+            elif 7900000 < self.status["fromStation"]["uic"] < 8000000:
+                vagonweb_operatorcode = "SŽ"
+        else:
+            return
 
         nr = self.status["train"]["no"]
         year = datetime.now().year
-        url = f"https://www.vagonweb.cz/razeni/vlak.php?zeme={vagonweboperatorcode}&cislo={nr}&rok={year}&lang=de"
+        url = f"https://www.vagonweb.cz/razeni/vlak.php?zeme={vagonweb_operatorcode}&cislo={nr}&rok={year}&lang=de"
 
         # Vagonweb / vaz hosting blocks python-requests user agent
         headers = {
@@ -734,6 +715,14 @@ class Trip:
         except:
             print(f"vagonweb request broke")
             traceback.print_exc()
+            newpatch = DB.execute(
+                "SELECT json_patch(?,?) AS newpatch",
+                (
+                    '{"failedcomposition-db": true}',
+                    json.dumps(self.status_patch),
+                ),
+            ).fetchone()["newpatch"]
+            self.write_patch(json.loads(newpatch))
             return
         if plan_nodes:
             try:
@@ -780,6 +769,15 @@ class Trip:
                 self.write_patch(json.loads(newpatch))
             except:
                 print("vagonweb parsing went wrong")
+                traceback.print_exc()
+                newpatch = DB.execute(
+                    "SELECT json_patch(?,?) AS newpatch",
+                    (
+                        '{"failedcomposition-db": true}',
+                        json.dumps(self.status_patch),
+                    ),
+                ).fetchone()["newpatch"]
+                self.write_patch(json.loads(newpatch))
 
     async def get_oebb_composition(self):
         if "composition" in self.status:
