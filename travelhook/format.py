@@ -104,7 +104,6 @@ def get_network(status):
     if haversine((lat, lon), (48.21, 16.39)) < 70:
         return "SWien"
 
-
     # network AT: austrian trains
     if (
         8100000 < status["fromStation"]["uic"] < 8200000
@@ -275,6 +274,9 @@ def get_display(bot, status):
     if status["backend"]["name"] == "BLS":
         bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}
         type = bls_replace_train_types.get(type, type)
+        if type == "SN":
+            type = "S"
+            line = f"N{line}"
 
     # fix "RB RB38", "U U8", … in a lot of regional HAFASes
     if line and line.startswith(type):

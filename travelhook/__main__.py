@@ -1487,7 +1487,12 @@ async def train_variants(ia):
                 )
                 if len(types) != len(buses):
                     description += "\n"
-            if trams := [type for type in types if type.get("type") == "STR"]:
+            if trams := [
+                type
+                for type in types
+                if type.get("type") == "STR"
+                and not type.get("line", "").startswith("NL")
+            ]:
                 emojis = [
                     emoji(bot, tt) if i == 0 else "<" + (emoji(bot, tt).split("><")[1])
                     for i, tt in enumerate(trams)
