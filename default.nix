@@ -146,7 +146,7 @@ in python310Packages.buildPythonPackage {
   '';
 
   propagatedBuildInputs =
-    (with python310Packages; [ discordpy setuptools haversine tomli tomli-w requests beautifulsoup4 ])
+    (with python310Packages; [ discordpy setuptools haversine tomli tomli-w beautifulsoup4 ])
     ++ [ perl perlPackages.JSON hafas-m dbris-m ];
   format = "pyproject";
 }

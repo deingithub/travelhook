@@ -1,6 +1,7 @@
 # pylint: disable=missing-function-docstring
 "contains and encapsulates database accesses"
 import asyncio
+import aiohttp
 import collections
 import json
 import sqlite3
@@ -29,7 +30,6 @@ from .helpers import (
 from .format import get_network
 from . import oebb_wr
 
-import requests
 from bs4 import BeautifulSoup
 import re
 
@@ -658,7 +658,7 @@ class Trip:
             ).fetchone()["newpatch"]
             self.write_patch(json.loads(newpatch))
 
-    def get_vagonweb_composition(self):
+    async def get_vagonweb_composition(self):
         if "composition" in self.status:
             return
         if not self.status["train"]["no"] or not "operator" in self.hafas_data:
@@ -709,8 +709,9 @@ class Trip:
         }
 
         try:
-            res = requests.get(url, headers=headers)
-            soup = BeautifulSoup(res.content, "html.parser")
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as response:
+                    soup = BeautifulSoup(await response.text(), "html.parser")
             plan_nodes = soup.select("#planovane_razeni table")
         except:
             print(f"vagonweb request broke")
