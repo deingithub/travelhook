@@ -659,7 +659,7 @@ class Trip:
             self.write_patch(json.loads(newpatch))
 
     async def get_vagonweb_composition(self):
-        if "composition" in self.status:
+        if "composition" in self.status or "failedcomposition-vagonweb" in self.status:
             return
         if not self.status["train"]["no"] or not "operator" in self.hafas_data:
             return
@@ -719,7 +719,7 @@ class Trip:
             newpatch = DB.execute(
                 "SELECT json_patch(?,?) AS newpatch",
                 (
-                    '{"failedcomposition-db": true}',
+                    '{"failedcomposition-vagonweb": true}',
                     json.dumps(self.status_patch),
                 ),
             ).fetchone()["newpatch"]
@@ -774,7 +774,7 @@ class Trip:
                 newpatch = DB.execute(
                     "SELECT json_patch(?,?) AS newpatch",
                     (
-                        '{"failedcomposition-db": true}',
+                        '{"failedcomposition-vagonweb": true}',
                         json.dumps(self.status_patch),
                     ),
                 ).fetchone()["newpatch"]
