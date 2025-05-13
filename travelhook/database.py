@@ -645,7 +645,7 @@ class Trip:
             return
         if not self.status["train"]["no"] or not "operator" in self.hafas_data:
             return
-        vagonweb_operatorcode = None
+
         vagonweb_operatorcodes = {
             "ARRIVA vlaky": "ARV",
             "Regiojet a.s.": "RJ",
@@ -661,11 +661,8 @@ class Trip:
             "SKPL Cargo Sp. z o. o.": "SKPL",
             "Polregio": "PREG",
         }
-        if self.hafas_data.get("operator") in vagonweb_operatorcodes:
-            vagonweb_operatorcode = vagonweb_operatorcodes.get(
-                self.hafas_data["operator"]
-            )
-        elif self.hafas_data.get("operator") == "Nahreisezug":
+        vagonweb_operatorcode = vagonweb_operatorcodes.get(self.hafas_data["operator"])
+        if not vagonweb_operatorcode and self.hafas_data["operator"] == "Nahreisezug":
             if 5100000 < self.status["fromStation"]["uic"] < 5200000:
                 vagonweb_operatorcode = "PKPIC"
             elif 5300000 < self.status["fromStation"]["uic"] < 5400000:
@@ -678,7 +675,8 @@ class Trip:
                 vagonweb_operatorcode = "ZSSK"
             elif 7900000 < self.status["fromStation"]["uic"] < 8000000:
                 vagonweb_operatorcode = "SŽ"
-        else:
+
+        if not vagonweb_operatorcode:
             return
 
         nr = self.status["train"]["no"]
@@ -736,7 +734,9 @@ class Trip:
                         composition.append(
                             f"{same_type_counter[0]}x {same_type_counter[1]}"
                         )
-                    composition_text = " + ".join(composition)
+                    composition_text = " + ".join(
+                        [format_composition_element(unit) for unit in composition]
+                    )
                 link = Link.make(url)
                 newpatch = DB.execute(
                     "SELECT json_patch(?,?) AS newpatch",
