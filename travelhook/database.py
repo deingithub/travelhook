@@ -1,6 +1,7 @@
 # pylint: disable=missing-function-docstring
 "contains and encapsulates database accesses"
 import asyncio
+import aiohttp
 import collections
 import json
 import sqlite3
@@ -28,6 +29,9 @@ from .helpers import (
 )
 from .format import get_network
 from . import oebb_wr
+
+from bs4 import BeautifulSoup
+import re
 
 DB = None
 
@@ -635,6 +639,128 @@ class Trip:
                 ),
             ).fetchone()["newpatch"]
             self.write_patch(json.loads(newpatch))
+
+    async def get_vagonweb_composition(self):
+        if "composition" in self.status or "failedcomposition-vagonweb" in self.status:
+            return
+        if not self.status["train"]["no"] or not "operator" in self.hafas_data:
+            return
+
+        vagonweb_operatorcodes = {
+            "ARRIVA vlaky": "ARV",
+            "Regiojet a.s.": "RJ",
+            "GW Train Regio": "GWTR",
+            "Leo Express Tenders s.r.o": "LE",
+            "GySEV": "GySEV",
+            "Bulgarische Staatsbahnen Balgarski Darzavni Zeleznici": "BDŽ",
+            "Dänische Staatsbahnen": "DSB",
+            "SJ": "SJ",
+            "VR": "VR",
+            "Koleje Mazowieckie": "KM",
+            "Koleje Slaskie": "KŚ",
+            "SKPL Cargo Sp. z o. o.": "SKPL",
+            "Polregio": "PREG",
+        }
+        vagonweb_operatorcode = vagonweb_operatorcodes.get(self.hafas_data["operator"])
+        if not vagonweb_operatorcode and self.hafas_data["operator"] == "Nahreisezug":
+            if 5100000 < self.status["fromStation"]["uic"] < 5200000:
+                vagonweb_operatorcode = "PKPIC"
+            elif 5300000 < self.status["fromStation"]["uic"] < 5400000:
+                vagonweb_operatorcode = "CFR"
+            elif 5400000 < self.status["fromStation"]["uic"] < 5500000:
+                vagonweb_operatorcode = "CD"
+            elif 5500000 < self.status["fromStation"]["uic"] < 5600000:
+                vagonweb_operatorcode = "MÁV"
+            elif 5600000 < self.status["fromStation"]["uic"] < 5700000:
+                vagonweb_operatorcode = "ZSSK"
+            elif 7900000 < self.status["fromStation"]["uic"] < 8000000:
+                vagonweb_operatorcode = "SŽ"
+
+        if not vagonweb_operatorcode:
+            return
+
+        nr = self.status["train"]["no"]
+        year = datetime.now().year
+        url = f"https://www.vagonweb.cz/razeni/vlak.php?zeme={vagonweb_operatorcode}&cislo={nr}&rok={year}&lang=de"
+
+        # Vagonweb / vaz hosting blocks python-requests user agent
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+        }
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as response:
+                    soup = BeautifulSoup(await response.text(), "html.parser")
+            plan_nodes = soup.select("#planovane_razeni table")
+        except:
+            print(f"vagonweb request broke")
+            traceback.print_exc()
+            newpatch = DB.execute(
+                "SELECT json_patch(?,?) AS newpatch",
+                (
+                    '{"failedcomposition-vagonweb": true}',
+                    json.dumps(self.status_patch),
+                ),
+            ).fetchone()["newpatch"]
+            self.write_patch(json.loads(newpatch))
+            return
+        if plan_nodes:
+            try:
+                carriage_nodes = plan_nodes[0].select(
+                    "td.bunka_vozu a", title=re.compile(r"^Züge mit Wagen:")
+                )
+                if carriage_nodes:
+                    carriages = []
+                    composition = []
+                    same_type_counter = [0, ""]
+                    for node in carriage_nodes:
+                        if "Züge mit Wagen:" in node["title"]:
+                            wagentyp = node["title"].replace("Züge mit Wagen: ", "")
+                            carriages.append(wagentyp)
+                            if same_type_counter[1] == wagentyp:
+                                same_type_counter[0] += 1
+                            else:
+                                if same_type_counter[0] == 1:
+                                    composition.append(same_type_counter[1])
+                                elif same_type_counter[0]:
+                                    composition.append(
+                                        f"{same_type_counter[0]}x {same_type_counter[1]}"
+                                    )
+                                same_type_counter = [1, wagentyp]
+                    if same_type_counter[0] == 1:
+                        composition.append(same_type_counter[1])
+                    elif same_type_counter[0]:
+                        composition.append(
+                            f"{same_type_counter[0]}x {same_type_counter[1]}"
+                        )
+                    composition_text = " + ".join(
+                        [format_composition_element(unit) for unit in composition]
+                    )
+                link = Link.make(url)
+                newpatch = DB.execute(
+                    "SELECT json_patch(?,?) AS newpatch",
+                    (
+                        json.dumps(
+                            {
+                                "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
+                            }
+                        ),
+                        json.dumps(self.status_patch),
+                    ),
+                ).fetchone()["newpatch"]
+                self.write_patch(json.loads(newpatch))
+            except:
+                print("vagonweb parsing went wrong")
+                traceback.print_exc()
+                newpatch = DB.execute(
+                    "SELECT json_patch(?,?) AS newpatch",
+                    (
+                        '{"failedcomposition-vagonweb": true}',
+                        json.dumps(self.status_patch),
+                    ),
+                ).fetchone()["newpatch"]
+                self.write_patch(json.loads(newpatch))
 
     async def get_oebb_composition(self):
         if "composition" in self.status:

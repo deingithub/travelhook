@@ -220,7 +220,7 @@ def format_composition_element(element):
         if numbers := match[2]:
             out += f"**{match['class']}** {match['number']} "
         if name := match["name"]:
-            out += f"_{name}_"
+            out += f"*{name}*"
         return out.strip()
 
     return element
