@@ -5,5 +5,5 @@ mkShell {
   shellHook = ''
     export PATH=.:$PATH
   '';
-  packages = [ python310Packages.black python310Packages.pylint ];
+  packages = [ python310Packages.black python310Packages.pylint sqlite ];
 }
