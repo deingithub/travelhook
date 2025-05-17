@@ -232,6 +232,10 @@ def get_display(bot, status):
 
     type = blanket_replace_train_type.get(type, type)
 
+    if get_network(status) == "DPP":
+        if not type and line in ("A", "B", "C"):
+            type = "U"
+
     if get_network(status) == "UK":
         if not type and line in (
             "Lioness",
