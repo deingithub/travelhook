@@ -29,6 +29,7 @@ from .format import (
     format_travelynx,
     get_display,
     train_types_config,
+    get_network,
 )
 from .helpers import (
     available_tzs,
@@ -1050,7 +1051,26 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
                 )
 
 
+async def composition_autocomplete(ia, current):
+    if (
+        (user := DB.User.find(ia.user.id))
+        and (trip := DB.Trip.find_last_trip_for(user.discord_id))
+        and (network := get_network(trip.status))
+    ):
+        numbers = [int(s.strip()) for s in current.split("+") if s]
+        composition_enriched = " + ".join(
+            [f"{number} {DB.Tram.find(network, number) or ''}" for number in numbers]
+        )
+        return [
+            Choice(name=current, value=current),
+            Choice(name=composition_enriched, value=composition_enriched),
+        ]
+
+    return []
+
+
 @journey.command()
+@discord.app_commands.autocomplete(composition=composition_autocomplete)
 async def composition(ia, composition: str, do_not_format: bool = False):
     "quickly add the rolling stock of your journey if it wasn't fetched automatically"
     user = DB.User.find(discord_id=ia.user.id)
@@ -2087,7 +2107,6 @@ async def cts(
         content=f"### CTS manual check-in at _{cts_name or '?'}_",
         view=view,
     )
-
 
 
 def main():

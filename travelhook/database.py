@@ -224,6 +224,28 @@ class CTSStop:
 
 
 @dataclass
+class Tram:
+    "trams in selected networks, vehicle number associated with type"
+    network: str
+    individual_number: Optional[int]
+    number_from: Optional[int]
+    number_to: Optional[int]
+    description: str
+
+    @classmethod
+    def find(cls, network, number):
+        row = DB.execute(
+            "SELECT * FROM trams WHERE network = ? "
+            "AND individual_number = ? OR (number_from <= ? AND number_to >= ?) "
+            "ORDER BY individual_number DESC LIMIT 1",
+            (network, number, number, number),
+        ).fetchone()
+        print(row)
+        if row:
+            return row["description"]
+
+
+@dataclass
 class Trip:
     "user-trips the bot knows about"
     journey_id: str
