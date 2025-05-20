@@ -1,0 +1,2 @@
+INSERT INTO trams VALUES ('KVV', 333, NULL, NULL, 'NET 2012 "Pauly"');
+INSERT INTO trams VALUES ('RNV', 1402, NULL, NULL, '🏳️‍🌈 RNT 30');
