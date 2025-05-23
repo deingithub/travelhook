@@ -236,7 +236,7 @@ class Tram:
     def find(cls, network, number):
         row = DB.execute(
             "SELECT * FROM trams WHERE network = ? "
-            "AND individual_number = ? OR (number_from <= ? AND number_to >= ?) "
+            "AND (individual_number = ? OR (number_from <= ? AND number_to >= ?)) "
             "ORDER BY individual_number DESC LIMIT 1",
             (network, number, number, number),
         ).fetchone()
