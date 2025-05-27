@@ -332,6 +332,7 @@ class Trip:
             "UPDATE trips SET status_patch=? WHERE user_id = ? AND journey_id = ?",
             (json.dumps(status_patch), self.user_id, self.journey_id),
         )
+        self.status_patch = status_patch
 
     def get_unpatched_status(self):
         """get the unpatched status, for mocking webhooks. this way we don't
@@ -661,6 +662,89 @@ class Trip:
                 ),
             ).fetchone()["newpatch"]
             self.write_patch(json.loads(newpatch))
+
+    async def get_rtt_composition(self):
+        if "composition" in self.status or "failedcomposition-rtt" in self.status:
+            return
+
+        if not self.status["train"]["line"]:
+            return
+        if not self.status["fromStation"]["uic"] or not (
+            7000000 < self.status["fromStation"]["uic"] < 7100000
+        ):
+            return
+        if not re.search(r"^[A-Z][0-9]{5}$", self.status["train"]["line"]):
+            return
+
+        year = datetime.now().year
+        month = datetime.now().strftime("%m")
+        day = datetime.now().strftime("%d")
+        line = self.status["train"]["line"]
+        url = f"https://www.realtimetrains.co.uk/service/gb-nr:{line}/{year}-{month}-{day}/detailed"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    soup = BeautifulSoup(await response.text(), "html.parser")
+                    try:
+                        plan_nodes = soup.select_one("div.allocation").getText().strip()
+                        newpatch = DB.execute(
+                            "SELECT json_patch(?,?) AS newpatch",
+                            (
+                                json.dumps({"composition": f"{plan_nodes}"}),
+                                json.dumps(self.status_patch),
+                            ),
+                        ).fetchone()["newpatch"]
+                        self.write_patch(json.loads(newpatch))
+                        print(self.status_patch)
+                    except:
+                        print("rtt: no nodes found")
+                        plan_nodes = None
+                        newpatch = DB.execute(
+                            "SELECT json_patch(?,?) AS newpatch",
+                            (
+                                '{"failedcomposition-rtt": true}',
+                                json.dumps(self.status_patch),
+                            ),
+                        ).fetchone()["newpatch"]
+                        self.write_patch(json.loads(newpatch))
+
+                    operatorheader = soup.select_one("#servicetitle .header")
+                    text_parts = list(operatorheader.stripped_strings)
+                    if "to" in text_parts:
+                        to_index = text_parts.index("to")
+                        destination = " ".join(text_parts[to_index + 1 :])
+                        self.headsign = destination
+                        DB.execute(
+                            "UPDATE trips SET headsign=? WHERE user_id = ? AND journey_id = ?",
+                            (
+                                destination,
+                                self.user_id,
+                                self.journey_id,
+                            ),
+                        )
+
+                    operator = soup.select_one("#servicetitle .toc > div").getText()
+                    newpatch = DB.execute(
+                        "SELECT json_patch(?,?) AS newpatch",
+                        (
+                            json.dumps({"operator": f"{operator}"}),
+                            json.dumps(self.status_patch),
+                        ),
+                    ).fetchone()["newpatch"]
+                    self.write_patch(json.loads(newpatch))
+                    return
+        except:
+            print(f"rtt request broke")
+            traceback.print_exc()
+            newpatch = DB.execute(
+                "SELECT json_patch(?,?) AS newpatch",
+                (
+                    '{"failedcomposition-rtt": true}',
+                    json.dumps(self.status_patch),
+                ),
+            ).fetchone()["newpatch"]
+            self.write_patch(json.loads(newpatch))
+            return
 
     async def get_vagonweb_composition(self):
         if "composition" in self.status or "failedcomposition-vagonweb" in self.status:
