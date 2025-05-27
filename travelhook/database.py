@@ -847,6 +847,110 @@ class Trip:
             ).fetchone()["newpatch"]
             self.write_patch(json.loads(newpatch))
 
+    async def get_sncf_composition(self):
+        if "composition" in self.status or "failedcomposition-sncf" in self.status:
+            return
+
+        if not self.status["train"]["no"]:
+            return
+        if not self.status["fromStation"]["uic"] or not (
+            8700000 < self.status["fromStation"]["uic"] < 8800000
+        ):
+            return
+
+        year = datetime.now().year
+        month = datetime.now().strftime("%m")
+        day = datetime.now().strftime("%d")
+
+        trainnumber = self.status["train"]["no"]
+        traindetails = ""
+
+        async def fetch_with_number(session, trainnumber):
+            url = f"https://sncfproxy.f2k1.de/get-train-details.php?dateCirculation={year}-{month}-{day}&numeroCirculation={trainnumber}"
+            try:
+                async with session.get(url) as resp:
+                    statuscode = resp.status
+                    response = await resp.text()
+                    if statuscode == 429:
+                        return "Ratelimited"
+                    if response and response != "[]":
+                        return response
+            except Exception as e:
+                print(f"Failed to fetch for train number {trainnumber}: {e}")
+            return None
+    
+        try:
+            async with aiohttp.ClientSession() as session:
+                response = await fetch_with_number(session, trainnumber)
+                if response:
+                    traindetails = response
+                elif len(trainnumber) >= 5:
+                        for prefix in ["8", "4", "1"]:
+                            new_trainnumber = prefix + trainnumber
+                            response = await fetch_with_number(session, new_trainnumber)
+                            if response:
+                                if response == "Ratelimited":
+                                    # No failedcomposition here, because it may work later
+                                    return
+                                traindetails = response
+                                trainnumber = new_trainnumber
+                                break
+        except Exception as e:
+            print("sncf request broke")
+            traceback.print_exc()
+            newpatch = DB.execute(
+                "SELECT json_patch(?,?) AS newpatch",
+                (
+                    '{"failedcomposition-sncf": true}',
+                    json.dumps(self.status_patch),
+                ),
+            ).fetchone()["newpatch"]
+            self.write_patch(json.loads(newpatch))
+        if traindetails == "Ratelimited":
+            print("SNCF API Ratelimited. We should try later")
+            return
+        if traindetails == "":
+            print("Traindetails empty")
+            return
+        traindetails = json.loads(traindetails)
+        first_stop = traindetails[0]["stops"]["stops"][0]["location"]["code"]
+        last_stop = traindetails[0]["stops"]["stops"][len(traindetails[0]["stops"]["stops"])-1]["location"]["code"]
+
+        payload = {"date": f"{year}-{month}-{day}", "destination": last_stop, "number": trainnumber, "origin": first_stop}
+        headers = {
+            'x-bff-key': 'ah1MPO-izehIHD-QZZ9y88n-kku876',
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0',
+            'Content-Type': 'application/json'
+        }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post('https://www.sncf-connect.com/bff/api/v1/vehicle/detail',
+                        json=payload, headers=headers) as resp:
+                    antwort = json.loads(await resp.text())
+                    if antwort != "":
+                        newpatch = DB.execute(
+                        "SELECT json_patch(?,?) AS newpatch",
+                        (
+                            json.dumps(
+                                {
+                                    "composition": antwort["composition"]["vehiclesCompositionLabel"]
+                                }
+                            ),
+                            json.dumps(self.status_patch),
+                        ),
+                    ).fetchone()["newpatch"]
+                    self.write_patch(json.loads(newpatch))
+        except Exception as e:
+            print("sncf request broke")
+            traceback.print_exc()
+            newpatch = DB.execute(
+                "SELECT json_patch(?,?) AS newpatch",
+                (
+                    '{"failedcomposition-sncf": true}',
+                    json.dumps(self.status_patch),
+                ),
+            ).fetchone()["newpatch"]
+            self.write_patch(json.loads(newpatch))
 
 @dataclass
 class Message:

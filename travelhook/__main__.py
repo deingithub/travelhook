@@ -139,6 +139,7 @@ async def handle_status_update(userid, reason, status):
     await trip.get_oebb_composition()
     trip.get_db_composition()
     await trip.get_vagonweb_composition()
+    await trip.get_sncf_composition()
 
 
 async def receive(bot):
