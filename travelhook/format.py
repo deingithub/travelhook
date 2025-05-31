@@ -312,7 +312,7 @@ def get_display(bot, status):
         ):
             if "remove_line_startswith" in tt:
                 line = line.removeprefix(tt["line_startswith"])
-            if "fallback" in tt:
+            if "fallback" in tt and not type == "NationalRail":
                 line = f"{type}{(' '+ line) if line else ''}"
 
             # { emoji = "ica,ic1", color = "#ff0404", hide_line_number = true, always_show_train_number = true }
@@ -765,7 +765,7 @@ def sillies(bot, trips, embed):
         )
 
     if (not trips[-1].hafas_data) and trips[-1].status["backend"]["id"] >= 0:
-        embed = embed.set_thumbnail(url="https://i.imgur.com/6pB5Kc6.png")
+        # embed = embed.set_thumbnail(url="https://i.imgur.com/6pB5Kc6.png")
         embed.description += "\n-# **» ?**: hafas broke, try to update"
 
     status = trips[-1].status
