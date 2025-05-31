@@ -42,6 +42,22 @@ def connect(path):
     DB.row_factory = sqlite3.Row
 
 
+def json_patch_dicts(patch, old_dict):
+    return json.loads(
+        DB.execute(
+            "SELECT json_patch(?,?) AS newpatch",
+            (
+                json.dumps(patch),
+                json.dumps(old_dict),
+            ),
+        ).fetchone()["newpatch"]
+    )
+
+
+re_british_train_no = re.compile(r"[A-Z]\d{5}$")
+re_british_class_numbers = re.compile(r"(\d{3})(\d{3})")
+
+
 @dataclass
 class Server:
     "servers the bot is enabled on"
@@ -334,6 +350,10 @@ class Trip:
         )
         self.status_patch = status_patch
 
+    def patch_patch(self, patch):
+        "directly patch our status patch with a new patch"
+        self.write_patch(json_patch_dicts(patch, self.status_patch))
+
     def get_unpatched_status(self):
         """get the unpatched status, for mocking webhooks. this way we don't
         accidentally destructively commit the user's edits as the actual status."""
@@ -563,14 +583,7 @@ class Trip:
             traceback.print_exc()
 
         if status.get("error_string") == "404 Not Found":
-            newpatch = DB.execute(
-                "SELECT json_patch(?,?) AS newpatch",
-                (
-                    '{"failedcomposition-db": true}',
-                    json.dumps(self.status_patch),
-                ),
-            ).fetchone()["newpatch"]
-            self.write_patch(json.loads(newpatch))
+            self.patch_patch({"failedcomposition-db": True})
             return
         elif "error_string" in status:
             print(f"db_wr perl broke:\n{status}")
@@ -650,100 +663,55 @@ class Trip:
                 f"&evaNumber={self.status['fromStation']['uic']}&date={departure:%Y-%m-%d}"
                 f"&time={departure.isoformat()}Z"
             )
-            newpatch = DB.execute(
-                "SELECT json_patch(?,?) AS newpatch",
-                (
-                    json.dumps(
-                        {
-                            "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
-                        }
-                    ),
-                    json.dumps(self.status_patch),
-                ),
-            ).fetchone()["newpatch"]
-            self.write_patch(json.loads(newpatch))
+            self.patch_patch(
+                {
+                    "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
+                }
+            )
 
     async def get_rtt_composition(self):
         if "composition" in self.status or "failedcomposition-rtt" in self.status:
             return
 
-        if not self.status["train"]["line"]:
+        if not (7000000 < (self.status["fromStation"]["uic"] or 0) < 7100000):
             return
-        if not self.status["fromStation"]["uic"] or not (
-            7000000 < self.status["fromStation"]["uic"] < 7100000
-        ):
-            return
-        if not re.search(r"^[A-Z][0-9]{5}$", self.status["train"]["line"]):
+        if not re_british_train_no.match(self.status["train"]["line"] or ""):
             return
 
-        year = datetime.now().year
-        month = datetime.now().strftime("%m")
-        day = datetime.now().strftime("%d")
-        line = self.status["train"]["line"]
-        url = f"https://www.realtimetrains.co.uk/service/gb-nr:{line}/{year}-{month}-{day}/detailed"
+        now = datetime.now(tz=User.find(discord_id=self.user_id).get_timezone())
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
+                async with session.get(
+                    "https://www.realtimetrains.co.uk/service/gb-nr:"
+                    f"{self.status['train']['line']}/{now:%Y-%m-%d}/detailed"
+                ) as response:
+                    apply_patch = {"network": "UK"}
                     soup = BeautifulSoup(await response.text(), "html.parser")
                     try:
                         plan_nodes = soup.select_one("div.allocation").getText().strip()
-                        newpatch = DB.execute(
-                            "SELECT json_patch(?,?) AS newpatch",
-                            (
-                                json.dumps({"composition": f"{plan_nodes}"}),
-                                json.dumps(self.status_patch),
-                            ),
-                        ).fetchone()["newpatch"]
-                        self.write_patch(json.loads(newpatch))
-                        print(self.status_patch)
+                        plan_nodes = re_british_class_numbers.sub(r"\1 \2", plan_nodes)
+                        plan_nodes = plan_nodes.split("+")
+                        plan_nodes = " + ".join(
+                            format_composition_element(node) for node in plan_nodes
+                        )
+                        apply_patch["composition"] = plan_nodes
                     except:
                         print("rtt: no nodes found")
-                        plan_nodes = None
-                        newpatch = DB.execute(
-                            "SELECT json_patch(?,?) AS newpatch",
-                            (
-                                '{"failedcomposition-rtt": true}',
-                                json.dumps(self.status_patch),
-                            ),
-                        ).fetchone()["newpatch"]
-                        self.write_patch(json.loads(newpatch))
-
+                        traceback.print_exc()
+                        apply_patch["failedcomposition-rtt"] = True
                     operatorheader = soup.select_one("#servicetitle .header")
-                    text_parts = list(operatorheader.stripped_strings)
-                    if "to" in text_parts:
-                        to_index = text_parts.index("to")
-                        destination = " ".join(text_parts[to_index + 1 :])
-                        self.headsign = destination
-                        DB.execute(
-                            "UPDATE trips SET headsign=? WHERE user_id = ? AND journey_id = ?",
-                            (
-                                destination,
-                                self.user_id,
-                                self.journey_id,
-                            ),
-                        )
-
-                    operator = soup.select_one("#servicetitle .toc > div").getText()
-                    newpatch = DB.execute(
-                        "SELECT json_patch(?,?) AS newpatch",
-                        (
-                            json.dumps({"operator": f"{operator}"}),
-                            json.dumps(self.status_patch),
-                        ),
-                    ).fetchone()["newpatch"]
-                    self.write_patch(json.loads(newpatch))
-                    return
+                    destination_text = " ".join(operatorheader.stripped_strings)
+                    if "to" in destination_text:
+                        destination = destination_text.split("to")[-1].strip()
+                        apply_patch["train"] = {"fakeheadsign": destination}
+                    apply_patch["operator"] = soup.select_one(
+                        "#servicetitle .toc > div"
+                    ).getText()
+                    self.patch_patch(apply_patch)
         except:
             print(f"rtt request broke")
             traceback.print_exc()
-            newpatch = DB.execute(
-                "SELECT json_patch(?,?) AS newpatch",
-                (
-                    '{"failedcomposition-rtt": true}',
-                    json.dumps(self.status_patch),
-                ),
-            ).fetchone()["newpatch"]
-            self.write_patch(json.loads(newpatch))
+            self.patch_patch({"failedcomposition-rtt": True})
             return
 
     async def get_vagonweb_composition(self):
@@ -791,7 +759,8 @@ class Trip:
 
         # Vagonweb / vaz hosting blocks python-requests user agent
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36",
+            "Referer": url,
         }
 
         try:
@@ -802,14 +771,7 @@ class Trip:
         except:
             print(f"vagonweb request broke")
             traceback.print_exc()
-            newpatch = DB.execute(
-                "SELECT json_patch(?,?) AS newpatch",
-                (
-                    '{"failedcomposition-vagonweb": true}',
-                    json.dumps(self.status_patch),
-                ),
-            ).fetchone()["newpatch"]
-            self.write_patch(json.loads(newpatch))
+            self.patch_patch({"failedcomposition-vagonweb": True})
             return
         if plan_nodes:
             try:
@@ -844,29 +806,15 @@ class Trip:
                         [format_composition_element(unit) for unit in composition]
                     )
                 link = Link.make(url)
-                newpatch = DB.execute(
-                    "SELECT json_patch(?,?) AS newpatch",
-                    (
-                        json.dumps(
-                            {
-                                "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
-                            }
-                        ),
-                        json.dumps(self.status_patch),
-                    ),
-                ).fetchone()["newpatch"]
-                self.write_patch(json.loads(newpatch))
+                self.patch_patch(
+                    {
+                        "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
+                    }
+                )
             except:
                 print("vagonweb parsing went wrong")
                 traceback.print_exc()
-                newpatch = DB.execute(
-                    "SELECT json_patch(?,?) AS newpatch",
-                    (
-                        '{"failedcomposition-vagonweb": true}',
-                        json.dumps(self.status_patch),
-                    ),
-                ).fetchone()["newpatch"]
-                self.write_patch(json.loads(newpatch))
+                self.patch_patch({"failedcomposition-vagonweb": True})
 
     async def get_oebb_composition(self):
         if "composition" in self.status:
@@ -917,19 +865,11 @@ class Trip:
                 f"&date={departure:%Y-%m-%d}&station={self.status['fromStation']['uic']}"
                 f"&time={departure:%H%%3A%M}"
             )
-
-            newpatch = DB.execute(
-                "SELECT json_patch(?,?) AS newpatch",
-                (
-                    json.dumps(
-                        {
-                            "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
-                        }
-                    ),
-                    json.dumps(self.status_patch),
-                ),
-            ).fetchone()["newpatch"]
-            self.write_patch(json.loads(newpatch))
+            self.patch_patch(
+                {
+                    "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
+                }
+            )
 
 
 @dataclass
