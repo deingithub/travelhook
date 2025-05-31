@@ -47,8 +47,8 @@ def json_patch_dicts(patch, old_dict):
         DB.execute(
             "SELECT json_patch(?,?) AS newpatch",
             (
-                json.dumps(patch),
                 json.dumps(old_dict),
+                json.dumps(patch),
             ),
         ).fetchone()["newpatch"]
     )

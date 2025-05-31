@@ -464,15 +464,11 @@ class TripActionsView(discord.ui.View):
             True,
         )
         if original_patch := self.trip.status_patch:
-            newpatch = {}
-            if operator := original_patch.get("operator"):
-                newpatch["operator"] = operator
-            if network := original_patch.get("network"):
-                newpatch["network"] = network
-            if distance := original_patch.get("distance"):
-                newpatch["distance"] = distance
-            if not newpatch:
-                return
+            newpatch = original_patch.copy()
+            if "comment" in newpatch:
+                del newpatch["comment"]
+                if not newpatch:
+                    return
             try:
                 await EditTripView(
                     DB.Trip.find_last_trip_for(ia.user.id), newpatch, quiet=True
@@ -882,12 +878,7 @@ async def manualtrip(
 
 def render_patched_train(trip, patch):
     "helper method to render a preview of how a train will look with a different patch applied"
-    status = json.loads(
-        DB.DB.execute(
-            "SELECT json_patch(?,?) as status",
-            (json.dumps(trip.get_unpatched_status()), json.dumps(patch)),
-        ).fetchone()["status"]
-    )
+    status = DB.json_patch_dicts(patch, trip.get_unpatched_status())
     user_tz = DB.User.find(trip.user_id).get_timezone()
     display = get_display(bot, status)
     link = generate_train_link(status)
@@ -994,15 +985,9 @@ async def delay(ia, departure: typing.Optional[int], arrival: typing.Optional[in
         prepare_patch["toStation"] = {
             "realTime": trip.status["toStation"]["scheduledTime"] + arrival * 60
         }
+    trip.patch_patch(prepare_patch)
 
-    newpatch = DB.DB.execute(
-        "SELECT json_patch(?,?) AS newpatch",
-        (json.dumps(trip.status_patch), json.dumps(prepare_patch)),
-    ).fetchone()["newpatch"]
-
-    trip.write_patch(json.loads(newpatch))
     trip = DB.Trip.find(trip.user_id, trip.journey_id)
-
     reason = "update" if trip.status["checkedIn"] else "checkout"
     async with ClientSession() as session:
         async with session.post(
@@ -1098,10 +1083,7 @@ async def composition(ia, composition: str, do_not_format: bool = False):
             [format_composition_element(unit.strip()) for unit in composition]
         )
 
-    newpatch = DB.DB.execute(
-        "SELECT json_patch(?,?) AS newpatch",
-        (json.dumps(trip.status_patch), json.dumps(prepare_patch)),
-    ).fetchone()["newpatch"]
+    newpatch = DB.json_patch_dicts(prepare_patch, trip.status_patch)
     await EditTripView(trip, json.loads(newpatch)).commit.callback(ia)
 
 
@@ -1183,7 +1165,7 @@ async def edit(
 
     await ia.response.defer(ephemeral=True)
 
-    prepare_patch = {}
+
     if from_station or departure or departure_delay:
         prepare_patch["fromStation"] = {"name": from_station}
         if departure:
@@ -1253,17 +1235,8 @@ async def edit(
             [format_composition_element(unit.strip()) for unit in composition]
         )
 
-    newpatch = DB.DB.execute(
-        "SELECT json_patch(?,?) AS newpatch",
-        (json.dumps(trip.status_patch), json.dumps(prepare_patch)),
-    ).fetchone()["newpatch"]
-
-    newpatched_status = DB.DB.execute(
-        "SELECT json_patch(?,?) as newpatched_status", (trip.travelynx_status, newpatch)
-    ).fetchone()["newpatched_status"]
-
-    newpatch = json.loads(newpatch)
-    newpatched_status = json.loads(newpatched_status)
+    newpatch = DB.json_patch_dicts(prepare_patch, trip.status_patch)
+    newpatched_status = DB.json_patch_dicts(newpatch, trip.travelynx_status)
 
     await ia.edit_original_response(
         embed=discord.Embed(
