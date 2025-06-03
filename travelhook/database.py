@@ -871,6 +871,33 @@ class Trip:
                 }
             )
 
+    async def get_ns_composition(self):
+        if "composition" in self.status or "failedcomposition-ns" in self.status:
+            return
+        if not self.status["train"]["no"]:
+            return
+        if not (8400000 < (self.status["fromStation"]["uic"] or 0) < 8500000):
+            return
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    "https://vt.ns-mlab.nl/api/v1/trein?ids="
+                    f"{self.status['train']['no']}"
+                ) as response:
+                    parsed = await response.json()
+                    material = parsed[0]["materieeldelen"]
+                    composition_text = " + ".join([f"**{deel['type'] or 'Trein'}** {deel.get('materieelnummer') or ''}" for deel in material])
+                    self.patch_patch(
+                        {
+                            "composition": composition_text
+                        }
+                    )
+        except:
+            print(f"ns request broke")
+            traceback.print_exc()
+            self.patch_patch({"failedcomposition-ns": True})
+            return
 
 @dataclass
 class Message:
