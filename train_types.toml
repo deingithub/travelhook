@@ -36,6 +36,7 @@ train_types = [
 	{ type = "Bus", line_startswith = "X", emoji = "BusX", remove_line_startswith = true, color = "#a3167e", class="city transit" },
         { type = "Bus", line_startswith = "SV", emoji = "Sa|Sb", class="special" },
 	{ type = "Bus", emoji = "Bus", color = "#a3167e", class="city transit" },
+	{ type = "BV", emoji = "bv0|bv1", color = "#ff0404", always_show_train_number = true, class="czechia, also bulgaria" },
 	{ type = "CB", emoji = "cbc", color = "#c91432", class="special" },
 	{ type = "CJX", emoji = "Ja|Jb", color = "#ff4f00", class="regional" },
 	{ type = "D", emoji = "da|db", color = "#ff0404", always_show_train_number = true, class="long-distance 2" },
@@ -44,7 +45,7 @@ train_types = [
 	{ type = "EIC", emoji = "pia|pib", color = "#ff0404", always_show_train_number = true, class="poland" },
 	{ type = "EN", emoji = "na|nb", color = "#282559", always_show_train_number = true, class="night trains" },
 	{ type = "EST", emoji = "est0|est1", color = "#ff0404", always_show_train_number = true, class="private operators" },
-	{ type = "Ex", emoji = "ex0|ex1", color = "#ff0404", class = "czechia" },
+	{ type = "Ex", emoji = "ex0|ex1", color = "#ff0404", class = "czechia, also bulgaria" },
 	{ type = "FA", emoji = "fa0|fa1", color = "#cccccc", always_show_train_number = true, class="long-distance 2" },
 	{ type = "Fähre", emoji = "Faehre", color = "#00a4db", class="city transit" },
 	{ type = "FB", emoji = "fb0|fb1", color = "#ff0404", always_show_train_number = true, class="long-distance 2" },
@@ -60,16 +61,19 @@ train_types = [
 	{ type = "IRN", emoji = "irn0|irn1", color = "#282559", always_show_train_number = true, class="night trains" },
 	{ type = "KM", emoji = "ka|kb", color = "#204a87", class="poland" },
 	{ type = "KML", emoji = "kLa|kLb", color = "#204a87", class="poland" },
+	{ type = "KPV", emoji = "kpv0|kpv1", color = "#204a87", class="czechia, also bulgaria" },
 	{ type = "KS", emoji = "sa|sb", color = "#204a87", class="poland" },
 	{ type = "L", emoji = "l0|Rb", color = "#204a87", class="regional" },
 	{ type = "Lt", emoji = "lt0|lt1", class="special" },
 	{ type = "M", emoji = "metro", color = "#014e8d", class="rapid transit" },
+	{ type = "MBV", emoji = "mbv0|mbv1", color = "#ff0404", always_show_train_number = true, class="czechia, also bulgaria" },
 	{ type = "MEX", emoji = "m0|m1", color = "#204a87", class="regional" },
 	{ type = "NJ", emoji = "Na|Nb", color = "#282559", always_show_train_number = true, class="night trains" },
 	{ type = "OGV", emoji = "ogv0|ogv1", color = "#ff0404", always_show_train_number = true, class="private operators" },
-	{ type = "Os", emoji = "os0|os1", color = "#204a87", class="czechia" },
+	{ type = "Os", emoji = "os0|os1", color = "#204a87", class="czechia, also bulgaria" },
 	{ type = "OTC", emoji = "otc0|otc1", color = "#ff0404", always_show_train_number = true, class="private operators" },
-	{ type = "R", emoji = "Rcz0|db", color = "#ff0404", class = "czechia" },
+	{ type = "PV", emoji = "pv0|pv1", color = "#204a87", class="czechia, also bulgaria" },
+	{ type = "R", emoji = "Rcz0|db", color = "#ff0404", class = "czechia, also bulgaria" },
 	{ type = "R", emoji = "Ra|Rb", color = "#204a87", network = "AT" },
 	{ type = "RB", emoji = "Ba|Bb", color = "#204a87", class="regional" },
 	# network = "NS": matches if operator is "Nederlandse Spoorwegen"
@@ -113,10 +117,10 @@ train_types = [
 	{ type = "S", line_startswith = "N", emoji = "SN", color = "#17181c", class="special" },
 	{ type = "S", emoji = "SBahn", color = "#2c8e4e", class="rapid transit" },
 	{ type = "SB", emoji = "SB", color = "#014e8d", class="city transit" },
-	{ type = "SC", emoji = "sc0|sc1", color = "#ff0404", always_show_train_number = true, class = "czechia" },
+	{ type = "SC", emoji = "sc0|sc1", color = "#ff0404", always_show_train_number = true, class = "czechia, also bulgaria" },
 	{ type = "Schw-B", emoji = "SchwB", color = "#014e8d", class="city transit" },
 	{ type = "SEV", emoji = "Sa|Sb", class="special" },
-	{ type = "Sp", emoji = "sp0|sp1", color = "#ff4f00", always_show_train_number = true, class = "czechia" },
+	{ type = "Sp", emoji = "sp0|sp1", color = "#ff4f00", always_show_train_number = true, class = "czechia, also bulgaria" },
 	# network = "CTS": matches if operator is "CTS"
 	{ type = "STR", network = "CTS", line = "A", emoji = "KASTR|ctsa", color = "#e10d19", hide_line_number = true },
 	{ type = "STR", network = "CTS", line = "B", emoji = "KASTR|ctsb", color = "#009ee0", hide_line_number = true },
@@ -249,7 +253,7 @@ AT = "Trains in Austria"
 BVG = "U-Bahn Berlin"
 CH-FV = "Swiss long-distance trains"
 CTS = "Strasbourg trams"
-CZ = "Regional trains in Czechia"
+CZ = "Regional trains in czechia, also bulgaria"
 DPP = "Praha metro"
 HHA = "U-Bahn Hamburg"
 KVB = "Stadtbahn Köln/Bonn"
