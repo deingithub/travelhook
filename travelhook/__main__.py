@@ -1165,7 +1165,6 @@ async def edit(
 
     await ia.response.defer(ephemeral=True)
 
-
     if from_station or departure or departure_delay:
         prepare_patch["fromStation"] = {"name": from_station}
         if departure:

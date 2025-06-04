@@ -388,15 +388,6 @@ class Trip:
     def fetch_hafas_data(self, force: bool = False):
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
 
-        # sometimes, just sometimes, ÖBB hafas has a station in germany but under a different ID
-        # of course this mostly happens in fucking karlsruhe
-        translate_for_öbb_hafas = {
-            501001: 4668246,  # Durlacher Tor/KIT Campus Süd, Karlsruhe
-            301001: 4668246,  # also Durlacher Tor/KIT Campus Süd, Karlsruhe
-            363449: 4628893,  # Mühlburger Tor, Karlsruhe
-            721836: 4628893,  # also Mühlburger Tor, Karlsruhe
-        }
-
         station_id = self.status["fromStation"]["uic"]
         if station_id == 0:
             # new backend träwelling data via travelcrab. no chance here sorry
@@ -439,8 +430,6 @@ class Trip:
             if train_line == "S2" and distance_from_karlsruhe < 15.0:
                 return
 
-            station_id = translate_for_öbb_hafas.get(station_id) or station_id
-
             backend = bytes([214, 66, 66])
         elif backend == "bahn.de":
             backend = "DBRIS"
@@ -449,6 +438,27 @@ class Trip:
             or self.status["backend"]["type"] == "travelcrab.friz64.de"
         ):
             return
+
+        def hafas_get_stationboard(eva_id):
+            hafas_sb = subprocess.run(
+                [
+                    "json-hafas-stationboard.pl",
+                    backend,
+                    str(eva_id),
+                    str(self.status["fromStation"]["scheduledTime"]),
+                ],
+                capture_output=True,
+            )
+            stationboard = {}
+            try:
+                stationboard = json.loads(hafas_sb.stdout)
+            except:  # pylint: disable=bare-except
+                print(f"hafas sb perl broke:\n{hafas_sb.stdout} {hafas_sb.stderr}")
+                traceback.print_exc()
+                return None
+            if "error_code" in stationboard:
+                print(f"hafas sb perl broke:\n{stationboard}")
+            return stationboard
 
         def write_hafas_data(departureboard_entry):
             hafas = subprocess.run(
@@ -496,25 +506,42 @@ class Trip:
         if not jid and "|" in self.status["train"]["id"]:
             jid = self.status["train"]["id"]
 
-        hafas_sb = subprocess.run(
-            [
-                "json-hafas-stationboard.pl",
-                backend,
-                str(station_id),
-                str(self.status["fromStation"]["scheduledTime"]),
-            ],
-            capture_output=True,
-        )
-        stationboard = {}
-        try:
-            stationboard = json.loads(hafas_sb.stdout)
-        except:  # pylint: disable=bare-except
-            print(f"hafas sb perl broke:\n{hafas_sb.stdout} {hafas_sb.stderr}")
-            traceback.print_exc()
+        stationboard = hafas_get_stationboard(station_id)
+        if not stationboard:
             return
-        if "error_code" in stationboard:
-            print(f"hafas sb perl broke:\n{stationboard}")
-            return
+        elif stationboard.get("error_string") == "svcResL[0].err is LOCATION" and (
+            self.status["backend"]["name"] == "bahn.de"
+            or self.status["backend"]["type"] == "travelcrab.friz64.de"
+        ):
+            # presumably a karlsruhe stadtbahn station with a different ID in öbb hafas
+            # try to find it by name
+            hafas_stations = subprocess.run(
+                [
+                    "hafas-m",
+                    "-s",
+                    "ÖBB",
+                    f"?{self.status['fromStation']['name']}",
+                    "--json",
+                ],
+                capture_output=True,
+            )
+            stations = None
+            try:
+                stations = json.loads(hafas_stations.stdout)
+            except:  # pylint: disable=bare-except
+                print(
+                    f"alternative ÖBB station search perl broke:\n{hafas_stations.stdout} {hafas_stations.stderr}"
+                )
+                traceback.print_exc()
+                return
+            if not stations or "error_code" in stations:
+                print(f"alternative ÖBB station search broke:\n{stations}")
+                return
+            else:
+                stationboard = hafas_get_stationboard(stations[0].get("eva", 0))
+                if not stationboard:
+                    return
+                print(f"fixed it! got {stations[0]} instead")
 
         for train in stationboard["trains"]:
             if not train["scheduled"] == self.status["fromStation"]["scheduledTime"]:
