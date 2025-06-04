@@ -761,6 +761,8 @@ class Trip:
             "Koleje Slaskie": "KŚ",
             "SKPL Cargo Sp. z o. o.": "SKPL",
             "Polregio": "PREG",
+            "Schweizerische Bundesbahnen": "SBB",
+            "SNCB": "SNCB",
         }
         vagonweb_operatorcode = vagonweb_operatorcodes.get(self.hafas_data["operator"])
         if not vagonweb_operatorcode and self.hafas_data["operator"] == "Nahreisezug":
