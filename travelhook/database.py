@@ -256,7 +256,6 @@ class Tram:
             "ORDER BY individual_number DESC LIMIT 1",
             (network, number, number, number),
         ).fetchone()
-        print(row)
         if row:
             return row["description"]
 

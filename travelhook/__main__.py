@@ -1084,7 +1084,7 @@ async def composition(ia, composition: str, do_not_format: bool = False):
         )
 
     newpatch = DB.json_patch_dicts(prepare_patch, trip.status_patch)
-    await EditTripView(trip, json.loads(newpatch)).commit.callback(ia)
+    await EditTripView(trip, newpatch).commit.callback(ia)
 
 
 async def journey_autocomplete(ia, current):
@@ -1164,6 +1164,7 @@ async def edit(
         return
 
     await ia.response.defer(ephemeral=True)
+    prepare_patch = {}
 
     if from_station or departure or departure_delay:
         prepare_patch["fromStation"] = {"name": from_station}
