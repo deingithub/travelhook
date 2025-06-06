@@ -388,9 +388,6 @@ class Trip:
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
 
         station_id = self.status["fromStation"]["uic"]
-        if station_id == 0:
-            # new backend träwelling data via travelcrab. no chance here sorry
-            return
 
         backend = self.status["backend"]["name"]
         if backend == "ÖBB":
@@ -505,7 +502,13 @@ class Trip:
         if not jid and "|" in self.status["train"]["id"]:
             jid = self.status["train"]["id"]
 
-        stationboard = hafas_get_stationboard(station_id)
+        stationboard = {}
+        if station_id == 0 and self.status["backend"]["type"] == "travelcrab.friz64.de":
+            # skip useless request and trigger ÖBB stop finder later
+            stationboard = {"error_string": "svcResL[0].err is LOCATION"}
+        elif station_id > 0:
+            stationboard = hafas_get_stationboard(station_id)
+
         if not stationboard:
             return
         elif stationboard.get("error_string") == "svcResL[0].err is LOCATION" and (
