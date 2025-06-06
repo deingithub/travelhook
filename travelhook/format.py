@@ -3,6 +3,7 @@
 from itertools import groupby
 import json
 from datetime import datetime, timedelta
+import random
 import re
 import urllib
 
@@ -795,11 +796,15 @@ def sillies(bot, trips, embed):
         return embed.set_thumbnail(url="https://i.imgur.com/pHp8Sus.png")
     if "Bannwaldallee, Karlsruhe" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/4LQI5ep.jpeg")
-    if (
-        ("Weinweg, Karlsruhe" in status["toStation"]["name"])
-        or ("Gewerbepark Kagran" in status["toStation"]["name"])
-        or ("Place de l'Abattoir" in status["toStation"]["name"])
-        or ("IKEA".casefold() in status["toStation"]["name"].casefold())
+    if any(
+        ikea in status["toStation"]["name"]
+        for ikea in [
+            "Weinweg, Karlsruhe",
+            "Gewerbepark Kagran",
+            "Place de l'Abattoir",
+            "IKEA",
+            "Ikea",
+        ]
     ):
         return embed.set_thumbnail(url="https://i.imgur.com/9IAgPLd.png")
     if status.get("composition") and ("**612**" in status["composition"]):
@@ -815,6 +820,26 @@ def sillies(bot, trips, embed):
     if "Homme de Fer" in status["toStation"]["name"]:
         return embed.set_thumbnail(
             url="https://upload.wikimedia.org/wikipedia/commons/4/4c/Potato_heart_mutation.jpg"
+        )
+    if any(
+        ba in status["toStation"]["name"]
+        for ba in ["Arbeitsagentur", "Arbeitsamt", "Agentur für Arbeit"]
+    ):
+        return embed.set_image(
+            url=random.choice(
+                [
+                    "https://i.imgur.com/S3mvtbw.png",
+                    "https://i.imgur.com/YiSjZMP.png",
+                    "https://i.imgur.com/ytLsNRF.png",
+                    "https://i.imgur.com/aCzZXLE.png",
+                    "https://i.imgur.com/E8drJ9a.png",
+                    "https://i.imgur.com/E8drJ9a.png",
+                    "https://i.imgur.com/E8drJ9a.png",
+                    "https://i.imgur.com/9FZG0qu.png",
+                    "https://i.imgur.com/GmOGbQq.png",
+                    "https://i.imgur.com/gAFBKjS.png",
+                ]
+            )
         )
 
     return embed
