@@ -138,6 +138,7 @@ async def handle_status_update(userid, reason, status):
     trip.maybe_fix_1970()
     await trip.get_oebb_composition()
     trip.get_db_composition()
+    await trip.get_ns_composition()
     await trip.get_vagonweb_composition()
     await trip.get_rtt_composition()
 
