@@ -49,8 +49,35 @@ blanket_replace_train_type = {
     "Trm": "STR",
     "west": "WB",
 }
-
-
+london_overground_lines = {
+    "Lioness",
+    "Mildmay",
+    "Windrush",
+    "Weaver",
+    "Suffragette",
+    "Liberty",
+}
+london_underground_lines = {
+    "Bakerloo",
+    "Central",
+    "Circle",
+    "District",
+    "Hammersmith & City",
+    "Jubilee",
+    "Metropolitan",
+    "Northern",
+    "Piccadilly",
+    "Victoria",
+    "Waterloo & City",
+    "Elizabeth line",
+}
+british_tocs = {
+    "TransPennine Express",
+    "Thameslink",
+    "LNER",
+    "Southeastern",
+    "Stansted Express",
+}
 train_types_config = {}
 with open("train_types.toml", "rb") as f:
     train_types_config = tomli.load(f)
@@ -186,40 +213,13 @@ def get_network(status):
     if operator == "CTS":
         return "CTS"
 
+    trainplusline = f"{status['train']['type']} {status['train']['line']}".strip()
     if (
-        (
-            not status["train"]["type"]
-            and status["train"]["line"]
-            in (
-                "Bakerloo",
-                "Central",
-                "Circle",
-                "District",
-                "Hammersmith & City",
-                "Jubilee",
-                "Metropolitan",
-                "Northern",
-                "Piccadilly",
-                "Victoria",
-                "Waterloo & City",
-            )
-        )
-        or (
-            not status["train"]["type"]
-            and status["train"]["line"]
-            in ("Lioness", "Mildmay", "Windrush", "Weaver", "Suffragette", "Liberty")
-        )
-        or (
-            (f"{status['train']['type']} {status['train']['line']}").strip()
-            in (
-                "Elizabeth line",
-                "STR DLR",
-                "TransPennine Express",
-                "Thameslink",
-                "LNER",
-                "Southeastern",
-            )
-        )
+        (7000000 < (status["fromStation"]["uic"] or 0) < 7100000)
+        or trainplusline in london_overground_lines
+        or trainplusline in london_underground_lines
+        or trainplusline in british_tocs
+        or trainplusline == "STR DLR"
     ):
         return "UK"
 
@@ -238,30 +238,16 @@ def get_display(bot, status):
             type = "U"
 
     if get_network(status) == "UK":
-        if not type and line in (
-            "Lioness",
-            "Mildmay",
-            "Windrush",
-            "Weaver",
-            "Suffragette",
-            "Liberty",
-        ):
+        trainplusline = f"{status['train']['type']} {status['train']['line']}".strip()
+        if trainplusline in london_overground_lines:
             type = "Overground"
-        elif not type and line not in (
-            "Bakerloo",
-            "Central",
-            "Circle",
-            "District",
-            "Hammersmith & City",
-            "Jubilee",
-            "Metropolitan",
-            "Northern",
-            "Piccadilly",
-            "Victoria",
-            "Waterloo & City",
-        ):
-            line = (type + " " + line).strip()
+            line = trainplusline
+        elif trainplusline in london_underground_lines:
+            type = "Underground"
+            line = trainplusline
+        elif type not in all_types:
             type = "NationalRail"
+            line = trainplusline
 
     # account for "ME RE2" instead of "RE 2"
     if line and (type not in all_types or not type):
@@ -313,8 +299,6 @@ def get_display(bot, status):
         ):
             if "remove_line_startswith" in tt:
                 line = line.removeprefix(tt["line_startswith"])
-            if "fallback" in tt and not type == "NationalRail":
-                line = f"{type}{(' '+ line) if line else ''}"
 
             # { emoji = "ica,ic1", color = "#ff0404", hide_line_number = true, always_show_train_number = true }
             return {
