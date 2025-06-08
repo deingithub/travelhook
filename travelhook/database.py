@@ -775,6 +775,7 @@ class Trip:
             return
         if plan_nodes:
             try:
+                zugname = None
                 try:
                     zugname = soup.find("div", id="cesta3").find("i").text
                 except:
@@ -817,6 +818,8 @@ class Trip:
                 )
                 if zugname:
                     newhafasdata = self.hafas_data
+                    if "messages" not in newhafasdata:
+                        newhafasdata["messages"] = []
                     newhafasdata["messages"].append({
                         "code": "ZN",
                         "short": None,
