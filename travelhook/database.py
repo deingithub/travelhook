@@ -848,10 +848,9 @@ class Trip:
                     }
                 )
                 if zugname:
-                    newhafasdata = self.hafas_data
-                    if "messages" not in newhafasdata:
-                        newhafasdata["messages"] = []
-                    newhafasdata["messages"].append({
+                    if "messages" not in self.hafas_data:
+                        self.hafas_data["messages"] = []
+                    self.hafas_data["messages"].append({
                         "code": "ZN",
                         "short": None,
                         "text": zugname,
@@ -860,7 +859,7 @@ class Trip:
                     DB.execute(
                         "UPDATE trips SET hafas_data=? WHERE user_id = ? AND journey_id = ?",
                         (
-                            json.dumps(newhafasdata),
+                            json.dumps(self.hafas_data),
                             self.user_id,
                             self.journey_id,
                         ),
