@@ -153,6 +153,10 @@ def get_network(status):
     if haversine((lat, lon), (50.08, 14.42)) < 12:
         return "DPP"
 
+    # network BKV: Budapest metro
+    if haversine((lat, lon), (47.49, 19.04)) < 10:
+        return "BKV"
+
     # network Ü: Stadtbahn Hannover
     if (
         status["train"]["type"] in ("STR", "STB")
@@ -236,6 +240,11 @@ def get_display(bot, status):
     if get_network(status) == "DPP":
         if not type and line in ("A", "B", "C"):
             type = "U"
+
+    if get_network(status) == "BKV":
+        if not type and line in ("M1", "M2", "M3", "M4"):
+            type = "M"
+            line = line[1:]
 
     if get_network(status) == "UK":
         trainplusline = f"{status['train']['type']} {status['train']['line']}".strip()
