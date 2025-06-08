@@ -541,7 +541,7 @@ class Trip:
                 return
             else:
                 stationboard = hafas_get_stationboard(stations[0].get("eva", 0))
-                if not stationboard:
+                if not stationboard or "error_string" in stationboard:
                     return
                 print(f"fixed it! got {stations[0]} instead")
 
