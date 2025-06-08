@@ -850,12 +850,14 @@ class Trip:
                 if zugname:
                     if "messages" not in self.hafas_data:
                         self.hafas_data["messages"] = []
-                    self.hafas_data["messages"].append({
-                        "code": "ZN",
-                        "short": None,
-                        "text": zugname,
-                        "type": "I",
-                    })
+                    self.hafas_data["messages"].append(
+                        {
+                            "code": "ZN",
+                            "short": None,
+                            "text": zugname,
+                            "type": "I",
+                        }
+                    )
                     DB.execute(
                         "UPDATE trips SET hafas_data=? WHERE user_id = ? AND journey_id = ?",
                         (
@@ -940,17 +942,19 @@ class Trip:
                 ) as response:
                     parsed = await response.json()
                     material = parsed[0]["materieeldelen"]
-                    composition_text = " + ".join([f"**{deel['type'] or 'Trein'}** {deel.get('materieelnummer') or ''}" for deel in material])
-                    self.patch_patch(
-                        {
-                            "composition": composition_text
-                        }
+                    composition_text = " + ".join(
+                        [
+                            f"**{deel['type'] or 'Trein'}** {deel.get('materieelnummer') or ''}"
+                            for deel in material
+                        ]
                     )
+                    self.patch_patch({"composition": composition_text})
         except:
             print(f"ns request broke")
             traceback.print_exc()
             self.patch_patch({"failedcomposition-ns": True})
             return
+
 
 @dataclass
 class Message:
