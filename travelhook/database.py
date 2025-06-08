@@ -495,7 +495,7 @@ class Trip:
                 ),
             )
 
-        if "id" in self.hafas_data and not force:
+        if ("id" in self.hafas_data or "failedhafas" in self.hafas_data) and not force:
             return
 
         jid = self.status["train"]["hafasId"]
@@ -566,6 +566,14 @@ class Trip:
                 break
         else:
             print("didn't find a match!")
+            DB.execute(
+                "UPDATE trips SET hafas_data=? WHERE user_id = ? AND journey_id = ?",
+                (
+                    json.dumps({"failedhafas": True}),
+                    self.user_id,
+                    self.journey_id,
+                ),
+            )
 
     def fetch_headsign(self):
         if not self.hafas_data:
