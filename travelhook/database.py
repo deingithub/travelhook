@@ -806,6 +806,11 @@ class Trip:
             return
         if plan_nodes:
             try:
+                zugname = None
+                try:
+                    zugname = soup.find("div", id="cesta3").find("i").text
+                except:
+                    pass
                 carriage_nodes = plan_nodes[0].select(
                     "td.bunka_vozu a", title=re.compile(r"^Züge mit Wagen:")
                 )
@@ -842,6 +847,24 @@ class Trip:
                         "composition": f"[{composition_text}]({config['shortener_url']}/{link.short_id})"
                     }
                 )
+                if zugname:
+                    newhafasdata = self.hafas_data
+                    if "messages" not in newhafasdata:
+                        newhafasdata["messages"] = []
+                    newhafasdata["messages"].append({
+                        "code": "ZN",
+                        "short": None,
+                        "text": zugname,
+                        "type": "I",
+                    })
+                    DB.execute(
+                        "UPDATE trips SET hafas_data=? WHERE user_id = ? AND journey_id = ?",
+                        (
+                            json.dumps(newhafasdata),
+                            self.user_id,
+                            self.journey_id,
+                        ),
+                    )
             except:
                 print("vagonweb parsing went wrong")
                 traceback.print_exc()
