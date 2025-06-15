@@ -193,6 +193,13 @@ def get_network(status):
     if haversine((lat, lon), (50.11, 8.68)) < 30:
         return "VGF"
 
+    # network SAAR: Saarbahn
+    if (
+        haversine((lat,lon), (49.25, 6.98)) < 19
+        and status["train"]["type"] in ("STR", "STB")
+    ):
+        return "SAAR"
+
     # network ST: third-party operators in the netherlands
     if operator in ("Blauwnet", "Arriva Nederland", "RRReis", "R-net"):
         return "ST"

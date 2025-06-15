@@ -166,6 +166,8 @@ train_types = [
 	{ type = "STR", network = "RNV", line = "E", emoji = "KASTR|rnvE", color = "#e200e2", hide_line_number = true  },
 	# fix for Stuttgart Stadtbahn lines having a U prefix in the line
 	{ type = "STB", line_startswith = "U", emoji = "STB", remove_line_startswith = true, color = "#c5161c", class="rapid transit" },
+	# network = "SAAR"
+	{ type = "STB", network = "SAAR", emoji = "saarbahn", hide_line_number = true },
 	# network = "Ü": Stadtbahn Hannover
 	{ type = "STB", network = "Ü", emoji = "UE", color = "#20ac2b", class="rapid transit" },
 	{ type = "STB", emoji = "STB", color = "#c5161c", class="rapid transit" },
