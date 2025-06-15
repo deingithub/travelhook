@@ -47,6 +47,7 @@ blanket_replace_train_type = {
     "SKW": "S",
     "SVG": "FEX",
     "Trm": "STR",
+    "TRAM": "STR",
     "west": "WB",
 }
 london_overground_lines = {
@@ -112,7 +113,7 @@ def get_network(status):
         operator == "Albtal-Verkehrs-Gesellschaft mbH"
         or (
             (
-                status["train"]["type"] == "STR"
+                status["train"]["type"] in ("STR", "TRAM")
                 or f"{status['train']['type']}{status['train']['line']}" == "S2"
             )
             and haversine((lat, lon), (49.009, 8.417)) < 15
@@ -217,7 +218,7 @@ def get_network(status):
     if operator == "CTS":
         return "CTS"
 
-    trainplusline = f"{status['train']['type']} {status['train']['line']}".strip()
+    trainplusline = f"{status['train']['type']} {status['train']['line']}".removeprefix("SUBWAY").strip()
     if (
         (7000000 < (status["fromStation"]["uic"] or 0) < 7100000)
         or trainplusline in london_overground_lines
@@ -247,7 +248,7 @@ def get_display(bot, status):
             line = line[1:]
 
     if get_network(status) == "UK":
-        trainplusline = f"{status['train']['type']} {status['train']['line']}".strip()
+        trainplusline = f"{status['train']['type']} {status['train']['line']}".removeprefix("SUBWAY").strip()
         if trainplusline in london_overground_lines:
             type = "Overground"
             line = trainplusline
@@ -288,6 +289,10 @@ def get_display(bot, status):
             type = "S"
             line = f"N{line}"
 
+        if status["backend"]["type"] == "MOTIS":
+            motis_train_types = {"TRAM": "STR"}
+            type = motis_train_types.get(type, type)
+
     # fix "RB RB38", "U U8", … in a lot of regional HAFASes
     if line and line.startswith(type):
         line = line.removeprefix(type)
@@ -308,6 +313,9 @@ def get_display(bot, status):
         ):
             if "remove_line_startswith" in tt:
                 line = line.removeprefix(tt["line_startswith"])
+
+            if "fallback" in tt:
+                line = f"{type} {line}".strip()
 
             # { emoji = "ica,ic1", color = "#ff0404", hide_line_number = true, always_show_train_number = true }
             return {
@@ -793,6 +801,7 @@ def sillies(bot, trips, embed):
         ikea in status["toStation"]["name"]
         for ikea in [
             "Weinweg, Karlsruhe",
+            "Karlsruhe Weinweg",
             "Gewerbepark Kagran",
             "Place de l'Abattoir",
             "IKEA",
