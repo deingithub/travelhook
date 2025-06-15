@@ -6,6 +6,61 @@ use warnings;
 use JSON;
 use Travel::Status::DE::DBRIS;
 use Travel::Status::DE::HAFAS;
+use Travel::Status::MOTIS;
+
+if ($ARGV[0] =~ /^MOTIS-/) {
+	my $service = substr($ARGV[0],6);
+	my $motis = Travel::Status::MOTIS->new(
+		service => $service,
+		trip_id => $ARGV[1]
+	);
+	if (my $status = $motis->result) {
+		my @polyline;
+		foreach my $point ($status->polyline) {
+			push(@polyline, {
+				lat=>$point->{lat},
+				lon=>$point->{lon},
+				eva=>JSON::null,
+				name=>JSON::null
+			});
+		}
+		my @messages; # unused
+		my %stop_messages; # unused
+		my @route;
+		foreach my $stop ($status->stopovers) {
+			push(@route, {
+				name=>$stop->stop->name,
+				eva=>$stop->stop->id,
+				sched_arr => defined $stop->{scheduled_arrival} ? $stop->{scheduled_arrival}->epoch : JSON::null,
+				sched_dep => defined $stop->{scheduled_departure} ? $stop->{scheduled_departure}->epoch : JSON::null,
+				rt_arr => defined $stop->{realtime_arrival} ? $stop->{realtime_arrival}->epoch : JSON::null,
+				rt_dep => defined $stop->{realtime_departure} ? $stop->{realtime_departure}->epoch : JSON::null,
+			});
+		}
+		my $only_eva = 0;
+		if ($#route == $#polyline) {
+			$only_eva = 1;
+		}
+		print encode_json({
+			id=>$status->id,
+			operator=>$status->agency,
+			direction=>$status->headsign,
+			no=>0,
+			polyline=>[@polyline],
+			beeline=>$only_eva,
+			route=>[@route],
+			messages=>[@messages],
+			stop_messages=>{%stop_messages}
+		});
+		exit 0;
+	} else {
+		print encode_json({
+			error_code => 'motis broke rip',
+			error_string => $motis->errstr
+		});
+		exit 1;
+	}
+}
 
 if ($ARGV[0] eq 'DBRIS') {
 	my @no_train_number_types = qw(Bus RNV S STB STR U);

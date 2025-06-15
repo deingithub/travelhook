@@ -218,7 +218,9 @@ def get_network(status):
     if operator == "CTS":
         return "CTS"
 
-    trainplusline = f"{status['train']['type']} {status['train']['line']}".removeprefix("SUBWAY").strip()
+    trainplusline = f"{status['train']['type']} {status['train']['line']}".removeprefix(
+        "SUBWAY"
+    ).strip()
     if (
         (7000000 < (status["fromStation"]["uic"] or 0) < 7100000)
         or trainplusline in london_overground_lines
@@ -248,7 +250,11 @@ def get_display(bot, status):
             line = line[1:]
 
     if get_network(status) == "UK":
-        trainplusline = f"{status['train']['type']} {status['train']['line']}".removeprefix("SUBWAY").strip()
+        trainplusline = (
+            f"{status['train']['type']} {status['train']['line']}".removeprefix(
+                "SUBWAY"
+            ).strip()
+        )
         if trainplusline in london_overground_lines:
             type = "Overground"
             line = trainplusline

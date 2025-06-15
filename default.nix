@@ -43,13 +43,38 @@ let
           JSON
           LWP
           LWPProtocolhttps
-          ListMoreUtils
         ];
         meta = {
           description = "Interface to the online arrival/departure";
           license = with lib.licenses; [ artistic1 gpl1Plus ];
         };
       };
+      motis-m = with perlPackages;
+        buildPerlModule {
+          pname = "Travel-Status-MOTIS";
+          version = "0.0.1";
+          src = fetchurl {
+            url = "https://finalrewind.org/projects/Travel-Status-MOTIS/Travel-Status-MOTIS-0.01.tar.gz";
+            hash = "sha256-5tkGKZzPezQPcMcVPEZmKYVutE8aPiqJAd7vnKlahFQ=";
+          };
+          doCheck = false;
+          buildInputs = [ FileSlurp TestCompile TestPod ];
+          propagatedBuildInputs = [
+            ClassAccessor
+            DateTime
+            DateTimeFormatISO8601
+            DateTimeFormatStrptime
+            GISDistance
+            JSON
+            LWP
+            LWPProtocolhttps
+            ListMoreUtils
+          ];
+          meta = {
+            description = "Interface to the online arrival/departure";
+            license = with lib.licenses; [ artistic1 gpl1Plus ];
+          };
+        };
   GISDistance = with perlPackages;
     buildPerlModule {
       pname = "GIS-Distance";
@@ -135,7 +160,7 @@ in python310Packages.buildPythonPackage {
 
   postFixup = let
     hafasperl = with perlPackages;
-      makeFullPerlPath [ JSON hafas-m dbris-m ];
+      makeFullPerlPath [ JSON hafas-m dbris-m motis-m ];
   in ''
     mkdir -p $out/bin
     cp $src/*.pl $out/bin
@@ -147,6 +172,6 @@ in python310Packages.buildPythonPackage {
 
   propagatedBuildInputs =
     (with python310Packages; [ discordpy setuptools haversine tomli tomli-w beautifulsoup4 ])
-    ++ [ perl perlPackages.JSON hafas-m dbris-m ];
+    ++ [ perl perlPackages.JSON hafas-m dbris-m motis-m ];
   format = "pyproject";
 }

@@ -6,6 +6,7 @@ use warnings;
 use JSON;
 use Travel::Status::DE::HAFAS;
 use Travel::Status::DE::DBRIS;
+use Travel::Status::MOTIS;
 use DateTime;
 
 sub  trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
@@ -57,33 +58,66 @@ if ($ARGV[0] eq 'DBRIS') {
 	}
 	exit 0;
 }
-
-my $hafas = Travel::Status::DE::HAFAS->new(
-	service => $ARGV[0],
-	station => $ARGV[1],
-	datetime => $dt
-);
-if (my @results = $hafas->results) {
-	my @trains;
-	for my $train (@results) {
-		push(@trains, {
-			id=>$train->id,
-			type=>trim($train->type),
-			line=>$train->line_no,
-			number=>$train->number,
-			direction=>$train->direction,
-			station=>$train->station,
-			scheduled=>$train->sched_datetime->epoch,
-			realtime=>defined $train->rt_datetime ? $train->rt_datetime->epoch : JSON::null,
-			delay=>defined $train->rt_datetime ? ($train->rt_datetime->epoch - $train->sched_datetime->epoch)/60 : JSON::null,
+if ($ARGV[0] =~ /^MOTIS-/) {
+	my $service = substr($ARGV[0],6);
+	my $motis = Travel::Status::MOTIS->new(
+		service => $service,
+		stop_id => $ARGV[1],
+		datetime => $dt
+	);
+	if (my @results = $motis->results) {
+		my @trains;
+		for my $train (@results) {
+			push(@trains, {
+				id=>$train->id,
+				type=>$train->mode,
+				line=>$train->route_name,
+				number=>0,
+				direction=>$train->headsign,
+				station=>$train->stopover->stop->TO_JSON,
+				scheduled=>$train->stopover->scheduled_departure->epoch,
+				realtime=>$train->is_realtime,
+				delay=>defined $train->is_realtime ? $train->stopover->departure_delay : JSON::null,
+			});
+		}
+		print encode_json({
+			trains=>[@trains]
+		});
+	} else {
+		print encode_json({
+			error_code => 'motis broke rip',
+			error_string => $motis->errstr
 		});
 	}
-	print encode_json({
-		trains=>[@trains]
-	});
+
 } else {
-	print encode_json({
-		error_code => $hafas->errcode,
-		error_string => $hafas->errstr
-	});
+	my $hafas = Travel::Status::DE::HAFAS->new(
+		service => $ARGV[0],
+		station => $ARGV[1],
+		datetime => $dt
+	);
+	if (my @results = $hafas->results) {
+		my @trains;
+		for my $train (@results) {
+			push(@trains, {
+				id=>$train->id,
+				type=>trim($train->type),
+				line=>$train->line_no,
+				number=>$train->number,
+				direction=>$train->direction,
+				station=>$train->station,
+				scheduled=>$train->sched_datetime->epoch,
+				realtime=>defined $train->rt_datetime ? $train->rt_datetime->epoch : JSON::null,
+				delay=>defined $train->rt_datetime ? ($train->rt_datetime->epoch - $train->sched_datetime->epoch)/60 : JSON::null,
+			});
+		}
+		print encode_json({
+			trains=>[@trains]
+		});
+	} else {
+		print encode_json({
+			error_code => $hafas->errcode,
+			error_string => $hafas->errstr
+		});
+	}
 }

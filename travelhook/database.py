@@ -387,136 +387,44 @@ class Trip:
     def fetch_hafas_data(self, force: bool = False):
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
 
-        station_id = self.status["fromStation"]["uic"]
-
-        backend = self.status["backend"]["name"]
-        if backend == "ÖBB":
-            # rest in piss DB/VRN hafas -- you were, at best, vaguely adequate
-            # i REALLY wish i knew what the fuck is wrong with perl
-            backend = bytes([214, 66, 66])
-        # elif backend == "bahn.de" or self.status["backend"]["type"] == "IRIS-TTS":
-        #    backend = "DBRIS"
-        elif (
-            backend == "bahn.de"
-            or self.status["backend"]["type"] == "IRIS-TTS"
-            or self.status.get("manual-datasource") == "DBRIS"
-            or self.status["backend"]["type"] == "travelcrab.friz64.de"
-        ) and self.status["train"]["type"] not in (
-            "AST",
-            "Bus",
-            "Fähre",
-            "Ruf",
-            "RNV",
-            "SB",
-            "Schw-B",
-            "STB",
-            "STR",
-            "U",
-            "ZahnR",
-        ):
-            # exclude karlsruhe S2 (not in ÖBB hafas) -- this is extraordinarily silly
-            train_line = f"{self.status['train']['type']}{self.status['train']['line']}"
-            distance_from_karlsruhe = haversine(
+        def save_hafas_data(data):
+            self.hafas_data = data
+            DB.execute(
+                "UPDATE trips SET hafas_data=? WHERE user_id = ? AND journey_id = ?",
                 (
-                    self.status["fromStation"]["latitude"],
-                    self.status["fromStation"]["longitude"],
+                    json.dumps(data),
+                    self.user_id,
+                    self.journey_id,
                 ),
-                (49.009, 8.417),
             )
-            if train_line == "S2" and distance_from_karlsruhe < 15.0:
-                return
 
-            backend = bytes([214, 66, 66])
-        elif backend == "bahn.de":
-            backend = "DBRIS"
-        elif (
-            backend == "manual"
-            or self.status["backend"]["type"] == "travelcrab.friz64.de"
-        ):
-            return
-
-        def hafas_get_stationboard(eva_id):
-            hafas_sb = subprocess.run(
+        def get_stationboard(backend_name, station_id):
+            if backend_name == "ÖBB":
+                # wonky perl unicode handling that i do not understand
+                backend_name = bytes([214, 66, 66])
+            sb = subprocess.run(
                 [
                     "json-hafas-stationboard.pl",
-                    backend,
-                    str(eva_id),
+                    backend_name,
+                    str(station_id),
                     str(self.status["fromStation"]["scheduledTime"]),
                 ],
                 capture_output=True,
             )
             stationboard = {}
             try:
-                stationboard = json.loads(hafas_sb.stdout)
+                stationboard = json.loads(sb.stdout)
             except:  # pylint: disable=bare-except
-                print(f"hafas sb perl broke:\n{hafas_sb.stdout} {hafas_sb.stderr}")
+                print(
+                    f"{backend_name} stationboard perl broke:\n{sb.stdout} {sb.stderr}"
+                )
                 traceback.print_exc()
                 return None
             if "error_code" in stationboard:
-                print(f"hafas sb perl broke:\n{stationboard}")
+                print(f"{backend_name} stationboard perl broke:\n{stationboard}")
             return stationboard
 
-        def write_hafas_data(departureboard_entry):
-            hafas = subprocess.run(
-                ["json-hafas.pl", backend, departureboard_entry["id"]],
-                capture_output=True,
-            )
-            status = {}
-            try:
-                status = json.loads(hafas.stdout)
-                if "error_string" in status:
-                    print(f"hafas perl broke:\n{status}")
-            except:  # pylint: disable=bare-except
-                if not backend == "DBRIS":
-                    # /shrugs/ doesn't work on my machine
-                    print(f"hafas perl broke:\n{hafas.stdout} {hafas.stderr}")
-                    traceback.print_exc()
-
-            headsign = departureboard_entry["direction"]
-            if (not headsign) and (route := status.get("route")):
-                headsign = route[-1]["name"]
-
-            status.update(
-                line=departureboard_entry["line"],
-                headsign=headsign,
-            )
-
-            self.hafas_data = status
-            if not self.status["train"]["line"]:
-                self.status["train"]["line"] = departureboard_entry["line"]
-
-            DB.execute(
-                "UPDATE trips SET hafas_data=?, headsign=? WHERE user_id = ? AND journey_id = ?",
-                (
-                    json.dumps(status),
-                    headsign,
-                    self.user_id,
-                    self.journey_id,
-                ),
-            )
-
-        if ("id" in self.hafas_data or "failedhafas" in self.hafas_data) and not force:
-            return
-
-        jid = self.status["train"]["hafasId"]
-        if not jid and "|" in self.status["train"]["id"]:
-            jid = self.status["train"]["id"]
-
-        stationboard = {}
-        if station_id == 0 and self.status["backend"]["type"] == "travelcrab.friz64.de":
-            # skip useless request and trigger ÖBB stop finder later
-            stationboard = {"error_string": "svcResL[0].err is LOCATION"}
-        elif station_id > 0:
-            stationboard = hafas_get_stationboard(station_id)
-
-        if not stationboard:
-            return
-        elif stationboard.get("error_string") == "svcResL[0].err is LOCATION" and (
-            self.status["backend"]["name"] == "bahn.de"
-            or self.status["backend"]["type"] == "travelcrab.friz64.de"
-        ):
-            # presumably a karlsruhe stadtbahn station with a different ID in öbb hafas
-            # try to find it by name
+        def öbb_stopfinder():
             hafas_stations = subprocess.run(
                 [
                     "hafas-m",
@@ -539,54 +447,240 @@ class Trip:
             if not stations or "error_code" in stations:
                 print(f"alternative ÖBB station search broke:\n{stations}")
                 return
-            else:
-                stationboard = hafas_get_stationboard(stations[0].get("eva", 0))
-                if not stationboard or "error_string" in stationboard:
-                    return
-                print(f"fixed it! got {stations[0]} instead")
+            return stations[0]
 
-        for train in stationboard["trains"]:
-            if not train["scheduled"] == self.status["fromStation"]["scheduledTime"]:
-                continue
-            if (
-                jid == train["id"]
-                or (train["number"] == self.status["train"]["no"])
-                or (
-                    f"{train['type']}{train['line']}"
-                    == f"{self.status['train']['type']}{self.status['train']['line'] or self.status['train']['no']}"
-                )
-                or (
-                    self.status["backend"]["type"] == "travelcrab.friz64.de"
-                    and f"{train['type']}{train['line']}".endswith(
-                        self.status["train"]["line"]
-                    )
-                )
-            ):
-                write_hafas_data(train)
-                break
-        else:
-            print("didn't find a match!")
-            DB.execute(
-                "UPDATE trips SET hafas_data=? WHERE user_id = ? AND journey_id = ?",
-                (
-                    json.dumps({"failedhafas": True}),
-                    self.user_id,
-                    self.journey_id,
-                ),
+        def get_trip(backend_name, trip_id):
+            if backend_name == "ÖBB":
+                # wonky perl unicode handling that i do not understand
+                backend_name = bytes([214, 66, 66])
+
+            hafas = subprocess.run(
+                ["json-hafas.pl", backend_name, trip_id],
+                capture_output=True,
             )
+            status = {}
+            try:
+                status = json.loads(hafas.stdout)
+                if "error_string" in status:
+                    print(f"{backend_name} trip perl broke:\n{status}")
+                    return None
+            except:  # pylint: disable=bare-except
+                print(f"{backend_name} trip perl broke:\n{hafas.stdout} {hafas.stderr}")
+                traceback.print_exc()
+                return None
+
+            return status
+
+        if ("id" in self.hafas_data or "failedhafas" in self.hafas_data) and not force:
+            return
+
+        german_local_transit_not_in_oebb_hafas = (
+            "AST",
+            "Bus",
+            "Fähre",
+            "Ruf",
+            "RNV",
+            "SB",
+            "Schw-B",
+            "STB",
+            "STR",
+            "U",
+            "ZahnR",
+        )
+
+        station_id = self.status["fromStation"]["uic"]
+        mode = self.status["backend"]["type"]
+        backend = self.status["backend"]["name"]
+        if mode == "IRIS-TTS":
+            # iris-tts: only german trains, should all be in ÖBB hafas
+            mode = "HAFAS"
+            backend = "ÖBB"
+        elif (
+            mode in ("DBRIS", "travelcrab.friz64.de")
+            and self.status["train"]["type"]
+            not in german_local_transit_not_in_oebb_hafas
+            and not (
+                f"{self.status['train']['type']}{self.status['train']['line']}".strip()
+                == "S2"
+                and haversine(
+                    (
+                        self.status["fromStation"]["latitude"],
+                        self.status["fromStation"]["longitude"],
+                    ),
+                    (49.009, 8.417),
+                )
+                < 15.0
+            )
+        ):
+            # DBRIS or travelcrab (relayed transitous) checkins for non-local transit, i.e. mainline trains
+            # should all be in ÖBB hafas
+            # EXCEPT line S2 in karlsruhe. grrr
+            mode = "HAFAS"
+            backend = "ÖBB"
+        elif mode == "travelcrab.friz64.de":
+            mode = "MOTIS"
+            backend = "transitous"
+
+        # actually go ahead and fetch the data…
+        if mode == "HAFAS":
+            # 1. fetch stationboard
+            # 2. find train there, pick out ID, headsign and line
+            # 3. fetch train
+            jid = self.status["train"]["hafasId"]
+            if not jid and "|" in self.status["train"]["id"]:
+                jid = self.status["train"]["id"]
+
+            stationboard = {}
+            if station_id == 0:
+                # skip guaranteed failed request and run stopfinder later
+                stationboard = {"error_string": "svcResL[0].err is LOCATION"}
+            elif station_id > 0:
+                stationboard = get_stationboard(backend, station_id)
+
+            if (
+                backend == "ÖBB"
+                and stationboard.get("error_string") == "svcResL[0].err is LOCATION"
+            ):
+                # if we got here via DBRIS/travelcrab mainline trains we might have run
+                # into a station that has a different ID in the ÖBB hafas
+                # run a stop finder request to try and find a stop with the same name
+                station = öbb_stopfinder()
+                if station.get("eva"):
+                    print(
+                        f"trying to fix missing station {self.status['fromStation']}, found {station} instead"
+                    )
+                    stationboard = get_stationboard(backend, station["eva"])
+                else:
+                    print(f"failed to fix missing station {self.status['fromStation']}")
+
+            if not stationboard or not "trains" in stationboard:
+                save_hafas_data({"failedhafas": True})
+                return
+
+            for train in stationboard["trains"]:
+                if (
+                    not train["scheduled"]
+                    == self.status["fromStation"]["scheduledTime"]
+                ):
+                    continue
+
+                if (
+                    jid == train["id"]
+                    or (train["number"] == self.status["train"]["no"])
+                    or (
+                        f"{train['type']}{train['line']}"
+                        == f"{self.status['train']['type']}{self.status['train']['line'] or self.status['train']['no']}"
+                    )
+                    or (
+                        self.status["backend"]["type"]
+                        in ("MOTIS", "travelcrab.friz64.de")
+                        and f"{train['type']}{train['line']}".endswith(
+                            self.status["train"]["line"]
+                        )
+                    )
+                ):
+                    trip = get_trip(backend, train["id"])
+                    if trip:
+                        headsign = train["direction"]
+                        if (not headsign) and (route := trip.get("route")):
+                            headsign = route[-1]["name"]
+
+                        trip.update(headsign=headsign, line=train["line"])
+                        save_hafas_data(trip)
+                        return
+            else:
+                print(f"did not find a match for {self.status['train']}!")
+                save_hafas_data({"failedhafas": True})
+                return
+
+        elif mode == "DBRIS":
+            # 1. fetch stationboard, pick out headsign
+            # 2. we got ip banned :( only stationboard access for us
+            jid = self.status["train"]["hafasId"]
+            if not jid and "|" in self.status["train"]["id"]:
+                jid = self.status["train"]["id"]
+
+            stationboard = get_stationboard("DBRIS", station_id)
+
+            if not stationboard or not "trains" in stationboard:
+                save_hafas_data({"failedhafas": True})
+                return
+
+            for train in stationboard["trains"]:
+                if (
+                    not train["scheduled"]
+                    == self.status["fromStation"]["scheduledTime"]
+                ):
+                    continue
+
+                if (
+                    jid == train["id"]
+                    or (train["number"] == self.status["train"]["no"])
+                    or (
+                        f"{train['type']}{train['line']}"
+                        == f"{self.status['train']['type']}{self.status['train']['line'] or self.status['train']['no']}"
+                    )
+                ):
+                    save_hafas_data(
+                        {"headsign": train["direction"], "line": train["line"]}
+                    )
+                    return
+            else:
+                print(f"did not find a match for {self.status['train']}!")
+                save_hafas_data({"failedhafas": True})
+                return
+        elif mode == "MOTIS":
+            # 1. fetch train
+            # 2. find current stop in route
+            # 3. fetch stationboard, find train there and pick out correct headsign
+            trip = get_trip(f"MOTIS-{backend}", self.status["train"]["hafasId"])
+            if not trip:
+                save_hafas_data({"failedhafas": True})
+                return
+
+            station = None
+            if (route := trip.get("route")) and (
+                stations := [
+                    s
+                    for s in route
+                    if s["name"] == self.status["fromStation"]["name"]
+                ]
+            ):
+                stationboard = get_stationboard(f"MOTIS-{backend}", stations[0]["eva"])
+                if stationboard and "trains" in stationboard:
+                    for train in stationboard["trains"]:
+                        if (
+                            not train["scheduled"]
+                            == self.status["fromStation"]["scheduledTime"]
+                        ):
+                            continue
+
+                        if self.status["train"]["hafasId"] == train["id"]:
+                            trip.update(headsign=headsign, line=train["line"])
+                            break
+                    else:
+                        print(f"did not find a match at {stations[0]} for {self.status['train']}!")
+
+                save_hafas_data(trip)
+        else:
+            # manual trips and uhhhh EFA? not handled yet. later tm
+            return
 
     def fetch_headsign(self):
         if not self.hafas_data:
             self.fetch_hafas_data()
 
-        if headsign := self.status["train"].get("fakeheadsign", self.headsign):
-            return replace_headsign.get(
-                (
-                    f"{self.status['train']['type']}{self.status['train']['line']}".replace(
-                        " ", ""
-                    ),
-                    headsign,
+        if headsign := self.status["train"].get(
+            "fakeheadsign", self.hafas_data.get("headsign")
+        ):
+            replace_key = (
+                f"{self.status['train']['type']}{self.status['train']['line']}".replace(
+                    " ", ""
                 ),
+                headsign,
+            )
+            return replace_headsign.get(
+                replace_key,
                 headsign,
             )
         return "?"
