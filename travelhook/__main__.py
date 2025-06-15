@@ -1049,7 +1049,6 @@ async def composition_autocomplete(ia, current):
             [f"{number} {DB.Tram.find(network, number) or ''}" for number in numbers]
         )
         return [
-            Choice(name=current, value=current),
             Choice(name=composition_enriched, value=composition_enriched),
         ]
 
