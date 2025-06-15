@@ -656,6 +656,9 @@ class Trip:
                             continue
 
                         if self.status["train"]["hafasId"] == train["id"]:
+                            headsign = train["direction"]
+                            if (not headsign) and (route := trip.get("route")):
+                                headsign = route[-1]["name"]
                             trip.update(headsign=headsign, line=train["line"])
                             break
                     else:
