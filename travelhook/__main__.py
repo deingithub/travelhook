@@ -2042,6 +2042,8 @@ async def cts_journey(selected_transport):
 async def cts_station_autocomplete(ia, current):
     all_stops = DB.CTSStop.find_all()
     suggestions = [s for s in all_stops if current.casefold() in s.name.casefold()]
+    if not current and (trip := DB.Trip.find_last_trip_for(ia.user.id)):
+        suggestions = [s for s in suggestions if s.name == trip.status["toStation"]["name"]]
 
     return [Choice(name=s.name, value=str(s.logicalstopcode)) for s in suggestions][:25]
 
