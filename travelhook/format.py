@@ -292,8 +292,10 @@ def get_display(bot, status):
     if type == "ICB":
         type = "coach"
         line = "Intercitybus"
-    if not type and get_network(status) == "RNV":
-        type = "STR"
+    if get_network(status) == "RNV":
+        if not type:
+            type = "STR"
+        line = line.removeprefix("RNV ")
 
     if status["backend"]["name"] == "BLS":
         bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}
