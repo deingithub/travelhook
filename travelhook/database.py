@@ -641,9 +641,7 @@ class Trip:
             station = None
             if (route := trip.get("route")) and (
                 stations := [
-                    s
-                    for s in route
-                    if s["name"] == self.status["fromStation"]["name"]
+                    s for s in route if s["name"] == self.status["fromStation"]["name"]
                 ]
             ):
                 stationboard = get_stationboard(f"MOTIS-{backend}", stations[0]["eva"])
@@ -662,7 +660,9 @@ class Trip:
                             trip.update(headsign=headsign, line=train["line"])
                             break
                     else:
-                        print(f"did not find a match at {stations[0]} for {self.status['train']}!")
+                        print(
+                            f"did not find a match at {stations[0]} for {self.status['train']}!"
+                        )
 
                 save_hafas_data(trip)
         else:

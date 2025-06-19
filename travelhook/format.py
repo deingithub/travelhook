@@ -129,9 +129,13 @@ def get_network(status):
         return "KVV"
 
     # network RNV: trams in mannheim, ludwigshafen and heidelberg
-    if operator.startswith("Rhein-Neckar-Verkehr") or (
-        (status["train"]["type"] in ("", "STR", "RNV"))
-        and haversine((lat, lon), (49.47884, 8.55787)) < 29
+    if (
+        operator.startswith("Rhein-Neckar-Verkehr")
+        or operator.startswith("RNV")
+        or (
+            (status["train"]["type"] in ("", "STR", "RNV", "TRAM"))
+            and haversine((lat, lon), (49.47884, 8.55787)) < 29
+        )
     ):
         return "RNV"
 
@@ -194,9 +198,9 @@ def get_network(status):
         return "VGF"
 
     # network SAAR: Saarbahn
-    if (
-        haversine((lat,lon), (49.25, 6.98)) < 19
-        and status["train"]["type"] in ("STR", "STB")
+    if haversine((lat, lon), (49.25, 6.98)) < 19 and status["train"]["type"] in (
+        "STR",
+        "STB",
     ):
         return "SAAR"
 

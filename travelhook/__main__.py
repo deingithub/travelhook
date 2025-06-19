@@ -388,21 +388,37 @@ class TripActionsView(discord.ui.View):
             else:
                 self.add_item(self.disabled_refresh_button)
 
-            url = f"{config['travelynx_instance']}/s/{status['fromStation']['uic']}?"
-            if trip.status["backend"]["type"] == "IRIS-TTS":
-                train = urllib.parse.quote(
+            backend = trip.status["backend"]
+            url = config["travelynx_instance"]
+            if backend["type"] == "IRIS-TTS":
+                url += f"/s/{status['fromStation']['uic']}?train=" + urllib.parse.quote(
                     f"{status['train']['type']} {status['train']['no']}"
                 )
-                url += f"train={train}"
-            else:
-                jid = urllib.parse.quote(
-                    trip.status["train"]["hafasId"] or trip.status["train"]["id"]
-                )
+            elif backend["type"] == "DBRIS":
                 url += (
-                    f"hafas={trip.status['backend']['name']}&trip_id={jid}"
+                    f"/s/A=1@L={status['fromStation']['uic']}@?dbris=bahn.de&trip_id="
+                    + urllib.parse.quote(status["train"]["hafasId"])
                     + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
                 )
-            self.add_item(discord.ui.Button(label="Copy", url=url))
+            elif backend["type"] == "MOTIS":
+                # no station id yet…
+                url = None
+                # url += (
+                #     f"/s/{status['fromStation']['uic']}?motis={trip.status['backend']['name']}&trip_id="
+                #     + urllib.parse.quote(status["train"]["hafasId"])
+                #     + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
+                # )
+            elif backend["type"] == "HAFAS":
+                url += (
+                    f"/s/{status['fromStation']['uic']}?hafas={trip.status['backend']['name']}&trip_id="
+                    + urllib.parse.quote(status["train"]["hafasId"])
+                    + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
+                )
+            else:
+                url = None
+
+            if url:
+                self.add_item(discord.ui.Button(label="Copy", url=url))
 
     @discord.ui.button(label="Update", style=discord.ButtonStyle.secondary)
     async def refresh(self, ia, _):
@@ -2043,7 +2059,9 @@ async def cts_station_autocomplete(ia, current):
     all_stops = DB.CTSStop.find_all()
     suggestions = [s for s in all_stops if current.casefold() in s.name.casefold()]
     if not current and (trip := DB.Trip.find_last_trip_for(ia.user.id)):
-        suggestions = [s for s in suggestions if s.name == trip.status["toStation"]["name"]]
+        suggestions = [
+            s for s in suggestions if s.name == trip.status["toStation"]["name"]
+        ]
 
     return [Choice(name=s.name, value=str(s.logicalstopcode)) for s in suggestions][:25]
 
