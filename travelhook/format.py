@@ -334,7 +334,7 @@ def get_display(bot, status):
                 line = line.removeprefix(tt["line_startswith"])
 
             if "fallback" in tt:
-                line = f"{type} {line}".strip()
+                line = f"{type} {line or ''}".strip()
 
             # { emoji = "ica,ic1", color = "#ff0404", hide_line_number = true, always_show_train_number = true }
             return {
