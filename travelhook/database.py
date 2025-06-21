@@ -762,7 +762,10 @@ class Trip:
                                 "type"
                             ] = f"{wagon['uic_id'][4:8]} {wagon['uic_id'][8:11]}-{wagon['uic_id'][11]}"
                         else:
-                            wagon["type"] = wagon["uic_id"]
+                            if wagon["uic_id"].startswith("Lok_PP"):
+                                wagon["type"] = wagon["uic_id"].removeprefix(f"Lok_PP_{self.status['train']['no']}_")
+                            else:
+                                wagon["type"] = wagon["uic_id"]
 
                     if same_type_counter[1] == wagon["type"]:
                         same_type_counter[0] += 1
