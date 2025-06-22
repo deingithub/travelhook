@@ -657,7 +657,11 @@ class Trip:
                             headsign = train["direction"]
                             if (not headsign) and (route := trip.get("route")):
                                 headsign = route[-1]["name"]
-                            trip.update(headsign=headsign, line=train["line"])
+                            trip.update(
+                                headsign=headsign,
+                                line=train["line"],
+                                from_station_id=stations[0]["eva"],
+                            )
                             break
                     else:
                         print(

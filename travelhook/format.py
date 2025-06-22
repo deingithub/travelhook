@@ -732,13 +732,17 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             f"https://dbf.finalrewind.org/map/{jid}/0?hafas={hafas}"
             + f"&from={from_station}&to={to_station}"
         )
-    # travelcrab backend - motis id
-    elif trip.status["backend"]["type"] == "travelcrab.friz64.de":
+    # travelcrab (non-train checkins, trains covered by ÖBB above) or motis backend
+    elif trip.status["backend"]["type"] in ("travelcrab.friz64.de", "MOTIS"):
+        if trip.status["backend"]["type"] in ("travelcrab.friz64.de", "MOTIS"):
+            map_backend = "transitous"
+        else:
+            map_backend = trip.status["backend"]["name"]
         motis_id = urllib.parse.quote(trip.status["train"]["id"])
         from_station = urllib.parse.quote(trip.status["fromStation"]["name"])
         to_station = urllib.parse.quote(trip.status["toStation"]["name"])
         map_link = DB.Link.make(
-            f"https://dbf.finalrewind.org/map/{motis_id}/0?motis=transitous"
+            f"https://dbf.finalrewind.org/map/{motis_id}/0?motis={map_backend}"
             + f"&from={from_station}&to={to_station}"
         )
 

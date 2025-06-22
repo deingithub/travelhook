@@ -52,10 +52,10 @@ let
       motis-m = with perlPackages;
         buildPerlModule {
           pname = "Travel-Status-MOTIS";
-          version = "0.0.1";
+          version = "0.0.2";
           src = fetchurl {
-            url = "https://finalrewind.org/projects/Travel-Status-MOTIS/Travel-Status-MOTIS-0.01.tar.gz";
-            hash = "sha256-5tkGKZzPezQPcMcVPEZmKYVutE8aPiqJAd7vnKlahFQ=";
+            url = "https://finalrewind.org/projects/Travel-Status-MOTIS/Travel-Status-MOTIS-0.02.tar.gz";
+            hash = "sha256-bHt1M7yAxCQO8YetU+z888mW5YJ6+FeUB1J5QOAx2NI=";
           };
           doCheck = false;
           buildInputs = [ FileSlurp TestCompile TestPod ];
