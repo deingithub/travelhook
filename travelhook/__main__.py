@@ -403,7 +403,7 @@ class TripActionsView(discord.ui.View):
                     )
                 else:
                     url = None
-            elif backend["type"] == "MOTIS":
+            elif backend["type"] in ("MOTIS", "travelcrab.friz64.de"):
                 if from_station_id := self.trip.hafas_data.get("from_station_id"):
                     # filtering for trip doesn't work on travelynx's end, keep it here anyway
                     # in case it starts working sometime
@@ -416,11 +416,14 @@ class TripActionsView(discord.ui.View):
                     url = None
 
             elif backend["type"] == "HAFAS":
-                url += (
-                    f"/s/{status['fromStation']['uic']}?hafas={trip.status['backend']['name']}&trip_id="
-                    + urllib.parse.quote(status["train"]["hafasId"])
-                    + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
-                )
+                if jid := self.trip.hafas_data.get("id", status["train"]["id"]):
+                    url += (
+                        f"/s/{status['fromStation']['uic']}?hafas={trip.status['backend']['name']}&trip_id="
+                        + urllib.parse.quote(jid)
+                        + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
+                    )
+                else:
+                    url = None
             else:
                 url = None
 
