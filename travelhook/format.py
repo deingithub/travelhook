@@ -789,7 +789,7 @@ def sillies(bot, trips, embed):
             f"\n### {len(grouped[0])}× {display['emoji']} {display['line'] or ''}COMBO!"
         )
 
-    if (not trips[-1].hafas_data) and trips[-1].status["backend"]["id"] >= 0:
+    if trips[-1].hafas_data.get("failedhafas"):
         # embed = embed.set_thumbnail(url="https://i.imgur.com/6pB5Kc6.png")
         embed.description += "\n-# **» ?**: hafas broke, try to update"
 

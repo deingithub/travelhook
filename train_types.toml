@@ -256,6 +256,7 @@ train_types = [
 ]
 [network_descriptions]
 AT = "Trains in Austria"
+BKV = "Budapest Metro"
 BVG = "U-Bahn Berlin"
 CH-FV = "Swiss long-distance trains"
 CTS = "Strasbourg trams"

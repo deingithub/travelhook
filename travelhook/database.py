@@ -491,7 +491,7 @@ class Trip:
         station_id = self.status["fromStation"]["uic"]
         mode = self.status["backend"]["type"]
         backend = self.status["backend"]["name"]
-        if mode == "IRIS-TTS":
+        if mode == "IRIS-TTS" and backend == "DB":
             # iris-tts: only german trains, should all be in ÖBB hafas
             mode = "HAFAS"
             backend = "ÖBB"
@@ -520,6 +520,9 @@ class Trip:
         elif mode == "travelcrab.friz64.de":
             mode = "MOTIS"
             backend = "transitous"
+        elif mode == "IRIS-TTS":
+            # incorrectly reported EFA from travelynx - not implemented yet on our side
+            mode = "EFA"
 
         # actually go ahead and fetch the data…
         if mode == "HAFAS":
@@ -633,7 +636,7 @@ class Trip:
             # 1. fetch train
             # 2. find current stop in route
             # 3. fetch stationboard, find train there and pick out correct headsign
-            trip = get_trip(f"MOTIS-{backend}", self.status["train"]["hafasId"])
+            trip = get_trip(f"MOTIS-{backend}", self.status["train"]["hafasId"] or self.status["train"]["id"])
             if not trip:
                 save_hafas_data({"failedhafas": True})
                 return
