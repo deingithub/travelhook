@@ -245,106 +245,110 @@ def get_network(status):
 
 
 def get_display(bot, status):
-    type = status["train"]["type"].strip()
-    line = status["train"]["line"]
+    ret = {}
     all_types = [t.get("type") for t in train_types_config["train_types"]]
+    for type in status["train"]["type"].strip().split("|"):
+        line = status["train"]["line"]
 
-    type = blanket_replace_train_type.get(type, type)
+        type = blanket_replace_train_type.get(type, type)
 
-    if get_network(status) == "DPP":
-        if not type and line in ("A", "B", "C"):
-            type = "U"
+        if get_network(status) == "DPP":
+            if not type and line in ("A", "B", "C"):
+                type = "U"
 
-    if get_network(status) == "BKV":
-        if not type and line in ("M1", "M2", "M3", "M4"):
-            type = "M"
-            line = line[1:]
+        if get_network(status) == "BKV":
+            if not type and line in ("M1", "M2", "M3", "M4"):
+                type = "M"
+                line = line[1:]
 
-    if get_network(status) == "UK":
-        trainplusline = (
-            f"{status['train']['type']} {status['train']['line']}".removeprefix(
-                "SUBWAY"
-            ).strip()
-        )
-        if trainplusline in london_overground_lines:
-            type = "Overground"
-            line = trainplusline
-        elif trainplusline in london_underground_lines:
-            type = "Underground"
-            line = trainplusline
-        elif type not in all_types:
-            type = "NationalRail"
-            line = trainplusline
+        if get_network(status) == "UK":
+            trainplusline = (
+                f"{status['train']['type']} {status['train']['line']}".removeprefix(
+                    "SUBWAY"
+                ).strip()
+            )
+            if trainplusline in london_overground_lines:
+                type = "Overground"
+                line = trainplusline
+            elif trainplusline in london_underground_lines:
+                type = "Underground"
+                line = trainplusline
+            elif type not in all_types:
+                type = "NationalRail"
+                line = trainplusline
 
-    # account for "ME RE2" instead of "RE 2"
-    if line and (type not in all_types or not type):
-        if len(line) > 2 and line[0:2] in all_types:
-            type = line[0:2]
-            line = line[2:]
-        if line[0] in all_types:
-            type = line[0]
-            line = line[1:]
+        # account for "ME RE2" instead of "RE 2"
+        if line and (type not in all_types or not type):
+            if len(line) > 2 and line[0:2] in all_types:
+                type = line[0:2]
+                line = line[2:]
+            if line[0] in all_types:
+                type = line[0]
+                line = line[1:]
 
-    if not type and line == "BB":
-        type = "WLB"
-        line = ""
-    if type == "RT":
-        type = "STR"
-        line = "RT" + line
-    if type == "Bus" and get_network(status) == "WL":
-        line = line.replace("A", "ᴀ").replace("B", "ʙ")
-    if type == "ICB":
-        type = "coach"
-        line = "Intercitybus"
-    if get_network(status) == "RNV":
-        if not type:
+        if not type and line == "BB":
+            type = "WLB"
+            line = ""
+        if type == "RT":
             type = "STR"
-        line = line.removeprefix("RNV ")
+            line = "RT" + line
+        if type == "Bus" and get_network(status) == "WL":
+            line = line.replace("A", "ᴀ").replace("B", "ʙ")
+        if type == "ICB":
+            type = "coach"
+            line = "Intercitybus"
+        if get_network(status) == "RNV":
+            if not type:
+                type = "STR"
+            line = line.removeprefix("RNV ")
 
-    if status["backend"]["name"] == "BLS":
-        bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}
-        type = bls_replace_train_types.get(type, type)
-        if type == "SN":
-            type = "S"
-            line = f"N{line}"
+        if status["backend"]["name"] == "BLS":
+            bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}
+            type = bls_replace_train_types.get(type, type)
+            if type == "SN":
+                type = "S"
+                line = f"N{line}"
 
-        if status["backend"]["type"] == "MOTIS":
-            motis_train_types = {"TRAM": "STR"}
-            type = motis_train_types.get(type, type)
+            if status["backend"]["type"] == "MOTIS":
+                motis_train_types = {"TRAM": "STR"}
+                type = motis_train_types.get(type, type)
 
-    # fix "RB RB38", "U U8", … in a lot of regional HAFASes
-    if line and line.startswith(type):
-        line = line.removeprefix(type)
+        # fix "RB RB38", "U U8", … in a lot of regional HAFASes
+        if line and line.startswith(type):
+            line = line.removeprefix(type)
 
-    for tt in train_types_config["train_types"]:
-        # { type = "IC", line = "1",  line_startswith = "1", network = "SBB"}
-        if (
-            (not "type" in tt or tt["type"].casefold() == type.casefold())
-            and (not "line" in tt or tt["line"] == line)
-            and (
-                not "line_startswith" in tt
-                or (line and line.startswith(tt["line_startswith"]))
-            )
-            and (
-                not "network" in tt
-                or tt["network"].casefold() == get_network(status).casefold()
-            )
-        ):
-            if "remove_line_startswith" in tt:
-                line = line.removeprefix(tt["line_startswith"])
+        for tt in train_types_config["train_types"]:
+            # { type = "IC", line = "1",  line_startswith = "1", network = "SBB"}
+            if (
+                (not "type" in tt or tt["type"].casefold() == type.casefold())
+                and (not "line" in tt or tt["line"] == line)
+                and (
+                    not "line_startswith" in tt
+                    or (line and line.startswith(tt["line_startswith"]))
+                )
+                and (
+                    not "network" in tt
+                    or tt["network"].casefold() == get_network(status).casefold()
+                )
+            ):
+                if "remove_line_startswith" in tt:
+                    line = line.removeprefix(tt["line_startswith"])
 
-            if "fallback" in tt:
-                line = f"{type} {line or ''}".strip()
+                if "fallback" in tt:
+                    line = f"{type} {line or ''}".strip()
 
-            # { emoji = "ica,ic1", color = "#ff0404", hide_line_number = true, always_show_train_number = true }
-            return {
-                "emoji": emoji(bot, tt),
-                "color": tt.get("color", "#2e2e7d"),
-                "type": type,
-                "line": line if not tt.get("hide_line_number") else "",
-                "number": status["train"]["no"],
-                "always_show_train_number": tt.get("always_show_train_number", False),
-            }
+                # { emoji = "ica,ic1", color = "#ff0404", hide_line_number = true, always_show_train_number = true }
+                ret = {
+                    "emoji": (ret.get("emoji", "") + " " + emoji(bot, tt)).strip(),
+                    "color": tt.get("color", "#2e2e7d"),
+                    "type": type,
+                    "line": line if not tt.get("hide_line_number") else "",
+                    "number": status["train"]["no"],
+                    "always_show_train_number": tt.get("always_show_train_number", False),
+                }
+                break
+
+    return ret
 
 
 def emoji(bot, tt):
