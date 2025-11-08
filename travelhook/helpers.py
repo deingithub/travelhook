@@ -197,7 +197,7 @@ def generate_train_link(data):
             hafas = "ÖBB"
         link = (
             "https://dbf.finalrewind.org/z/"
-            + urllib.parse.quote(jid)
+            + jid.replace("#", "%23")
             + f"?hafas={hafas}"
         )
     else:

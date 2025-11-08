@@ -636,7 +636,10 @@ class Trip:
             # 1. fetch train
             # 2. find current stop in route
             # 3. fetch stationboard, find train there and pick out correct headsign
-            trip = get_trip(f"MOTIS-{backend}", self.status["train"]["hafasId"] or self.status["train"]["id"])
+            trip = get_trip(
+                f"MOTIS-{backend}",
+                self.status["train"]["hafasId"] or self.status["train"]["id"],
+            )
             if not trip:
                 save_hafas_data({"failedhafas": True})
                 return
@@ -804,10 +807,9 @@ class Trip:
                 .replace(tzinfo=None)
             )
             link = Link.make(
-                f"https://dbf.finalrewind.org/carriage-formation?number={self.status['train']['no']}"
-                f"&category={self.status['train']['type']}&administrationId=80"
-                f"&evaNumber={self.status['fromStation']['uic']}&date={departure:%Y-%m-%d}"
-                f"&time={departure.isoformat()}Z"
+                f"https://dbf.finalrewind.org/carriage-formation?tn={self.status['train']['no']}"
+                f"&tt={self.status['train']['type']}&eva={self.status['fromStation']['uic']}"
+                f"&dt={int(departure.timestamp())}"
             )
             self.patch_patch(
                 {

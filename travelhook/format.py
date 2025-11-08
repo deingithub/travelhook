@@ -301,6 +301,8 @@ def get_display(bot, status):
             if not type:
                 type = "STR"
             line = line.removeprefix("RNV ")
+            if line in ("8X", "9X"):
+                line = line.removesuffix("X")
 
         if status["backend"]["name"] == "BLS":
             bls_replace_train_types = {"B": "Bus", "FUN": "SB", "M": "U", "T": "STR"}
@@ -344,7 +346,9 @@ def get_display(bot, status):
                     "type": type,
                     "line": line if not tt.get("hide_line_number") else "",
                     "number": status["train"]["no"],
-                    "always_show_train_number": tt.get("always_show_train_number", False),
+                    "always_show_train_number": tt.get(
+                        "always_show_train_number", False
+                    ),
                 }
                 break
 
@@ -824,6 +828,31 @@ def sillies(bot, trips, embed):
         return embed.set_thumbnail(url="https://i.imgur.com/pHp8Sus.png")
     if "Bannwaldallee, Karlsruhe" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/4LQI5ep.jpeg")
+    if "Lange Rötterstraße" in status["toStation"]["name"]:
+        return embed.set_image(url="https://i.imgur.com/mZf2MfJ.png")
+    if "Dalbergstraße" in status["toStation"]["name"]:
+        return embed.set_image(url="https://i.imgur.com/P3w72xX.png")
+    if (
+        any(
+            scheckin in status["toStation"]["name"]
+            for scheckin in [
+                "Wohlgelegen EKZ",
+                "Käfertaler Straße",
+                "Mannheim-Käfertal",
+                "Exerzierplatz",
+            ]
+        )
+        and haversine(
+            (status["fromStation"]["latitude"], status["fromStation"]["longitude"]),
+            (49.5, 8.5),
+        )
+        < 2.0
+    ):
+        return embed.set_image(url="https://i.imgur.com/vUhC6RB.png")
+    if "Rosengarten" in status["toStation"]["name"]:
+        return embed.set_image(url="https://i.imgur.com/x9Fu9zc.gif")
+    if "Handelshafen/Jungbusch" in status["toStation"]["name"]:
+        return embed.set_thumbnail(url="https://i.imgur.com/8ot2cdB.png")
     if any(
         ikea in status["toStation"]["name"]
         for ikea in [
