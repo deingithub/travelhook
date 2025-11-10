@@ -409,7 +409,7 @@ class TripActionsView(discord.ui.View):
                     # in case it starts working sometime
                     url += (
                         f"/s/{from_station_id}?motis={trip.status['backend']['name']}&trip_id="
-                        + urllib.parse.quote(status["train"]["hafasId"])
+                        + urllib.parse.quote(status["train"]["id"])
                         + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
                     )
                 else:
