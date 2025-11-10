@@ -200,6 +200,15 @@ def generate_train_link(data):
             + jid.replace("#", "%23")
             + f"?hafas={hafas}"
         )
+    elif data["backend"]["type"] == "MOTIS":
+        trip_viewers = {
+            "transitous": "https://api.transitous.org/?tripId=",
+            "RNV": "https://directions.nwex.de/api/providers/rhein-neckar-verkehr/?tripId=",
+        }
+        if trip_view_url := trip_viewers.get(data["backend"]["name"]):
+            link = trip_view_url + data["train"]["id"]
+        else:
+            link = None
     else:
         link = None
 
