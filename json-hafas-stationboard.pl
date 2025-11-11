@@ -63,7 +63,7 @@ if ($ARGV[0] =~ /^MOTIS-/) {
 	my $motis = Travel::Status::MOTIS->new(
 		service => $service,
 		stop_id => $ARGV[1],
-		datetime => $dt
+		timestamp => $dt
 	);
 	if (my @results = $motis->results) {
 		my @trains;
