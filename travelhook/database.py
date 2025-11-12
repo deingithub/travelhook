@@ -659,7 +659,7 @@ class Trip:
                         ):
                             continue
 
-                        if self.status["train"]["hafasId"] == train["id"]:
+                        if self.status["train"]["id"] == train["id"]:
                             headsign = train["direction"]
                             if (not headsign) and (route := trip.get("route")):
                                 headsign = route[-1]["name"]
