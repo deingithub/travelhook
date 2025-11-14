@@ -647,7 +647,9 @@ class Trip:
             station = None
             if (route := trip.get("route")) and (
                 stations := [
-                    s for s in route if s["name"] == self.status["fromStation"]["name"]
+                    s for s in route
+                    if s["name"] == self.status["fromStation"]["name"]
+                    and s["sched_dep"] == self.status["fromStation"]["scheduledTime"]
                 ]
             ):
                 stationboard = get_stationboard(f"MOTIS-{backend}", stations[0]["eva"])
