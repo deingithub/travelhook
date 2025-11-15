@@ -654,29 +654,32 @@ class Trip:
             ):
                 stationboard = get_stationboard(f"MOTIS-{backend}", stations[0]["eva"])
                 if stationboard and "trains" in stationboard:
-                    for train in stationboard["trains"]:
-                        if (
-                            not train["scheduled"]
-                            == self.status["fromStation"]["scheduledTime"]
-                        ):
-                            continue
-
-                        if train["id"] in (self.status["train"]["id"], self.status["train"]["hafasId"]):
-                            headsign = train["direction"]
-                            if (not headsign) and (route := trip.get("route")):
-                                headsign = route[-1]["name"]
-                            trip.update(
-                                headsign=headsign,
-                                line=train["line"],
-                                from_station_id=stations[0]["eva"],
-                            )
-                            break
+                    candidates = [
+                        train for train in stationboard["trains"]
+                        if train["scheduled"] == self.status["fromStation"]["scheduledTime"]
+                        and train["id"] in (self.status["train"]["id"], self.status["train"]["hafasId"])
+                    ]
+                    if not candidates:
+                      candidates = [
+                            train for train in stationboard["trains"]
+                            if train["scheduled"] == self.status["fromStation"]["scheduledTime"]
+                            and train["line"] == self.status["train"]["line"]
+                        ]  
+                    if candidates:
+                        headsign = candidates[0]["direction"]
+                        if (not headsign) and (route := trip.get("route")):
+                            headsign = route[-1]["name"]
+                        trip.update(
+                            headsign=headsign,
+                            line=candidates[0]["line"],
+                            from_station_id=stations[0]["eva"],
+                        )
                     else:
                         print(
                             f"did not find a match at {stations[0]} for {self.status['train']}!"
                         )
 
-                save_hafas_data(trip)
+                    save_hafas_data(trip)
         else:
             # manual trips and uhhhh EFA? not handled yet. later tm
             return
