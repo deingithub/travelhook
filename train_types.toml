@@ -28,6 +28,8 @@ train_types = [
 	{ type = "Bus", network = "CTS", line = "H", emoji = "Bus2|ctsH", color = "#a62341", hide_line_number = true },
 	{ type = "Bus", network = "CTS", line = "C1", emoji = "Bus2|ctsC1", color = "#22ae84", hide_line_number = true },
 	{ type = "Bus", network = "CTS", line = "C3", emoji = "Bus2|ctsC3", color = "#9fc204", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "C4", emoji = "Bus2|ctsC4", color = "#f08118", hide_line_number = true },
+	{ type = "Bus", network = "CTS", line = "C5", emoji = "Bus2|ctsC5", color = "#25715c", hide_line_number = true },
 	{ type = "Bus", network = "CTS", line = "C6", emoji = "Bus2|ctsC6", color = "#7d5d9f", hide_line_number = true },
 	{ type = "Bus", network = "CTS", line = "C7", emoji = "Bus2|ctsC7", color = "#008a27", hide_line_number = true },
 	{ type = "Bus", network = "CTS", line = "C8", emoji = "Bus2|ctsC8", color = "#88cdd5", hide_line_number = true },
