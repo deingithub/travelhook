@@ -449,6 +449,7 @@ replace_operators = {
     "üstra Hannoversche Verkehrsbetriebe AG": "dem ÜMO",
     "VBB - Verkehrsbetriebe Burgenland GesmbH": "den Verkehrsbetrieben Burgenland",
     "Verkehrsbetriebe der Stadt St.Gallen": "vbsg",
+    "Verkehrsbetriebe Karlsruhe GmbH": "den VBK",
     "Wiener Linien GmbH & Co KG": "den Wiener Linien",  # öbb hafas spelling
 }
 known_operator_pronouns = {
@@ -519,11 +520,11 @@ replace_headsign = {
     ("STB9", "Empelde (Bus/Tram), Ronnenberg"): "Empelde",
     ("STB13", "Hemmingen (Hannover)"): "Hemmingen",
     # jesus christ KVV please fix this nonsense
-    ("S2", "Blankenloch Nord, Stutensee"): "Blankenloch",
-    ("S2", "Daxlanden Dornröschenweg, Karlsruhe"): "Rheinstrandsiedlung",
-    ("S2", "Hagsfeld Reitschulschlag (Schleife), Karlsruhe"): "Reitschulschlag",
-    ("S2", "Mörsch Bach-West, Rheinstetten"): "Rheinstetten",
-    ("S2", "Spöck Richard-Hecht-Schule, Stutensee"): "Spöck",
+    ("VBKS2", "Blankenloch Nord, Stutensee"): "Blankenloch",
+    ("VBKS2", "Daxlanden Dornröschenweg, Karlsruhe"): "Rheinstrandsiedlung",
+    ("VBKS2", "Hagsfeld Reitschulschlag (Schleife), Karlsruhe"): "Reitschulschlag",
+    ("VBKS2", "Mörsch Bach-West, Rheinstetten"): "Rheinstetten",
+    ("VBKS2", "Spöck Richard-Hecht-Schule, Stutensee"): "Spöck",
     ("STR5", "Karlsruhe Bh West (Gleis 55)"): "Rheinhafen",
     # 48 stunden ringbahn challenge
     ("S41", "Ring S41"): "Ring ↻",

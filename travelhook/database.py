@@ -499,22 +499,9 @@ class Trip:
             mode in ("DBRIS", "travelcrab.friz64.de")
             and self.status["train"]["type"]
             not in german_local_transit_not_in_oebb_hafas
-            and not (
-                f"{self.status['train']['type']}{self.status['train']['line']}".strip()
-                == "S2"
-                and haversine(
-                    (
-                        self.status["fromStation"]["latitude"],
-                        self.status["fromStation"]["longitude"],
-                    ),
-                    (49.009, 8.417),
-                )
-                < 15.0
-            )
         ):
             # DBRIS or travelcrab (relayed transitous) checkins for non-local transit, i.e. mainline trains
             # should all be in ÖBB hafas
-            # EXCEPT line S2 in karlsruhe. grrr
             mode = "HAFAS"
             backend = "ÖBB"
         elif mode == "travelcrab.friz64.de":
