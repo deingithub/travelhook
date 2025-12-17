@@ -109,8 +109,12 @@ def get_network(status):
         return "NS"
 
     # network KVV: Stadtbahn Karlsruhe
-    if operator in (
-         "Albtal-Verkehrs-Gesellschaft mbH", "Verkehrsbetriebe Karlsruhe GmbH"
+    if (
+        operator in ("Albtal-Verkehrs-Gesellschaft mbH", "Verkehrsbetriebe Karlsruhe GmbH")
+        or (
+            status["train"]["type"] in ("STR", "TRAM")
+            and haversine((lat, lon), (49.009, 8.417)) < 15
+        )
     ):
         return "KVV"
 
