@@ -439,6 +439,7 @@ replace_operators = {
     "Rhein-Neckar-Verkehr GmbH": "der RNV",
     "Rhein-Neckar-Verkehr GmbH (Oberrheinische Eisenbahn)": "der RNV",
     "Rhein-Neckar-Verkehr GmbH (Rhein-Haardtbahn)": "der RNV",
+    "Rhein-Neckar-Verkehr GmbH (rnv)": "der RNV",
     "S-Bahn Hannover (Transdev)": "der S-Bahn Hannover",
     "Schweizerische Bundesbahnen": "der SBB",
     "Schweizerische Bundesbahnen SBB": "der SBB",  # bls hafas spelling
