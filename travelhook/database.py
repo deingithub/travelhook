@@ -634,7 +634,8 @@ class Trip:
             station = None
             if (route := trip.get("route")) and (
                 stations := [
-                    s for s in route
+                    s
+                    for s in route
                     if s["name"] == self.status["fromStation"]["name"]
                     and s["sched_dep"] == self.status["fromStation"]["scheduledTime"]
                 ]
@@ -642,16 +643,21 @@ class Trip:
                 stationboard = get_stationboard(f"MOTIS-{backend}", stations[0]["eva"])
                 if stationboard and "trains" in stationboard:
                     candidates = [
-                        train for train in stationboard["trains"]
-                        if train["scheduled"] == self.status["fromStation"]["scheduledTime"]
-                        and train["id"] in (self.status["train"]["id"], self.status["train"]["hafasId"])
+                        train
+                        for train in stationboard["trains"]
+                        if train["scheduled"]
+                        == self.status["fromStation"]["scheduledTime"]
+                        and train["id"]
+                        in (self.status["train"]["id"], self.status["train"]["hafasId"])
                     ]
                     if not candidates:
-                      candidates = [
-                            train for train in stationboard["trains"]
-                            if train["scheduled"] == self.status["fromStation"]["scheduledTime"]
+                        candidates = [
+                            train
+                            for train in stationboard["trains"]
+                            if train["scheduled"]
+                            == self.status["fromStation"]["scheduledTime"]
                             and train["line"] == self.status["train"]["line"]
-                        ]  
+                        ]
                     if candidates:
                         headsign = candidates[0]["direction"]
                         if (not headsign) and (route := trip.get("route")):

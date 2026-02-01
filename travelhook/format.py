@@ -747,6 +747,49 @@ def format_travelynx(bot, userid, trips, continue_link=None):
     if map_link:
         desc += f" · [Map]({config['shortener_url']}/{map_link.short_id})"
 
+    backend = trip.status["backend"]
+    copy_url = config["travelynx_instance"]
+    if backend["type"] == "IRIS-TTS":
+        copy_url += f"/s/{trip.status['fromStation']['uic']}?train=" + urllib.parse.quote(
+            f"{trip.status['train']['type']} {trip.status['train']['no']}"
+        )
+    elif backend["type"] == "DBRIS":
+        if jid := trip.hafas_data.get("id", trip.status["train"]["id"]):
+            copy_url += (
+                f"/s/A=1@L={trip.status['fromStation']['uic']}@?dbris=bahn.de&trip_id="
+                + urllib.parse.quote(jid)
+                + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
+            )
+        else:
+            copy_url = None
+    elif backend["type"] in ("MOTIS", "travelcrab.friz64.de"):
+        if from_station_id := trip.hafas_data.get("from_station_id"):
+            # filtering for trip doesn't work on travelynx's end, keep it here anyway
+            # in case it starts working sometime
+            copy_url += (
+                f"/s/{from_station_id}?motis={trip.status['backend']['name']}&trip_id="
+                + urllib.parse.quote(trip.status["train"]["id"])
+                + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
+            )
+        else:
+            copy_url = None
+
+    elif backend["type"] == "HAFAS":
+        if jid := trip.hafas_data.get("id", trip.status["train"]["id"]):
+            copy_url += (
+                f"/s/{trip.status['fromStation']['uic']}?hafas={trip.status['backend']['name']}&trip_id="
+                + urllib.parse.quote(jid)
+                + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
+            )
+        else:
+            copy_url = None
+    else:
+        copy_url = None
+
+    if copy_url:
+        copy_link = DB.Link.make(copy_url)
+        desc += f" · [Copy checkin]({config['shortener_url']}/{copy_link.short_id})"
+
     embed_title = f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
     embed_title += decline_operator_with_article(
         trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")

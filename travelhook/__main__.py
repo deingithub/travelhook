@@ -388,48 +388,6 @@ class TripActionsView(discord.ui.View):
             else:
                 self.add_item(self.disabled_refresh_button)
 
-            backend = trip.status["backend"]
-            url = config["travelynx_instance"]
-            if backend["type"] == "IRIS-TTS":
-                url += f"/s/{status['fromStation']['uic']}?train=" + urllib.parse.quote(
-                    f"{status['train']['type']} {status['train']['no']}"
-                )
-            elif backend["type"] == "DBRIS":
-                if jid := self.trip.hafas_data.get("id", status["train"]["id"]):
-                    url += (
-                        f"/s/A=1@L={status['fromStation']['uic']}@?dbris=bahn.de&trip_id="
-                        + urllib.parse.quote(jid)
-                        + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
-                    )
-                else:
-                    url = None
-            elif backend["type"] in ("MOTIS", "travelcrab.friz64.de"):
-                if from_station_id := self.trip.hafas_data.get("from_station_id"):
-                    # filtering for trip doesn't work on travelynx's end, keep it here anyway
-                    # in case it starts working sometime
-                    url += (
-                        f"/s/{from_station_id}?motis={trip.status['backend']['name']}&trip_id="
-                        + urllib.parse.quote(status["train"]["id"])
-                        + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
-                    )
-                else:
-                    url = None
-
-            elif backend["type"] == "HAFAS":
-                if jid := self.trip.hafas_data.get("id", status["train"]["id"]):
-                    url += (
-                        f"/s/{status['fromStation']['uic']}?hafas={trip.status['backend']['name']}&trip_id="
-                        + urllib.parse.quote(jid)
-                        + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
-                    )
-                else:
-                    url = None
-            else:
-                url = None
-
-            if url:
-                self.add_item(discord.ui.Button(label="Copy", url=url))
-
     @discord.ui.button(label="Update", style=discord.ButtonStyle.secondary)
     async def refresh(self, ia, _):
         """refresh real trips from travelynx api. this button is deleted from the view
