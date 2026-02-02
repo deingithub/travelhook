@@ -788,7 +788,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
 
     if copy_url:
         copy_link = DB.Link.make(copy_url)
-        desc += f" · [Copy checkin]({config['shortener_url']}/{copy_link.short_id})"
+        desc += f" · [Copy]({config['shortener_url']}/{copy_link.short_id})"
 
     embed_title = f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
     embed_title += decline_operator_with_article(
