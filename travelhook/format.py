@@ -752,14 +752,14 @@ def format_travelynx(bot, userid, trips, continue_link=None):
     if backend["type"] == "IRIS-TTS":
         copy_url += f"/s/{trip.status['fromStation']['uic']}?train=" + urllib.parse.quote(
             f"{trip.status['train']['type']} {trip.status['train']['no']}"
-        )
+        ) + "#now"
     elif backend["type"] == "DBRIS":
         if jid := trip.hafas_data.get("id", trip.status["train"]["id"]):
             copy_url += (
                 f"/s/A=1@L={trip.status['fromStation']['uic']}@?dbris=bahn.de&trip_id="
                 + urllib.parse.quote(jid)
-                + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
-            )
+                + f"&timestamp={trip.status['fromStation']['scheduledTime']}#now"
+            ) 
         else:
             copy_url = None
     elif backend["type"] in ("MOTIS", "travelcrab.friz64.de"):
@@ -769,7 +769,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             copy_url += (
                 f"/s/{from_station_id}?motis={trip.status['backend']['name']}&trip_id="
                 + urllib.parse.quote(trip.status["train"]["id"])
-                + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
+                + f"&timestamp={trip.status['fromStation']['scheduledTime']}#now"
             )
         else:
             copy_url = None
@@ -779,7 +779,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             copy_url += (
                 f"/s/{trip.status['fromStation']['uic']}?hafas={trip.status['backend']['name']}&trip_id="
                 + urllib.parse.quote(jid)
-                + f"&timestamp={trip.status['fromStation']['scheduledTime']}"
+                + f"&timestamp={trip.status['fromStation']['scheduledTime']}#now"
             )
         else:
             copy_url = None

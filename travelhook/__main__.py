@@ -1426,7 +1426,24 @@ async def train_types(ia):
 
 
 @manual.command()
-async def train_variants(ia):
+@discord.app_commands.describe(show='Which subset of variants to show')
+@discord.app_commands.choices(
+    show=[
+        Choice(
+            name="Trams & Stadtbahn - CTS, KVB, KVV, NRW, RNV, SAAR, Ü",
+            value="CTS, KVB, KVV, NRW, RNV, SAAR, Ü",
+        ),
+        Choice(
+            name="Metro - BKV, BVG, DPP, HHA, MVG, tl, VAG, VGF, WL",
+            value="BKV, BVG, DPP, HHA, MVG, tl, VAG, VGF, WL",
+        ),
+        Choice(
+            name="Mainline & Others - AT, CH-FV, CZ, NS, ST, SWien, UK",
+            value="AT, CH-FV, CZ, NS, ST, SWien, UK",
+        ),
+    ]
+)
+async def train_variants(ia, show: Choice[str]):
     "list the train display variants for transit networks the bot knows about"
 
     embeds = [
@@ -1436,15 +1453,19 @@ async def train_variants(ia):
             description="the relay bot supports 'native' display variants for a number of transit "
             "networks. when you check in with travelynx or **/cts**, the bot will automatically "
             "try to guess the correct network. if you're checking in manually or the bot makes a "
-            "mistake, you can correct it with **/journey edit network:**",
+            "mistake, you can correct it with **/journey edit network:**\n"
+            f"### {LineEmoji.WARN} Limited view\nshowing only: **{show.name}**.\n"
+            "There are more variants, use **/explain train_variants** "
+            "again with a different selection to show the others.",
         ),
         discord.Embed(color=discord.Color.from_str("#2e2e7d"), description=""),
     ]
+    show = show.value.split(", ")
     sortkey = lambda tt: tt.get("network", "")
     train_types = sorted(train_types_config["train_types"], key=sortkey)
     for network, types in itertools.groupby(train_types, sortkey):
         description = ""
-        if not network:
+        if not network or network not in show:
             continue
         types = list(types)
         if len(types) > 1 and all(tt.get("type") == "U" for tt in types):
@@ -1489,15 +1510,16 @@ async def train_variants(ia):
                 )
         elif network == "UK":
             description = f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n> `Underground` "
-            tube = [tt for tt in types if not (tt.get("type") or tt.get("fallback"))]
+            tube = [tt for tt in types if tt.get("type") == "Underground"]
             description += " | ".join(emoji(bot, tt) for tt in tube)
             description += f"\n> " + " | ".join(
                 [
                     explain_display(bot, tt, for_variants=True)
                     for tt in types
-                    if tt.get("type") or tt.get("fallback")
+                    if tt.get("type") != "Underground"
                 ]
             )
+            pass
         else:
             description = (
                 f"\n**`{network}` {train_types_config['network_descriptions'][network]}**\n> "
