@@ -48,6 +48,7 @@ blanket_replace_train_type = {
     "SVG": "FEX",
     "Trm": "STR",
     "TRAM": "STR",
+    "Straßenbahn": "STR",
     "west": "WB",
 }
 london_overground_lines = {
@@ -73,8 +74,10 @@ london_underground_lines = {
     "Elizabeth line",
 }
 british_tocs = {
+    "Avanti",
     "TransPennine Express",
     "Thameslink",
+    "LNR",
     "LNER",
     "Southeastern",
     "Stansted Express",
@@ -229,8 +232,7 @@ def get_network(status):
         or trainplusline in london_overground_lines
         or trainplusline in london_underground_lines
         or trainplusline in british_tocs
-        or trainplusline == "STR DLR"
-        or trainplusline == "DLR"
+        or trainplusline in ("STR DLR", "DLR")
         or operator
         in (
             "London Overground",
@@ -274,6 +276,9 @@ def get_display(bot, status):
             elif trainplusline in london_underground_lines:
                 type = "Underground"
                 line = trainplusline
+            elif trainplusline == "DLR":
+                type = "STR"
+                line = "DLR"
             elif type not in all_types:
                 type = "NationalRail"
                 line = trainplusline
