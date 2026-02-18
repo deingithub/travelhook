@@ -1426,7 +1426,7 @@ async def train_types(ia):
 
 
 @manual.command()
-@discord.app_commands.describe(show='Which subset of variants to show')
+@discord.app_commands.describe(show="Which subset of variants to show")
 @discord.app_commands.choices(
     show=[
         Choice(

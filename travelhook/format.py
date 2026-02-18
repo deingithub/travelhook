@@ -109,12 +109,12 @@ def get_network(status):
         return "NS"
 
     # network KVV: Stadtbahn Karlsruhe
-    if (
-        operator in ("Albtal-Verkehrs-Gesellschaft mbH", "Verkehrsbetriebe Karlsruhe GmbH")
-        or (
-            status["train"]["type"] in ("STR", "TRAM")
-            and haversine((lat, lon), (49.009, 8.417)) < 15
-        )
+    if operator in (
+        "Albtal-Verkehrs-Gesellschaft mbH",
+        "Verkehrsbetriebe Karlsruhe GmbH",
+    ) or (
+        status["train"]["type"] in ("STR", "TRAM")
+        and haversine((lat, lon), (49.009, 8.417)) < 15
     ):
         return "KVV"
 
@@ -219,15 +219,24 @@ def get_network(status):
     if operator == "CTS":
         return "CTS"
 
-    trainplusline = f"{status['train']['type']} {status['train']['line']}".removeprefix(
-        "SUBWAY"
-    ).strip()
+    trainplusline = (
+        f"{status['train']['type']} {status['train']['line']}".removeprefix("SUBWAY")
+        .removeprefix("METRO")
+        .strip()
+    )
     if (
         (7000000 < (status["fromStation"]["uic"] or 0) < 7100000)
         or trainplusline in london_overground_lines
         or trainplusline in london_underground_lines
         or trainplusline in british_tocs
         or trainplusline == "STR DLR"
+        or trainplusline == "DLR"
+        or operator
+        in (
+            "London Overground",
+            "London Docklands Light Railway - TfL",
+            "London Underground (TfL)",
+        )
     ):
         return "UK"
 
@@ -255,7 +264,9 @@ def get_display(bot, status):
             trainplusline = (
                 f"{status['train']['type']} {status['train']['line']}".removeprefix(
                     "SUBWAY"
-                ).strip()
+                )
+                .removeprefix("METRO")
+                .strip()
             )
             if trainplusline in london_overground_lines:
                 type = "Overground"
@@ -750,16 +761,20 @@ def format_travelynx(bot, userid, trips, continue_link=None):
     backend = trip.status["backend"]
     copy_url = config["travelynx_instance"]
     if backend["type"] == "IRIS-TTS":
-        copy_url += f"/s/{trip.status['fromStation']['uic']}?train=" + urllib.parse.quote(
-            f"{trip.status['train']['type']} {trip.status['train']['no']}"
-        ) + "#now"
+        copy_url += (
+            f"/s/{trip.status['fromStation']['uic']}?train="
+            + urllib.parse.quote(
+                f"{trip.status['train']['type']} {trip.status['train']['no']}"
+            )
+            + "#now"
+        )
     elif backend["type"] == "DBRIS":
         if jid := trip.hafas_data.get("id", trip.status["train"]["id"]):
             copy_url += (
                 f"/s/A=1@L={trip.status['fromStation']['uic']}@?dbris=bahn.de&trip_id="
                 + urllib.parse.quote(jid)
                 + f"&timestamp={trip.status['fromStation']['scheduledTime']}#now"
-            ) 
+            )
         else:
             copy_url = None
     elif backend["type"] in ("MOTIS", "travelcrab.friz64.de"):
