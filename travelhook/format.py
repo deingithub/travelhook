@@ -452,15 +452,90 @@ def shortened_name(previous_name, this_name):
 
     return this_name
 
+fullnames = {
+    "Lessing": "Gotthold Ephraim Lessing",
+    "Mathy": "Karl Mathy",
+    "Weinbrenner": "Friedrich Weinbrenner",
+    "Bibiena": "Giuseppe Bibiena",
+    "Rheinhafen": "Port du Rhin",
+    "Universität": "Université",
+    "Universitätsklinikum": "Hôpital universitaire"
+}
+
+def frenchify(name):
+    name = name.split(", ")
+    if len(name) > 1:
+        if DB.City.find(name[0]):
+            city = name[0].strip()
+            stopname = name[1].strip()
+        else:
+            city = name[1].strip()
+            stopname = name[0].strip()
+    else:
+        name = name[0].split(" ")
+        if DB.City.find(name[0]) or name[0] in ("KA",):
+            city = name[0].strip()
+            stopname = " ".join(name[1:]).strip()
+        else:
+            city = None
+            stopname = " ".join(name).strip()
+
+    if city == "KA":
+        city = "Karlsruhe"
+
+    hbfs = {"Hauptbahnhof", "Hbf", "Bahnhofsvorplatz", "Hauptbahnhof (Vorplatz)", "Hauptbf"}
+    if city and any(hbf in stopname for hbf in hbfs):
+        return f"Gare de {city}-ville"
+    elif stopname in hbfs:
+        return "Gare centrale"
+    elif stopname.casefold().endswith("bahnhof"):
+        translate = {"Ost": "Gare de l'Est", "West": "Gare de l'Ouest", "Süd": "Gare du Sud", "Stadt": "Gare de la ville", "Alter OEG-": "ancienne gare OEG"}
+        kind_of_bahnhof = stopname.removesuffix("bahnhof").strip()
+        if not kind_of_bahnhof:
+            return f"{city or ''} Gare".strip()
+        elif translated := translate.get(kind_of_bahnhof):
+            return f"{city or ''} {translated}".strip()
+        else:
+            return f"{city or ''} Gare du {stopname[:-7]}".strip()
+
+    stem = stopname
+
+    if stopname in ("Arbeitsagentur", "Arbeitsamt", "Agentur für Arbeit"):
+        stem = "Travail"
+    elif match := re.search(r"(.+)(-?kirche)", stopname, re.IGNORECASE):
+        stem = f"St {match[1]}"
+    elif match := re.search(r"(.+)-(.+)-.+", stopname, re.IGNORECASE):
+        stem = f"{match[1]} {match[2]}"
+    elif match := re.search(r"(.+)Rathaus", stopname):
+        stem = f"{match[1] or city or ''} Hôtel de ville"
+    elif match := re.search(r"(?:straße|platz|allee|weg) de[rs] (.+)", stopname, re.IGNORECASE):
+        stem = match[1]
+    elif match := re.search(r"(.+)(?:er str|-str|er weg|splatz|er platz|-platz|sweg|-weg|er tor)|(.+)(?:str|platz|weg|zentrum|tor)", stopname, re.IGNORECASE):
+        stem = (match[1] or match[2])
+    
+    stem = stem.replace("-", " ").strip()
+    return fullnames.get(stem, stem)
 
 def format_travelynx(bot, userid, trips, continue_link=None):
     """the actual formatting function called by message sends and edits
     to render an embed describing the current journey"""
     user = bot.get_user(userid)
     timezone = DB.User.find(user.id).get_timezone()
+    dt = datetime.fromtimestamp(trips[-1].status["fromStation"]["scheduledTime"], tz=timezone)
 
     desc = ""
     color = None
+
+    def _convert_name(name):
+        if translated := DB.CTSStop.translate(name):
+            return translated
+        else:
+            return frenchify(name)
+
+    if dt.month == 4 and dt.day == 1:
+        _conv = _convert_name
+    else:
+        _conv = lambda n: n
 
     def _next(statuses, current_index):
         "in the format loop, get the train after the current one or None if we're at the last"
@@ -485,7 +560,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         # compact layout for completed trips
         if continue_link and _next(trips, i):
             if not _prev(trips, i):
-                name = train["fromStation"]["name"]
+                name = _conv(train["fromStation"]["name"])
                 prefix_to_add = replace_city_suffix_with_prefix.get(
                     name.split(", ")[-1]
                 )
@@ -509,7 +584,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         # regular layout for full journey display
         # if we're the first trip of the journey, draw a journey start icon
         if not _prev(trips, i):
-            name = train["fromStation"]["name"]
+            name = _conv(train["fromStation"]["name"])
             prefix_to_add = replace_city_suffix_with_prefix.get(name.split(", ")[-1])
             if prefix_to_add:
                 name = f"{prefix_to_add} {', '.join(name.split(', ')[0:-1])}"
@@ -527,21 +602,21 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     )
                     or train["fromStation"]["name"]
                 )
-                station_name = shortened_name(
+                station_name = _conv(shortened_name(
                     prev_train["toStation"]["name"], station_name
-                )
+                ))
                 desc += f"{LineEmoji.CHANGE_ENTER_STOP}{departure} {station_name}\n"
             # if our trip starts on the same station as the last ended, we've already drawn the change icon
             else:
                 pass
 
         route_link = generate_train_link(train)
-        headsign = shortened_name(train["fromStation"]["name"], trip.fetch_headsign())
+        headsign = _conv(shortened_name(train["fromStation"]["name"], trip.fetch_headsign()))
 
         # all lines in vienna have overly long HAFAS destinations not consistent with the vehicle display
         # like "Wien Winckelmannstraße (Schwendergasse 61)" when it should just be Winckelmannstraße
         if match := re_remove_vienna_suffixes.match(headsign):
-            headsign = match["name"]
+            headsign = _conv(match["name"])
 
         headsign = "» " + headsign
 
@@ -564,9 +639,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             train["toStation"]["realTime"],
             timezone=timezone,
         )
-        station_name = shortened_name(
+        station_name = _conv(shortened_name(
             train["fromStation"]["name"], train["toStation"]["name"]
-        )
+        ))
         # if we're on the last trip of the journey, draw an end icon
         if not _next(trips, i):
             desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
@@ -645,9 +720,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     )
                     or train["toStation"]["name"]
                 )
-                station_name = shortened_name(
+                station_name = _conv(shortened_name(
                     next_train["fromStation"]["name"], station_name
-                )
+                ))
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
                     next_train["fromStation"]["realTime"],
@@ -687,7 +762,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             trips[-1].status["toStation"]["realTime"],
             True,
         )
-        desc += f"\n{LineEmoji.DESTINATION} **{trips[-1].status['toStation']['name']} {to_time}**\n"
+        desc += f"\n{LineEmoji.DESTINATION} **{_conv(trips[-1].status['toStation']['name'])} {to_time}**\n"
 
     total_time = timedelta(
         seconds=trips[-1].status["toStation"]["realTime"]
@@ -810,11 +885,21 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         copy_link = DB.Link.make(copy_url)
         desc += f" · [Copy]({config['shortener_url']}/{copy_link.short_id})"
 
-    embed_title = f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
-    embed_title += decline_operator_with_article(
-        trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
-    )
-    embed_title += " unterwegs"
+    if dt.month == 4 and dt.day == 1:
+        embed_title = f"Mon dieu! L'{user.name}, c'{'était' if not trips[-1].status['checkedIn'] else 'est'} en route"
+        if _operator := decline_operator_with_article(
+            trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
+        ):
+            _operator = _operator.removeprefix(' mit ')
+            _operator = _operator.removeprefix('der ').removeprefix('dem ').removeprefix('den ')
+            embed_title += f" avec {_operator}"
+        embed_title += "! 🇫🇷🇫🇷🇫🇷"
+    else:
+        embed_title = f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
+        embed_title += decline_operator_with_article(
+            trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
+        )
+        embed_title += " unterwegs"
 
     embed = discord.Embed(
         description=desc,

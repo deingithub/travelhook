@@ -221,22 +221,15 @@ class City:
 class CTSStop:
     "cts stops"
     name: str
-    logicalstopcode: int
-    latitude: int
-    longitude: int
+    translated: str
 
     @classmethod
-    def find_all(cls):
-        rows = DB.execute("SELECT * FROM cts_stops").fetchall()
-        return [cls(**row) for row in rows]
-
-    @classmethod
-    def find_by_logicalstopcode(cls, logicalstopcode):
-        row = DB.execute(
-            "SELECT * FROM cts_stops WHERE logicalstopcode = ?", (logicalstopcode,)
-        ).fetchone()
+    def translate(cls, name):
+        row = DB.execute("SELECT * FROM cts_stops WHERE name = ?", (name,)).fetchone()
         if row:
-            return cls(**row)
+            return cls(**row).translated 
+        else:
+            return None
 
 
 @dataclass
