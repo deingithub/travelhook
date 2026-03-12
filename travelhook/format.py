@@ -157,7 +157,7 @@ def get_network(status):
 
     # network Ü: Stadtbahn Hannover
     if (
-        status["train"]["type"] in ("STR", "STB", "Stb")
+        status["train"]["type"].casefold().strip() in ("str", "stb")
         and haversine((lat, lon), (52.369, 9.740)) < 20
     ):
         return "Ü"
