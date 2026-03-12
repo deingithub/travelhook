@@ -157,7 +157,7 @@ def get_network(status):
 
     # network Ü: Stadtbahn Hannover
     if (
-        status["train"]["type"] in ("STR", "STB")
+        status["train"]["type"] in ("STR", "STB", "Stb")
         and haversine((lat, lon), (52.369, 9.740)) < 20
     ):
         return "Ü"
@@ -454,6 +454,7 @@ def shortened_name(previous_name, this_name):
 
 fullnames = {
     "Lessing": "Gotthold Ephraim Lessing",
+    "Ettling": "Ettlingen",
     "Mathy": "Karl Mathy",
     "Weinbrenner": "Friedrich Weinbrenner",
     "Bibiena": "Giuseppe Bibiena",

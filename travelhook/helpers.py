@@ -44,6 +44,7 @@ train_types_with_realtime_data_on_bahnexpert_maybe_i_hope = (
     "RS",
     "RJ",
     "RJX",
+    "S",
     "TGV",
     "WB",
 )
