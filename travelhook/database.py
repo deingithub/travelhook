@@ -227,7 +227,7 @@ class CTSStop:
     def translate(cls, name):
         row = DB.execute("SELECT * FROM cts_stops WHERE name = ?", (name,)).fetchone()
         if row:
-            return cls(**row).translated 
+            return cls(**row).translated
         else:
             return None
 
@@ -500,9 +500,6 @@ class Trip:
         elif mode == "travelcrab.friz64.de":
             mode = "MOTIS"
             backend = "transitous"
-        elif mode == "IRIS-TTS":
-            # incorrectly reported EFA from travelynx - not implemented yet on our side
-            mode = "EFA"
 
         # actually go ahead and fetch the data…
         if mode == "HAFAS":
@@ -666,6 +663,43 @@ class Trip:
                         )
 
                     save_hafas_data(trip)
+        elif mode == "EFA":
+            # 1. fetch stationboard
+            # 2. find train there, pick out ID, headsign and line
+            # 3. fetch train
+            jid = self.status["train"]["id"]
+
+            stationboard = get_stationboard(f"EFA-{backend}", station_id)
+
+            if not stationboard or not "trains" in stationboard:
+                save_hafas_data({"failedhafas": True})
+                return
+
+            for train in stationboard["trains"]:
+                if (
+                    not train["scheduled"]
+                    == self.status["fromStation"]["scheduledTime"]
+                ):
+                    continue
+
+                if (
+                    jid == train["id"]
+                    or (train["number"] == self.status["train"]["no"])
+                    or (train["line"] == self.status["train"]["line"])
+                ):
+                    trip = get_trip(f"EFA-{backend}", train["id"])
+                    if trip:
+                        headsign = train["direction"]
+                        if (not headsign) and (route := trip.get("route")):
+                            headsign = route[-1]["name"]
+
+                        trip.update(headsign=headsign, line=train["line"])
+                        save_hafas_data(trip)
+                        return
+            else:
+                print(f"did not find a match for {self.status['train']}!")
+                save_hafas_data({"failedhafas": True})
+                return
         else:
             # manual trips and uhhhh EFA? not handled yet. later tm
             return

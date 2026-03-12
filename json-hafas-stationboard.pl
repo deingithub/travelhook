@@ -7,6 +7,7 @@ use JSON;
 use Travel::Status::DE::HAFAS;
 use Travel::Status::DE::DBRIS;
 use Travel::Status::MOTIS;
+use Travel::Status::DE::EFA;
 use DateTime;
 
 sub  trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
@@ -89,7 +90,39 @@ if ($ARGV[0] =~ /^MOTIS-/) {
 			error_string => $motis->errstr
 		});
 	}
-
+}
+if ($ARGV[0] =~ /^EFA-/) {
+	my $service = substr($ARGV[0],4);
+	my $efa = Travel::Status::DE::EFA->new(
+		service => $service,
+		name => $ARGV[1],
+		type => 'stopID',
+		datetime => $dt
+	);
+	if (my @results = $efa->results) {
+		my @trains;
+		for my $train (@results) {
+			push(@trains, {
+				id=>$train->id,
+				type=>defined $train->train_type ? $train->train_type : $train->mot_name,
+				line=>$train->line,
+				number=>defined $train->train_no ? $train->train_no : 0,
+				direction=>$train->destination,
+				station=>$ARGV[1],
+				scheduled=>$train->sched_datetime->epoch,
+				realtime=>defined $train->delay ? JSON::true : JSON::false,
+				delay=>defined $train->delay ? $train->delay + 0 : JSON::null,
+			});
+		}
+		print encode_json({
+			trains=>[@trains]
+		});
+	} else {
+		print encode_json({
+			error_code => 'efa broke rip',
+			error_string => $efa->errstr
+		});
+	}
 } else {
 	my $hafas = Travel::Status::DE::HAFAS->new(
 		service => $ARGV[0],

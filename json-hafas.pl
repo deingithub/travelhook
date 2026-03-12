@@ -6,6 +6,7 @@ use warnings;
 use JSON;
 use Travel::Status::DE::DBRIS;
 use Travel::Status::DE::HAFAS;
+use Travel::Status::DE::EFA;
 use Travel::Status::MOTIS;
 
 if ($ARGV[0] =~ /^MOTIS-/) {
@@ -112,6 +113,71 @@ if ($ARGV[0] eq 'DBRIS') {
 		});
 	}
 	exit 0;
+}
+
+if ($ARGV[0] =~ /^EFA-/) {
+	my $service = substr($ARGV[0],4);
+	my $stopseq;
+	if ( $ARGV[1] =~ m{ ^ ([^@]*) @ ([^@]*) [(] ([^T]*) T ([^)]*) [)] (.*)  $ }x )
+	{
+		$stopseq = {
+			stateless => $1,
+			stop_id   => $2,
+			date      => $3,
+			time      => $4,
+			key       => $5
+		};
+	}
+	my $efa = Travel::Status::DE::EFA->new(
+		service => $service,
+		stopseq => $stopseq
+	);
+	if (my $status = $efa->result) {
+		my @polyline;
+		foreach my $point ($status->polyline({fallback=>1})) {
+			push(@polyline, {
+				lat=>$point->{lat},
+				lon=>$point->{lon},
+				eva=>defined $point->{stop} ? $point->{stop}{id_code} : JSON::null,
+				name=>defined $point->{stop} ? $point->{stop}{full_name} : JSON::null
+			});
+		}
+		my @messages; # unused
+		my %stop_messages; # unused
+		my @route;
+		foreach my $stop ($status->route) {
+			push(@route, {
+				name=>$stop->full_name,
+				eva=>$stop->id_code,
+				sched_arr => defined $stop->{sched_arr} ? $stop->{sched_arr}->epoch : JSON::null,
+				sched_dep => defined $stop->{sched_dep} ? $stop->{sched_dep}->epoch : JSON::null,
+				rt_arr => defined $stop->{rt_arr} ? $stop->{rt_arr}->epoch : JSON::null,
+				rt_dep => defined $stop->{rt_dep} ? $stop->{rt_dep}->epoch : JSON::null,
+			});
+		}
+		my $only_eva = 0;
+		if ($#route == $#polyline) {
+			$only_eva = 1;
+		}
+		print encode_json({
+			id=>$status->id,
+			operator=>$status->operator,
+			direction=>$status->dest_name,
+			no=>defined $status->number ? $status->number : 0,
+			polyline=>[@polyline],
+			beeline=>$only_eva,
+			route=>[@route],
+			messages=>[@messages],
+			stop_messages=>{%stop_messages}
+		});
+		exit 0;
+	} else {
+		print encode_json({
+			error_code => 'efa broke rip',
+			error_string => $efa->errstr
+		});
+		exit 1;
+	}
 }
 
 my $result = Travel::Status::DE::HAFAS->new(

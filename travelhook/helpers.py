@@ -201,6 +201,8 @@ def generate_train_link(data):
             + jid.replace("#", "%23")
             + f"?hafas={hafas}"
         )
+    elif data["backend"]["type"] == "EFA":
+        link = f"https://dbf.finalrewind.org/z/{data['train']['id']}?efa={data['backend']['name']}"
     elif data["backend"]["type"] == "MOTIS":
         trip_viewers = {
             "transitous": "https://api.transitous.org/?tripId=",

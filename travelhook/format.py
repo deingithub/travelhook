@@ -452,6 +452,7 @@ def shortened_name(previous_name, this_name):
 
     return this_name
 
+
 fullnames = {
     "Lessing": "Gotthold Ephraim Lessing",
     "Ettling": "Ettlingen",
@@ -460,8 +461,9 @@ fullnames = {
     "Bibiena": "Giuseppe Bibiena",
     "Rheinhafen": "Port du Rhin",
     "Universität": "Université",
-    "Universitätsklinikum": "Hôpital universitaire"
+    "Universitätsklinikum": "Hôpital universitaire",
 }
+
 
 def frenchify(name):
     name = name.split(", ")
@@ -484,13 +486,25 @@ def frenchify(name):
     if city == "KA":
         city = "Karlsruhe"
 
-    hbfs = {"Hauptbahnhof", "Hbf", "Bahnhofsvorplatz", "Hauptbahnhof (Vorplatz)", "Hauptbf"}
+    hbfs = {
+        "Hauptbahnhof",
+        "Hbf",
+        "Bahnhofsvorplatz",
+        "Hauptbahnhof (Vorplatz)",
+        "Hauptbf",
+    }
     if city and any(hbf in stopname for hbf in hbfs):
         return f"Gare de {city}-ville"
     elif stopname in hbfs:
         return "Gare centrale"
     elif stopname.casefold().endswith("bahnhof"):
-        translate = {"Ost": "Gare de l'Est", "West": "Gare de l'Ouest", "Süd": "Gare du Sud", "Stadt": "Gare de la ville", "Alter OEG-": "ancienne gare OEG"}
+        translate = {
+            "Ost": "Gare de l'Est",
+            "West": "Gare de l'Ouest",
+            "Süd": "Gare du Sud",
+            "Stadt": "Gare de la ville",
+            "Alter OEG-": "ancienne gare OEG",
+        }
         kind_of_bahnhof = stopname.removesuffix("bahnhof").strip()
         if not kind_of_bahnhof:
             return f"{city or ''} Gare".strip()
@@ -509,20 +523,29 @@ def frenchify(name):
         stem = f"{match[1]} {match[2]}"
     elif match := re.search(r"(.+)Rathaus", stopname):
         stem = f"{match[1] or city or ''} Hôtel de ville"
-    elif match := re.search(r"(?:straße|platz|allee|weg) de[rs] (.+)", stopname, re.IGNORECASE):
+    elif match := re.search(
+        r"(?:straße|platz|allee|weg) de[rs] (.+)", stopname, re.IGNORECASE
+    ):
         stem = match[1]
-    elif match := re.search(r"(.+)(?:er str|-str|er weg|splatz|er platz|-platz|sweg|-weg|er tor)|(.+)(?:str|platz|weg|zentrum|tor)", stopname, re.IGNORECASE):
-        stem = (match[1] or match[2])
-    
+    elif match := re.search(
+        r"(.+)(?:er str|-str|er weg|splatz|er platz|-platz|sweg|-weg|er tor)|(.+)(?:str|platz|weg|zentrum|tor)",
+        stopname,
+        re.IGNORECASE,
+    ):
+        stem = match[1] or match[2]
+
     stem = stem.replace("-", " ").strip()
     return fullnames.get(stem, stem)
+
 
 def format_travelynx(bot, userid, trips, continue_link=None):
     """the actual formatting function called by message sends and edits
     to render an embed describing the current journey"""
     user = bot.get_user(userid)
     timezone = DB.User.find(user.id).get_timezone()
-    dt = datetime.fromtimestamp(trips[-1].status["fromStation"]["scheduledTime"], tz=timezone)
+    dt = datetime.fromtimestamp(
+        trips[-1].status["fromStation"]["scheduledTime"], tz=timezone
+    )
 
     desc = ""
     color = None
@@ -603,16 +626,18 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     )
                     or train["fromStation"]["name"]
                 )
-                station_name = _conv(shortened_name(
-                    prev_train["toStation"]["name"], station_name
-                ))
+                station_name = _conv(
+                    shortened_name(prev_train["toStation"]["name"], station_name)
+                )
                 desc += f"{LineEmoji.CHANGE_ENTER_STOP}{departure} {station_name}\n"
             # if our trip starts on the same station as the last ended, we've already drawn the change icon
             else:
                 pass
 
         route_link = generate_train_link(train)
-        headsign = _conv(shortened_name(train["fromStation"]["name"], trip.fetch_headsign()))
+        headsign = _conv(
+            shortened_name(train["fromStation"]["name"], trip.fetch_headsign())
+        )
 
         # all lines in vienna have overly long HAFAS destinations not consistent with the vehicle display
         # like "Wien Winckelmannstraße (Schwendergasse 61)" when it should just be Winckelmannstraße
@@ -640,9 +665,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             train["toStation"]["realTime"],
             timezone=timezone,
         )
-        station_name = _conv(shortened_name(
-            train["fromStation"]["name"], train["toStation"]["name"]
-        ))
+        station_name = _conv(
+            shortened_name(train["fromStation"]["name"], train["toStation"]["name"])
+        )
         # if we're on the last trip of the journey, draw an end icon
         if not _next(trips, i):
             desc += f"{LineEmoji.END}{arrival} **{station_name}**\n"
@@ -721,9 +746,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     )
                     or train["toStation"]["name"]
                 )
-                station_name = _conv(shortened_name(
-                    next_train["fromStation"]["name"], station_name
-                ))
+                station_name = _conv(
+                    shortened_name(next_train["fromStation"]["name"], station_name)
+                )
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
                     next_train["fromStation"]["realTime"],
@@ -835,6 +860,11 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             f"https://dbf.finalrewind.org/map/{motis_id}/0?motis={map_backend}"
             + f"&from={from_station}&to={to_station}"
         )
+    elif trip.status["backend"]["type"] == "EFA":
+        jid = urllib.parse.quote(trip.status["train"]["id"])
+        map_link = DB.Link.make(
+            f"https://dbf.finalrewind.org/map/{jid}/0?efa={trip.status['backend']['name']}"
+        )
 
     if map_link:
         desc += f" · [Map]({config['shortener_url']}/{map_link.short_id})"
@@ -851,9 +881,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         )
     elif backend["type"] == "DBRIS":
         if jid := trip.hafas_data.get("id", trip.status["train"]["id"]):
+            # filtering for trip doesn't really work rn? removed it
             copy_url += (
-                f"/s/A=1@L={trip.status['fromStation']['uic']}@?dbris=bahn.de&trip_id="
-                + urllib.parse.quote(jid)
+                f"/s/A=1@L={trip.status['fromStation']['uic']}@?dbris=bahn.de"
                 + f"&timestamp={trip.status['fromStation']['scheduledTime']}#now"
             )
         else:
@@ -879,6 +909,12 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             )
         else:
             copy_url = None
+    elif backend["type"] == "EFA":
+        copy_url += (
+            f"/s/{trip.status['fromStation']['uic']}?efa={trip.status['backend']['name']}&trip_id="
+            + urllib.parse.quote(trip.status["train"]["id"])
+            + f"&timestamp={trip.status['fromStation']['scheduledTime']}#now"
+        )
     else:
         copy_url = None
 
@@ -891,12 +927,16 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         if _operator := decline_operator_with_article(
             trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
         ):
-            _operator = _operator.removeprefix(' mit ')
-            _operator = _operator.removeprefix('der ').removeprefix('dem ').removeprefix('den ')
+            _operator = _operator.removeprefix(" mit ")
+            _operator = (
+                _operator.removeprefix("der ").removeprefix("dem ").removeprefix("den ")
+            )
             embed_title += f" avec {_operator}"
         embed_title += "! 🇫🇷🇫🇷🇫🇷"
     else:
-        embed_title = f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
+        embed_title = (
+            f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
+        )
         embed_title += decline_operator_with_article(
             trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
         )
