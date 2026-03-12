@@ -676,19 +676,20 @@ class Trip:
                 return
 
             for train in stationboard["trains"]:
+                # dear lord this is cursed
+                # compensate for subminute timestamps returned by efa
+                # vs minute accurate by travelynx
                 if (
-                    not train["scheduled"]
-                    == self.status["fromStation"]["scheduledTime"]
+                    abs(
+                        train["scheduled"] - self.status["fromStation"]["scheduledTime"]
+                    )
+                    > 60
                 ):
                     continue
 
-                if (
-                    jid == train["id"]
-                    or (train["number"] == self.status["train"]["no"])
-                    or (train["line"] == self.status["train"]["line"])
-                ):
-                    trip = get_trip(f"EFA-{backend}", train["id"])
-                    if trip:
+                # compensate for jid's changing during a trip(???)
+                if jid.split("@")[0] == train["id"].split("@")[0]:
+                    if trip := get_trip(f"EFA-{backend}", train["id"]):
                         headsign = train["direction"]
                         if (not headsign) and (route := trip.get("route")):
                             headsign = route[-1]["name"]
