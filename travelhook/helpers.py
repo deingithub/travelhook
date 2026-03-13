@@ -123,19 +123,19 @@ def format_time(sched, actual, relative=False, timezone=tz):
     if relative:
         return f"<t:{int(time.timestamp())}:R>"
 
-    diff = ""
-    if actual > sched:
-        diff = (actual - sched) // 60
+    diff = (actual - sched) // 60
+    if diff > 0:
         diff = f" +{diff}′"
-    elif actual < sched:
-        diff = (sched - actual) // 60
-        diff = f" -{diff}′"
+    elif diff < 0:
+        diff = f" {diff}′"
+    else:
+        diff = ""
 
     return f"**{time:%H:%M}{diff}**"
 
 
 def format_delta(delta):
-    "turn a timedelta into  representation like 1h37m"
+    "turn a timedelta into representation like 1h37m"
     h, m = divmod(delta, timedelta(hours=1))
     m = int(m.total_seconds() // 60)
     if h > 0:
