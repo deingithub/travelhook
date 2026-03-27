@@ -436,6 +436,7 @@ replace_operators = {
     "DB Regio AG S-Bahn München": "der S-Bahn München",
     "Graz-Köflacher Bahn und Busbetrieb GmbH": "der GKB",
     "Kölner Verkehrs-Betriebe": "der KVB",
+    "Kölner VB": "der KVB",  # transitous spelling
     "oberpfalzbahn - Die Länderbahn GmbH DLB": "der oberpfalzbahn",
     "Österreichische Bundesbahnen": "den ÖBB",
     "Ostdeutsche Eisenbahn GmbH": "der ODEG",

@@ -249,7 +249,11 @@ def get_network(status):
 
 def get_display(bot, status):
     ret = {}
-    all_types = [t.get("type") for t in train_types_config["train_types"]]
+    all_types = [
+        t.get("type").casefold()
+        for t in train_types_config["train_types"]
+        if "type" in t
+    ]
     for type in status["train"]["type"].strip().split("|"):
         line = status["train"]["line"]
 
@@ -281,16 +285,16 @@ def get_display(bot, status):
             elif trainplusline == "DLR":
                 type = "STR"
                 line = "DLR"
-            elif type not in all_types:
+            elif type.casefold() not in all_types:
                 type = "NationalRail"
                 line = trainplusline
 
         # account for "ME RE2" instead of "RE 2"
-        if line and (type not in all_types or not type):
-            if len(line) > 2 and line[0:2] in all_types:
+        if line and (type.casefold() not in all_types or not type):
+            if len(line) > 2 and line[0:2].casefold() in all_types:
                 type = line[0:2]
                 line = line[2:]
-            if line[0] in all_types:
+            if line[0].casefold() in all_types:
                 type = line[0]
                 line = line[1:]
 
@@ -319,9 +323,12 @@ def get_display(bot, status):
                 type = "S"
                 line = f"N{line}"
 
-            if status["backend"]["type"] == "MOTIS":
-                motis_train_types = {"TRAM": "STR"}
-                type = motis_train_types.get(type, type)
+        if status["backend"]["type"] == "MOTIS":
+            motis_train_types = {"TRAM": "STR"}
+            type = motis_train_types.get(type, type)
+
+        if get_network(status) == "KVB" and type == "SUBWAY":
+            type = "STR"
 
         # fix "RB RB38", "U U8", … in a lot of regional HAFASes
         if line and line.startswith(type):

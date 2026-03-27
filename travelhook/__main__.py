@@ -53,11 +53,6 @@ config = {}
 with open("settings.json", "r", encoding="utf-8") as f:
     config = json.load(f)
 
-if config["cts_token"]:
-    config["cts_token"] = "Basic " + base64.b64encode(
-        config["cts_token"].encode() + b":"
-    ).decode("utf-8")
-
 DB.connect(config["database"])
 
 servers = [server.as_discord_obj() for server in DB.Server.find_all()]
@@ -136,6 +131,7 @@ async def handle_status_update(userid, reason, status):
     trip = DB.Trip.find(userid, zugid(status))
     trip.fetch_headsign()  # also runs fetch_hafas_data in the background
     trip.maybe_fix_1970()
+    trip.maybe_patch_sev()
     await trip.get_oebb_composition()
     trip.get_db_composition()
     await trip.get_ns_composition()
@@ -475,47 +471,17 @@ configure = discord.app_commands.Group(
 async def privacy(ia, level: typing.Optional[DB.Privacy], quiet: bool = True):
     "Query or change your current privacy settings on this server."
 
-    def explain(level: typing.Optional[DB.Privacy]):
-        desc = "This means that, on this server,\n"
-        match level:
-            case DB.Privacy.ME:
-                desc += "- Only you can use the **/zug** command to share your current journey."
-            case DB.Privacy.EVERYONE:
-                desc += "- Everyone can use the **/zug** command to see your current journey."
-            case DB.Privacy.LIVE:
-                desc += "- Everyone can use the **/zug** command to see your current journey.\n"
-                if live_channel := DB.Server.find(ia.guild.id).live_channel:
-                    if (
-                        not ia.guild.get_channel(live_channel)
-                        .permissions_for(ia.user)
-                        .read_messages
-                    ):
-                        desc += (
-                            "- This server has a live feed channel set up, but you can't see it. "
-                            "The bot will not post live updates with your entire journey there."
-                        )
-                    else:
-                        desc += f"- Live updates will posted into {bot.get_channel(live_channel).mention} with your entire journey."
-
-                else:
-                    desc += (
-                        "- Live updates with your entire journey can be posted into a dedicated channel.\n"
-                        "- Note: This server has not set up a live channel. No live updates will be posted until it is set up."
-                    )
-        desc += "\n- Note: If your checkin is set to **private visibility** on travelynx, this bot will not post it anywhere."
-        return desc
-
     if user := DB.User.find(discord_id=ia.user.id):
         if level is None:
             level = user.find_privacy_for(ia.guild.id)
             await ia.response.send_message(
-                f"Your privacy level is set to **{level.name}**. {explain(level)}",
+                f"Your privacy level is set to **{level.name}**. {level.explain(ia.guild, ia.user)}",
                 ephemeral=quiet,
             )
         else:
             user.set_privacy_for(ia.guild_id, level)
             await ia.response.send_message(
-                f"Your privacy level has been set to **{level.name}**. {explain(level)}",
+                f"Your privacy level has been set to **{level.name}**. {level.explain(ia.guild, ia.user)}",
                 ephemeral=quiet,
             )
     else:
@@ -1720,377 +1686,101 @@ class RegisterTravelynxEnableLiveFeed(discord.ui.View):
         await privacy.callback(ia, DB.Privacy.LIVE, True)
 
 
-class CTSView(discord.ui.View):
-    """attached to the /cts response, select transport then target,
-    then fire off a manual checkin
+class ChangePrivacyView(discord.ui.View):
+    """view attached to the join privacy reminder message to allow easy setting of privacy
+    at first/subsequent server join
     """
 
-    @discord.ui.select(placeholder="select transport to check into")
-    async def select_transport(self, ia, select):
-        await ia.response.defer()
-        self.select_transport.placeholder = [
-            option.label
-            for option in self.select_transport.options
-            if str(option.value) == select.values[0]
-        ][0]
-        self.selected_transport = self.transports[int(select.values[0])]
-        self.remove_item(self.select_destination)
-        await self.add_select_destination()
-        await ia.edit_original_response(view=self)
-
-    async def add_select_transport(self):
-        self.transports = await cts_stationboard(
-            self.logicalstopcode, self.request_time
-        )
-        if self.transports is None:
-            # reply 503 -- timeout. let's try again
-            await asyncio.sleep(5)
-            self.transports = await cts_stationboard(
-                self.logicalstopcode, self.request_time
-            )
-        if not self.transports:
-            print(f"cts: no transports at {self.logicalstopcode} {self.request_time}")
-            self.select_transport.placeholder = "no transports found"
-            self.select_transport.options = [discord.SelectOption(label="-", value="0")]
-            self.select_transport.disabled = True
-        else:
-            self.select_transport.options = [
-                discord.SelectOption(
-                    label=(
-                        f"{format_time(trans['dep'], trans['dep'])} {trans['type']} "
-                        f"{trans['line']} » {trans['headsign']}"
-                    ).replace("**", ""),
-                    value=i,
-                )
-                for (i, trans) in enumerate(self.transports)
-            ][:25]
-        self.add_item(self.select_transport)
-
-    @discord.ui.select(placeholder="select destination")
-    async def select_destination(self, ia, select):
-        await ia.response.defer()
-        destination_index = int(select.values[0][1:])
-        self.selected_destination = self.stops_after[destination_index]
-        self.select_destination.placeholder = [
-            option.label
-            for option in self.select_destination.options
-            if str(option.value) == select.values[0]
-        ][0]
-        departure = datetime.fromtimestamp(self.selected_transport["dep"], tz=self.tz)
-        arrival = self.selected_destination["ExpectedArrivalTime"]
-        self.select_transport.disabled = True
-        self.select_destination.disabled = True
-        await ia.edit_original_response(view=self)
-        await manualtrip.callback(
-            ia,
-            self.selected_transport["stop_name"],
-            departure.isoformat(),
-            self.selected_destination["StopPointName"],
-            arrival.isoformat(),
-            f"{self.selected_transport['type']} {self.selected_transport['line']}",
-            self.selected_transport["headsign"],
-            0,
-            0,
-            "",
-            0,
-        )
-        distance = 0
-        if self.stop_geo:
-            coords = (self.stop_geo.get("latitude"), self.stop_geo.get("longitude"))
-            for i, stop in enumerate(self.stops_after):
-                if not stop.get("latitude"):
-                    distance = None
-                    break
-                if i > destination_index:
-                    break
-                newcoords = (stop["latitude"], stop["longitude"])
-                distance += haversine(coords, newcoords)
-                coords = newcoords
-        else:
-            distance = None
-        try:
-            await EditTripView(
-                DB.Trip.find_last_trip_for(ia.user.id),
-                {
-                    "operator": "CTS",
-                    "distance": distance,
-                    "fromStation": {
-                        "latitude": self.stop_geo.get("latitude"),
-                        "longitude": self.stop_geo.get("longitude"),
-                    },
-                    "toStation": {
-                        "latitude": self.selected_destination.get("latitude"),
-                        "longitude": self.selected_destination.get("longitude"),
-                    },
-                },
-                quiet=True,
-            ).commit.callback(ia)
-        except discord.errors.InteractionResponded:
-            pass
-
-    async def add_select_destination(self):
-        self.stops_after = await cts_journey(self.selected_transport)
-        if self.stops_after is None:
-            # reply 503 -- temporary timeout, let's try again
-            await asyncio.sleep(5)
-            self.stops_after = await cts_journey(self.selected_transport)
-
-        if not self.stops_after:
-            print(f"cts: no route found for {self.selected_transport}")
-            self.select_destination.placeholder = "no route found"
-            self.select_destination.options = [
-                discord.SelectOption(label="-", value="0")
-            ]
-            self.select_destination.disabled = True
-        else:
-            # TODO add a second selector for trips with more stops
-            for i, stop in enumerate(self.stops_after[:25]):
-                if i > 24:
-                    break
-                timestamp = stop["ExpectedArrivalTime"].timestamp()
-                self.select_destination.options.append(
-                    discord.SelectOption(
-                        label=f"({format_time(timestamp, timestamp)[2:-2]}) {stop['StopPointName']}",
-                        value=f"d{i}",
-                    )
-                )
-        self.add_item(self.select_destination)
-
-    def __init__(self, ia, stop, request_time, timezone):
+    def __init__(self, member):
         super().__init__()
-        self.remove_item(self.select_transport)
-        self.remove_item(self.select_destination)
-        self.logicalstopcode = stop
-        self.stop_geo = {}
-        if db_stop := DB.CTSStop.find_by_logicalstopcode(stop):
-            self.stop_geo = {
-                "latitude": db_stop.latitude,
-                "longitude": db_stop.longitude,
-            }
-        self.request_time = parse_manual_time(request_time, timezone)
-        self.tz = timezone
+        self.member = member
+        self.guild = member.guild
+        level = DB.User.find(discord_id=member.id).find_privacy_for(member.guild.id)
+        button = None
+        if level is DB.Privacy.ME:
+            button = self.set_me
+        elif level is DB.Privacy.EVERYONE:
+            button = self.set_everyone
+        elif level is DB.Privacy.LIVE:
+            button = self.set_live
 
+        button.disabled = True
+        button.label = f"✅ {button.label}"
 
-shitty_cts_lock = asyncio.Lock()
-shitty_cts_cache = {}
-
-
-def cleanup_cache():
-    global shitty_cts_cache
-    now = datetime.now(dt_tz.utc)
-    to_delete = []
-    for k, v in shitty_cts_cache.items():
-        if v[0] < now:
-            to_delete.append(k)
-    for k in to_delete:
-        del shitty_cts_cache[k]
-
-
-async def cts_stationboard(logicalstopcode, request_time):
-    global shitty_cts_lock, shitty_cts_cache
-    transports = []
-    sb_params = {
-        "MonitoringRef": logicalstopcode,
-        "VehicleMode": "undefined",
-        "PreviewInterval": "PT60M",
-        "StartTime": request_time.isoformat(),
-        "MaximumStopVisits": "5",
-    }
-    sb_headers = {"Authorization": config["cts_token"]}
-    async with shitty_cts_lock as lock:
-        cleanup_cache()
-        resp = {}
-        if str(sb_params) in shitty_cts_cache:
-            resp = deepcopy(shitty_cts_cache[str(sb_params)][1])
-        else:
-            async with ClientSession() as session:
-                async with session.get(
-                    "https://api.cts-strasbourg.eu/v1/siri/2.0/stop-monitoring",
-                    params=sb_params,
-                    headers=sb_headers,
-                ) as r:
-                    if r.status == 503:
-                        return None
-                    elif r.status != 200:
-                        print(f"cts stationboard returned {r.status}: {await r.text()}")
-                        return []
-                    try:
-                        resp = await r.json()
-                        resp_validuntil = datetime.fromisoformat(
-                            resp["ServiceDelivery"]["StopMonitoringDelivery"][0][
-                                "ValidUntil"
-                            ]
-                        )
-                        shitty_cts_cache[str(sb_params)] = (
-                            resp_validuntil,
-                            deepcopy(resp),
-                        )
-                    except:  # pylint: disable=bare-except
-                        print("error while decoding:")
-                        traceback.print_exc()
-                        print(await r.text())
-
-        if (
-            not "MonitoredStopVisit"
-            in resp["ServiceDelivery"]["StopMonitoringDelivery"][0]
-        ):
-            return []
-        for stop_visit in resp["ServiceDelivery"]["StopMonitoringDelivery"][0][
-            "MonitoredStopVisit"
-        ]:
-            mvj = stop_visit["MonitoredVehicleJourney"]
-            dep = datetime.fromisoformat(mvj["MonitoredCall"]["ExpectedDepartureTime"])
-            dep = dep - timedelta(seconds=dep.second, microseconds=dep.microsecond)
-            trans = {
-                "line": mvj["PublishedLineName"],
-                "line_ref": mvj["LineRef"],
-                "headsign": mvj["DestinationName"],
-                "direction_ref": mvj["DirectionRef"],
-                "stop_name": mvj["MonitoredCall"]["StopPointName"],
-                "dep": dep.timestamp(),
-                "journey_ref": mvj["FramedVehicleJourneyRef"][
-                    "DatedVehicleJourneySAERef"
-                ],
-                "stop_comparison": (
-                    stop_visit["StopCode"],
-                    mvj["MonitoredCall"]["ExpectedDepartureTime"],
-                ),
-            }
-            if trans["line"] in ("A", "B", "C", "D", "E", "F"):
-                trans["type"] = "Tram"
-            else:
-                trans["type"] = "Bus"
-            transports.append(trans)
-
-        return transports
-
-
-async def cts_journey(selected_transport):
-    global shitty_cts_cache, shitty_cts_lock
-    j_params = {
-        "LineRef": selected_transport["line_ref"],
-        "DirectionRef": selected_transport["direction_ref"],
-    }
-    j_headers = {"Authorization": config["cts_token"]}
-    async with shitty_cts_lock as lock:
-        cleanup_cache()
-        resp = {}
-        if str(j_params) in shitty_cts_cache:
-            resp = deepcopy(shitty_cts_cache[str(j_params)][1])
-        else:
-            async with ClientSession() as session:
-                async with session.get(
-                    "https://api.cts-strasbourg.eu/v1/siri/2.0/estimated-timetable",
-                    params=j_params,
-                    headers=j_headers,
-                ) as r:
-                    if r.status == 503:
-                        return None
-                    elif r.status != 200:
-                        print(f"cts timetable returned {r.status}: {await r.text()}")
-                        return []
-                    try:
-                        resp = await r.json()
-                        resp_validuntil = datetime.fromisoformat(
-                            resp["ServiceDelivery"]["EstimatedTimetableDelivery"][0][
-                                "ValidUntil"
-                            ]
-                        )
-                        shitty_cts_cache[str(j_params)] = (
-                            resp_validuntil,
-                            deepcopy(resp),
-                        )
-                    except:  # pylint: disable=bare-except
-                        print("error while decoding:")
-                        traceback.print_exc()
-                        print(await r.text())
-
-        journeys = resp["ServiceDelivery"]["EstimatedTimetableDelivery"][0][
-            "EstimatedJourneyVersionFrame"
-        ][0]["EstimatedVehicleJourney"]
-        journey = [
-            journey
-            for journey in journeys
-            if journey["FramedVehicleJourneyRef"]["DatedVehicleJourneySAERef"]
-            == selected_transport["journey_ref"]
-        ]
-        if not journey:
-            print(f"cts: didn't find {selected_transport}")
-            return None
-        else:
-            journey = journey[0]
-        calls = journey["EstimatedCalls"]
-        calls_after = []
-        after = False
-        for call in calls:
-            if call["StopPointRef"] == selected_transport["stop_comparison"][0]:
-                after = True
-                continue
-            if after:
-                call["ExpectedArrivalTime"] = datetime.fromisoformat(
-                    call["ExpectedArrivalTime"]
-                )
-                call["ExpectedArrivalTime"] = call["ExpectedArrivalTime"] - timedelta(
-                    seconds=call["ExpectedArrivalTime"].second,
-                    microseconds=call["ExpectedArrivalTime"].microsecond,
-                )
-                # logical stop code: stopref without the last letter (the "platform identifier")
-                call["LogicalStopCode"] = int(call["StopPointRef"][:-1])
-                db_stop = DB.CTSStop.find_by_logicalstopcode(call["LogicalStopCode"])
-                if db_stop:
-                    call["latitude"] = db_stop.latitude
-                    call["longitude"] = db_stop.longitude
-                calls_after.append(call)
-
-        return calls_after
-
-
-async def cts_station_autocomplete(ia, current):
-    all_stops = DB.CTSStop.find_all()
-    suggestions = [s for s in all_stops if current.casefold() in s.name.casefold()]
-    if not current and (trip := DB.Trip.find_last_trip_for(ia.user.id)):
-        suggestions = [
-            s for s in suggestions if s.name == trip.status["toStation"]["name"]
-        ]
-
-    return [Choice(name=s.name, value=str(s.logicalstopcode)) for s in suggestions][:25]
-
-
-@bot.tree.command(guilds=servers)
-@discord.app_commands.autocomplete(stop=cts_station_autocomplete)
-async def cts(
-    ia,
-    stop: str,
-    request_time: typing.Optional[str],
-):
-    "check into a transit trip in strasbourg"
-    user = DB.User.find(discord_id=ia.user.id)
-    if not user:
-        await ia.response.send_message(embed=not_registered_embed, ephemeral=True)
-        return
-    if not request_time:
-        request_time = datetime.now(tz=tz)
-        request_time = request_time - timedelta(
-            minutes=5,
-            seconds=request_time.second,
-            microseconds=request_time.microsecond,
+    @discord.ui.button(label="Just I can use /zug")
+    async def set_me(self, ia, _):
+        DB.User.find(discord_id=ia.user.id).set_privacy_for(
+            self.guild.id, DB.Privacy.ME
         )
-        request_time = request_time.isoformat()
-    await ia.response.defer(ephemeral=True)
-    view = CTSView(
-        ia,
-        stop,
-        request_time,
-        user.get_timezone(),
+        await ia.response.edit_message(
+            content=f"You've set your privacy level on {self.guild.name} to **ME**. "
+            + DB.Privacy.ME.explain(self.guild, self.member),
+            view=ChangePrivacyView(self.member),
+        )
+
+    @discord.ui.button(label="Everyone can use /zug")
+    async def set_everyone(self, ia, _):
+        DB.User.find(discord_id=ia.user.id).set_privacy_for(
+            self.guild.id, DB.Privacy.EVERYONE
+        )
+        await ia.response.edit_message(
+            content=f"You've set your privacy level on {self.guild.name} to **EVERYONE**. "
+            + DB.Privacy.EVERYONE.explain(self.guild, self.member),
+            view=ChangePrivacyView(self.member),
+        )
+
+    @discord.ui.button(
+        label="Everyone can use /zug + enable live travel feed",
+        style=discord.ButtonStyle.red,
     )
-    await view.add_select_transport()
-    cts_name = DB.CTSStop.find_by_logicalstopcode(stop)
-    if cts_name:
-        cts_name = cts_name.name
-    await ia.edit_original_response(
-        content=f"### CTS manual check-in at _{cts_name or '?'}_",
-        view=view,
-    )
+    async def set_live(self, ia, _):
+        DB.User.find(discord_id=ia.user.id).set_privacy_for(
+            self.guild.id, DB.Privacy.LIVE
+        )
+        await ia.response.edit_message(
+            content=f"You've set your privacy level on {self.guild.name} to **LIVE**. "
+            + DB.Privacy.LIVE.explain(self.guild, self.member),
+            view=ChangePrivacyView(self.member),
+        )
+
+
+@bot.event
+async def on_member_join(member):
+    if user := DB.User.find(discord_id=member.id):
+        message = (
+            f"Welcome to {member.guild.name}. You've previously signed up for "
+            "the travelynx relay bot. "
+        )
+        level = user.find_privacy_for(member.guild.id)
+        if level is DB.Privacy.ME:
+            message += (
+                "This message is to remind you that, by default, **only you** can use the "
+                "**/zug** command to share your current journey.\n"
+            )
+            if DB.Server.find(member.guild.id).live_channel:
+                message += (
+                    "By default, the bot will also **not** post live updates into the "
+                    "server's travel feed. If you want others to be able to use **/zug** for you "
+                    "or your travels to appear in the server's live travel feed, you need to "
+                    "**change your privacy level** for this server.\n"
+                )
+            else:
+                message += (
+                    "If you want others to be able to use **/zug** for you",
+                    "you need to **change your privacy level** for this server.\n",
+                )
+        else:
+            message += (
+                "You've previously set your privacy level on this server to "
+                f"**{level.name}**. {level.explain(member.guild, member)}"
+            )
+
+        message += (
+            "\nTo change your privacy level, use the command **/configure privacy** while on "
+            "the server, or use the buttons below."
+        )
+
+        await member.send(message, view=ChangePrivacyView(member))
 
 
 def main():
