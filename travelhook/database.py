@@ -424,7 +424,7 @@ class Trip:
 
         if match := re.match(
             r"(?P<train_type>\b\w{1,4}) ?(?P<train_line>\d+\b)",
-            train["line"] + " " + self.hafas_data.get("headsign"),
+            train["line"] + " " + self.hafas_data.get("headsign", ""),
         ):
             if match["train_type"] in all_train_types:
                 if (
