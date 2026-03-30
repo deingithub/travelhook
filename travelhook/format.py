@@ -462,6 +462,17 @@ def shortened_name(previous_name, this_name):
     return this_name
 
 
+cities_translated = {
+    "Wien": "Vienne",
+    "Karlsruhe": "Carlsruhe",
+    "Mannheim": "Hommeville",
+    "Frankfurt am Main": "Francfort-sur-le-Main",
+    "Frankfurt": "Francfort-sur-le-Main",
+    "Frankfurt (Main)": "Francfort-sur-le-Main",
+    "Frankfurt(M)": "Francfort-sur-le-Main",
+    "Eggenstein-Leopoldshafen": "Eggepierre-Port du Leopold",
+}
+
 fullnames = {
     "Lessing": "Gotthold Ephraim Lessing",
     "Ettling": "Ettlingen",
@@ -495,6 +506,11 @@ def frenchify(name):
     if city == "KA":
         city = "Karlsruhe"
 
+    if match := re.search(r"(.+) \(.+\)", stopname):
+        stopname = match[1]
+
+    city = cities_translated.get(city, city)
+
     hbfs = {
         "Hauptbahnhof",
         "Hbf",
@@ -508,19 +524,19 @@ def frenchify(name):
         return "Gare centrale"
     elif stopname.casefold().endswith("bahnhof"):
         translate = {
-            "Ost": "Gare de l'Est",
-            "West": "Gare de l'Ouest",
-            "Süd": "Gare du Sud",
-            "Stadt": "Gare de la ville",
-            "Alter OEG-": "ancienne gare OEG",
+            "ost": "Gare de l'Est",
+            "west": "Gare de l'Ouest",
+            "süd": "Gare du Sud",
+            "stadt": "Gare de la ville",
+            "alter oeg-": "ancienne gare OEG",
         }
-        kind_of_bahnhof = stopname.removesuffix("bahnhof").strip()
+        kind_of_bahnhof = stopname.casefold().removesuffix("bahnhof").strip()
         if not kind_of_bahnhof:
             return f"{city or ''} Gare".strip()
         elif translated := translate.get(kind_of_bahnhof):
             return f"{city or ''} {translated}".strip()
         else:
-            return f"{city or ''} Gare du {stopname[:-7]}".strip()
+            return f"{city or ''} Gare du {stopname[:-7]}".strip().removesuffix("-")
 
     stem = stopname
 
@@ -565,7 +581,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         else:
             return frenchify(name)
 
-    if dt.month == 4 and dt.day == 1:
+    if True:  # dt.month == 4 and dt.day == 1 :
         _conv = _convert_name
     else:
         _conv = lambda n: n
