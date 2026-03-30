@@ -581,7 +581,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         else:
             return frenchify(name)
 
-    if True:  # dt.month == 4 and dt.day == 1 :
+    if dt.month == 4 and dt.day == 1:
         _conv = _convert_name
     else:
         _conv = lambda n: n
