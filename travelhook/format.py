@@ -509,6 +509,17 @@ def frenchify(name):
     if match := re.search(r"(.+) \(.+\)", stopname):
         stopname = match[1]
 
+    if match := re.search(r"(S\+U|S|U) (.+)", stopname):
+        stopname = match[2]
+
+    if match := re.search(r"(.+) (Ost|West|Süd)", stopname):
+        replace = {
+            "Ost": " Est",
+            "West": " Ouest",
+            "Süd": " Sud"
+        }
+        stopname = match[1] + replace[match[2]]
+
     city = cities_translated.get(city, city)
 
     hbfs = {
@@ -553,7 +564,7 @@ def frenchify(name):
     ):
         stem = match[1]
     elif match := re.search(
-        r"(.+)(?:er str|-str|er weg|splatz|er platz|-platz|sweg|-weg|er tor)|(.+)(?:str|platz|weg|zentrum|tor)",
+        r"(.+)(?:er str|-str|er weg|splatz|er platz|-platz|sweg|-weg|stor|er tor)|(.+)(?:str|platz|weg|zentrum|tor)",
         stopname,
         re.IGNORECASE,
     ):
