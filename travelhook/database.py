@@ -27,7 +27,7 @@ from .helpers import (
     db_replace_group_classes,
     describe_class,
 )
-from .format import get_network
+from .format import get_network, train_types_config
 from . import oebb_wr
 
 from bs4 import BeautifulSoup
@@ -40,6 +40,10 @@ def connect(path):
     global DB
     DB = sqlite3.connect(path, isolation_level=None)
     DB.row_factory = sqlite3.Row
+
+
+all_train_types = train_types_config["train_types"]
+all_train_types = set([tt.get("type") for tt in all_train_types if tt.get("type")])
 
 
 def json_patch_dicts(patch, old_dict):
@@ -85,6 +89,41 @@ class Privacy(IntEnum):
     ME = 0
     EVERYONE = 5
     LIVE = 10
+
+    def explain(self, guild, user):
+        desc = "This means that, on this server,\n"
+        if self is self.ME:
+            desc += (
+                "- Only you can use the **/zug** command to share your current journey."
+            )
+        elif self is self.EVERYONE:
+            desc += (
+                "- Everyone can use the **/zug** command to see your current journey."
+            )
+        elif self is self.LIVE:
+            desc += (
+                "- Everyone can use the **/zug** command to see your current journey.\n"
+            )
+            if live_channel := Server.find(guild.id).live_channel:
+                if (
+                    not guild.get_channel(live_channel)
+                    .permissions_for(user)
+                    .read_messages
+                ):
+                    desc += (
+                        "- This server has a travel feed channel set up, but you can't see it. "
+                        "The bot will not post live updates for you there."
+                    )
+                else:
+                    desc += f"- Live updates will posted into <#{live_channel}> with your entire journey."
+
+            else:
+                desc += (
+                    "- Live updates with your entire journey can be posted into a dedicated channel.\n"
+                    "- Note: This server has not set up a travel feed channel. No live updates will be posted until it is set up."
+                )
+        desc += "\n- Note: If your checkin is set to **private visibility** on travelynx, this bot will not post it anywhere."
+        return desc
 
 
 class BreakMode(IntEnum):
@@ -221,22 +260,15 @@ class City:
 class CTSStop:
     "cts stops"
     name: str
-    logicalstopcode: int
-    latitude: int
-    longitude: int
+    translated: str
 
     @classmethod
-    def find_all(cls):
-        rows = DB.execute("SELECT * FROM cts_stops").fetchall()
-        return [cls(**row) for row in rows]
-
-    @classmethod
-    def find_by_logicalstopcode(cls, logicalstopcode):
-        row = DB.execute(
-            "SELECT * FROM cts_stops WHERE logicalstopcode = ?", (logicalstopcode,)
-        ).fetchone()
+    def translate(cls, name):
+        row = DB.execute("SELECT * FROM cts_stops WHERE name = ?", (name,)).fetchone()
         if row:
-            return cls(**row)
+            return cls(**row).translated
+        else:
+            return None
 
 
 @dataclass
@@ -384,6 +416,41 @@ class Trip:
                     self.upsert(self.user_id, self.status)
                     return
 
+    def maybe_patch_sev(self):
+        "if we're reasonably sure we're on an replacement bus, add the SEV train type"
+        train = self.status["train"]
+        if not train["type"].casefold() in ("sev", "ev", "bus", "ersatzbus"):
+            return
+
+        if match := re.match(
+            r"(?P<train_type>\b\w{1,4}) ?(?P<train_line>\d+\b)",
+            train["line"] + " " + self.hafas_data.get("headsign", ""),
+        ):
+            if match["train_type"] in all_train_types:
+                if (
+                    match["train_type"] in ("R", "S")
+                    and haversine(
+                        (
+                            self.status["fromStation"]["latitude"],
+                            self.status["fromStation"]["longitude"],
+                        ),
+                        (48.47, 7.94),
+                    )
+                    < 10.0
+                ):
+                    # Offenburg has Bus S1 and Bus R1 etc.
+                    # what an edge case once again
+                    return
+                else:
+                    self.patch_patch(
+                        {
+                            "train": {
+                                "type": f"SEV|{match['train_type']}",
+                                "line": match["train_line"],
+                            }
+                        }
+                    )
+
     def fetch_hafas_data(self, force: bool = False):
         "perform arcane magick (perl 'FFI') to get hafas data for our trip"
 
@@ -507,9 +574,6 @@ class Trip:
         elif mode == "travelcrab.friz64.de":
             mode = "MOTIS"
             backend = "transitous"
-        elif mode == "IRIS-TTS":
-            # incorrectly reported EFA from travelynx - not implemented yet on our side
-            mode = "EFA"
 
         # actually go ahead and fetch the data…
         if mode == "HAFAS":
@@ -673,6 +737,44 @@ class Trip:
                         )
 
                     save_hafas_data(trip)
+        elif mode == "EFA":
+            # 1. fetch stationboard
+            # 2. find train there, pick out ID, headsign and line
+            # 3. fetch train
+            jid = self.status["train"]["id"]
+
+            stationboard = get_stationboard(f"EFA-{backend}", station_id)
+
+            if not stationboard or not "trains" in stationboard:
+                save_hafas_data({"failedhafas": True})
+                return
+
+            for train in stationboard["trains"]:
+                # dear lord this is cursed
+                # compensate for subminute timestamps returned by efa
+                # vs minute accurate by travelynx
+                if (
+                    abs(
+                        train["scheduled"] - self.status["fromStation"]["scheduledTime"]
+                    )
+                    > 60
+                ):
+                    continue
+
+                # compensate for jid's changing during a trip(???)
+                if jid.split("@")[0] == train["id"].split("@")[0]:
+                    if trip := get_trip(f"EFA-{backend}", train["id"]):
+                        headsign = train["direction"]
+                        if (not headsign) and (route := trip.get("route")):
+                            headsign = route[-1]["name"]
+
+                        trip.update(headsign=headsign, line=train["line"])
+                        save_hafas_data(trip)
+                        return
+            else:
+                print(f"did not find a match for {self.status['train']}!")
+                save_hafas_data({"failedhafas": True})
+                return
         else:
             # manual trips and uhhhh EFA? not handled yet. later tm
             return

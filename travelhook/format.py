@@ -38,6 +38,7 @@ re_u_number = re.compile(r"(?P<station>.+) [\(\[]U\d+[\)\]]")
 re_decompose_him = re.compile(r"(?P<from>.+) - (?P<to>.+): Information\. (?P<msg>.+)")
 
 blanket_replace_train_type = {
+    "Ersatzverkehr": "SEV",
     "EV": "SEV",
     "IRE": "RE",
     "RNV": "STR",
@@ -114,6 +115,8 @@ def get_network(status):
     # network KVV: Stadtbahn Karlsruhe
     if operator in (
         "Albtal-Verkehrs-Gesellschaft mbH",
+        "Albtal-Verkehrs-Gesellschaft",
+        "Tram VBK",
         "Verkehrsbetriebe Karlsruhe GmbH",
     ) or (
         status["train"]["type"] in ("STR", "TRAM")
@@ -157,7 +160,7 @@ def get_network(status):
 
     # network Ü: Stadtbahn Hannover
     if (
-        status["train"]["type"] in ("STR", "STB")
+        status["train"]["type"].casefold().strip() in ("str", "stb")
         and haversine((lat, lon), (52.369, 9.740)) < 20
     ):
         return "Ü"
@@ -247,7 +250,11 @@ def get_network(status):
 
 def get_display(bot, status):
     ret = {}
-    all_types = [t.get("type") for t in train_types_config["train_types"]]
+    all_types = [
+        t.get("type").casefold()
+        for t in train_types_config["train_types"]
+        if "type" in t
+    ]
     for type in status["train"]["type"].strip().split("|"):
         line = status["train"]["line"]
 
@@ -279,16 +286,16 @@ def get_display(bot, status):
             elif trainplusline == "DLR":
                 type = "STR"
                 line = "DLR"
-            elif type not in all_types:
+            elif type.casefold() not in all_types:
                 type = "NationalRail"
                 line = trainplusline
 
         # account for "ME RE2" instead of "RE 2"
-        if line and (type not in all_types or not type):
-            if len(line) > 2 and line[0:2] in all_types:
+        if line and (type.casefold() not in all_types or not type):
+            if len(line) > 2 and line[0:2].casefold() in all_types:
                 type = line[0:2]
                 line = line[2:]
-            if line[0] in all_types:
+            if line[0].casefold() in all_types:
                 type = line[0]
                 line = line[1:]
 
@@ -317,9 +324,12 @@ def get_display(bot, status):
                 type = "S"
                 line = f"N{line}"
 
-            if status["backend"]["type"] == "MOTIS":
-                motis_train_types = {"TRAM": "STR"}
-                type = motis_train_types.get(type, type)
+        if status["backend"]["type"] == "MOTIS":
+            motis_train_types = {"TRAM": "STR"}
+            type = motis_train_types.get(type, type)
+
+        if get_network(status) == "KVB" and type == "SUBWAY":
+            type = "STR"
 
         # fix "RB RB38", "U U8", … in a lot of regional HAFASes
         if line and line.startswith(type):
@@ -453,14 +463,140 @@ def shortened_name(previous_name, this_name):
     return this_name
 
 
+cities_translated = {
+    "Wien": "Vienne",
+    "Karlsruhe": "Carlsruhe",
+    "Mannheim": "Hommeville",
+    "Frankfurt am Main": "Francfort-sur-le-Main",
+    "Frankfurt": "Francfort-sur-le-Main",
+    "Frankfurt (Main)": "Francfort-sur-le-Main",
+    "Frankfurt(M)": "Francfort-sur-le-Main",
+    "Eggenstein-Leopoldshafen": "Eggepierre-Port du Leopold",
+}
+
+fullnames = {
+    "Lessing": "Gotthold Ephraim Lessing",
+    "Ettling": "Ettlingen",
+    "Mathy": "Karl Mathy",
+    "Weinbrenner": "Friedrich Weinbrenner",
+    "Bibiena": "Giuseppe Bibiena",
+    "Rheinhafen": "Port du Rhin",
+    "Universität": "Université",
+    "Universitätsklinikum": "Hôpital universitaire",
+}
+
+
+def frenchify(name):
+    name = name.split(", ")
+    if len(name) > 1:
+        if DB.City.find(name[0]):
+            city = name[0].strip()
+            stopname = name[1].strip()
+        else:
+            city = name[1].strip()
+            stopname = name[0].strip()
+    else:
+        name = name[0].split(" ")
+        if DB.City.find(name[0]) or name[0] in ("KA",):
+            city = name[0].strip()
+            stopname = " ".join(name[1:]).strip()
+        else:
+            city = None
+            stopname = " ".join(name).strip()
+
+    if city == "KA":
+        city = "Karlsruhe"
+
+    if match := re.search(r"(.+) \(.+\)", stopname):
+        stopname = match[1]
+
+    if match := re.search(r"(S\+U|S|U) (.+)", stopname):
+        stopname = match[2]
+
+    if match := re.search(r"(.+) (Ost|West|Süd)", stopname):
+        replace = {
+            "Ost": " Est",
+            "West": " Ouest",
+            "Süd": " Sud"
+        }
+        stopname = match[1] + replace[match[2]]
+
+    city = cities_translated.get(city, city)
+
+    hbfs = {
+        "Hauptbahnhof",
+        "Hbf",
+        "Bahnhofsvorplatz",
+        "Hauptbahnhof (Vorplatz)",
+        "Hauptbf",
+    }
+    if city and any(hbf in stopname for hbf in hbfs):
+        return f"Gare de {city}-ville"
+    elif stopname in hbfs:
+        return "Gare centrale"
+    elif stopname.casefold().endswith("bahnhof"):
+        translate = {
+            "ost": "Gare de l'Est",
+            "west": "Gare de l'Ouest",
+            "süd": "Gare du Sud",
+            "stadt": "Gare de la ville",
+            "alter oeg-": "ancienne gare OEG",
+        }
+        kind_of_bahnhof = stopname.casefold().removesuffix("bahnhof").strip()
+        if not kind_of_bahnhof:
+            return f"{city or ''} Gare".strip()
+        elif translated := translate.get(kind_of_bahnhof):
+            return f"{city or ''} {translated}".strip()
+        else:
+            return f"{city or ''} Gare du {stopname[:-7]}".strip().removesuffix("-")
+
+    stem = stopname
+
+    if stopname in ("Arbeitsagentur", "Arbeitsamt", "Agentur für Arbeit"):
+        stem = "Travail"
+    elif match := re.search(r"(.+)(-?kirche)", stopname, re.IGNORECASE):
+        stem = f"St {match[1]}"
+    elif match := re.search(r"(.+)-(.+)-.+", stopname, re.IGNORECASE):
+        stem = f"{match[1]} {match[2]}"
+    elif match := re.search(r"(.+)Rathaus", stopname):
+        stem = f"{match[1] or city or ''} Hôtel de ville"
+    elif match := re.search(
+        r"(?:straße|platz|allee|weg) de[rs] (.+)", stopname, re.IGNORECASE
+    ):
+        stem = match[1]
+    elif match := re.search(
+        r"(.+)(?:er str|-str|er weg|splatz|er platz|-platz|sweg|-weg|stor|er tor)|(.+)(?:str|platz|weg|zentrum|tor)",
+        stopname,
+        re.IGNORECASE,
+    ):
+        stem = match[1] or match[2]
+
+    stem = stem.replace("-", " ").strip()
+    return fullnames.get(stem, stem)
+
+
 def format_travelynx(bot, userid, trips, continue_link=None):
     """the actual formatting function called by message sends and edits
     to render an embed describing the current journey"""
     user = bot.get_user(userid)
     timezone = DB.User.find(user.id).get_timezone()
+    dt = datetime.fromtimestamp(
+        trips[-1].status["fromStation"]["scheduledTime"], tz=timezone
+    )
 
     desc = ""
     color = None
+
+    def _convert_name(name):
+        if translated := DB.CTSStop.translate(name):
+            return translated
+        else:
+            return frenchify(name)
+
+    if dt.month == 4 and dt.day == 1:
+        _conv = _convert_name
+    else:
+        _conv = lambda n: n
 
     def _next(statuses, current_index):
         "in the format loop, get the train after the current one or None if we're at the last"
@@ -485,7 +621,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         # compact layout for completed trips
         if continue_link and _next(trips, i):
             if not _prev(trips, i):
-                name = train["fromStation"]["name"]
+                name = _conv(train["fromStation"]["name"])
                 prefix_to_add = replace_city_suffix_with_prefix.get(
                     name.split(", ")[-1]
                 )
@@ -509,7 +645,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         # regular layout for full journey display
         # if we're the first trip of the journey, draw a journey start icon
         if not _prev(trips, i):
-            name = train["fromStation"]["name"]
+            name = _conv(train["fromStation"]["name"])
             prefix_to_add = replace_city_suffix_with_prefix.get(name.split(", ")[-1])
             if prefix_to_add:
                 name = f"{prefix_to_add} {', '.join(name.split(', ')[0:-1])}"
@@ -527,8 +663,8 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     )
                     or train["fromStation"]["name"]
                 )
-                station_name = shortened_name(
-                    prev_train["toStation"]["name"], station_name
+                station_name = _conv(
+                    shortened_name(prev_train["toStation"]["name"], station_name)
                 )
                 desc += f"{LineEmoji.CHANGE_ENTER_STOP}{departure} {station_name}\n"
             # if our trip starts on the same station as the last ended, we've already drawn the change icon
@@ -536,12 +672,14 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                 pass
 
         route_link = generate_train_link(train)
-        headsign = shortened_name(train["fromStation"]["name"], trip.fetch_headsign())
+        headsign = _conv(
+            shortened_name(train["fromStation"]["name"], trip.fetch_headsign())
+        )
 
         # all lines in vienna have overly long HAFAS destinations not consistent with the vehicle display
         # like "Wien Winckelmannstraße (Schwendergasse 61)" when it should just be Winckelmannstraße
         if match := re_remove_vienna_suffixes.match(headsign):
-            headsign = match["name"]
+            headsign = _conv(match["name"])
 
         headsign = "» " + headsign
 
@@ -564,8 +702,8 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             train["toStation"]["realTime"],
             timezone=timezone,
         )
-        station_name = shortened_name(
-            train["fromStation"]["name"], train["toStation"]["name"]
+        station_name = _conv(
+            shortened_name(train["fromStation"]["name"], train["toStation"]["name"])
         )
         # if we're on the last trip of the journey, draw an end icon
         if not _next(trips, i):
@@ -645,8 +783,8 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     )
                     or train["toStation"]["name"]
                 )
-                station_name = shortened_name(
-                    next_train["fromStation"]["name"], station_name
+                station_name = _conv(
+                    shortened_name(next_train["fromStation"]["name"], station_name)
                 )
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
@@ -687,7 +825,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             trips[-1].status["toStation"]["realTime"],
             True,
         )
-        desc += f"\n{LineEmoji.DESTINATION} **{trips[-1].status['toStation']['name']} {to_time}**\n"
+        desc += f"\n{LineEmoji.DESTINATION} **{_conv(trips[-1].status['toStation']['name'])} {to_time}**\n"
 
     total_time = timedelta(
         seconds=trips[-1].status["toStation"]["realTime"]
@@ -759,6 +897,11 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             f"https://dbf.finalrewind.org/map/{motis_id}/0?motis={map_backend}"
             + f"&from={from_station}&to={to_station}"
         )
+    elif trip.status["backend"]["type"] == "EFA":
+        jid = urllib.parse.quote(trip.status["train"]["id"])
+        map_link = DB.Link.make(
+            f"https://dbf.finalrewind.org/map/{jid}/0?efa={trip.status['backend']['name']}"
+        )
 
     if map_link:
         desc += f" · [Map]({config['shortener_url']}/{map_link.short_id})"
@@ -775,9 +918,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         )
     elif backend["type"] == "DBRIS":
         if jid := trip.hafas_data.get("id", trip.status["train"]["id"]):
+            # filtering for trip doesn't really work rn? removed it
             copy_url += (
-                f"/s/A=1@L={trip.status['fromStation']['uic']}@?dbris=bahn.de&trip_id="
-                + urllib.parse.quote(jid)
+                f"/s/A=1@L={trip.status['fromStation']['uic']}@?dbris=bahn.de"
                 + f"&timestamp={trip.status['fromStation']['scheduledTime']}#now"
             )
         else:
@@ -803,6 +946,12 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             )
         else:
             copy_url = None
+    elif backend["type"] == "EFA":
+        copy_url += (
+            f"/s/{trip.status['fromStation']['uic']}?efa={trip.status['backend']['name']}&trip_id="
+            + urllib.parse.quote(trip.status["train"]["id"])
+            + f"&timestamp={trip.status['fromStation']['scheduledTime']}#now"
+        )
     else:
         copy_url = None
 
@@ -810,11 +959,25 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         copy_link = DB.Link.make(copy_url)
         desc += f" · [Copy]({config['shortener_url']}/{copy_link.short_id})"
 
-    embed_title = f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
-    embed_title += decline_operator_with_article(
-        trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
-    )
-    embed_title += " unterwegs"
+    if dt.month == 4 and dt.day == 1:
+        embed_title = f"Mon dieu! L'{user.name}, c'{'était' if not trips[-1].status['checkedIn'] else 'est'} en route"
+        if _operator := decline_operator_with_article(
+            trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
+        ):
+            _operator = _operator.removeprefix(" mit ")
+            _operator = (
+                _operator.removeprefix("der ").removeprefix("dem ").removeprefix("den ")
+            )
+            embed_title += f" avec {_operator}"
+        embed_title += "! 🇫🇷🇫🇷🇫🇷"
+    else:
+        embed_title = (
+            f"{user.name} {'war' if not trips[-1].status['checkedIn'] else 'ist'}"
+        )
+        embed_title += decline_operator_with_article(
+            trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
+        )
+        embed_title += " unterwegs"
 
     embed = discord.Embed(
         description=desc,

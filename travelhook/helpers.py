@@ -44,6 +44,7 @@ train_types_with_realtime_data_on_bahnexpert_maybe_i_hope = (
     "RS",
     "RJ",
     "RJX",
+    "S",
     "TGV",
     "WB",
 )
@@ -122,19 +123,19 @@ def format_time(sched, actual, relative=False, timezone=tz):
     if relative:
         return f"<t:{int(time.timestamp())}:R>"
 
-    diff = ""
-    if actual > sched:
-        diff = (actual - sched) // 60
+    diff = (actual - sched) // 60
+    if diff > 0:
         diff = f" +{diff}′"
-    elif actual < sched:
-        diff = (sched - actual) // 60
-        diff = f" -{diff}′"
+    elif diff < 0:
+        diff = f" {diff}′"
+    else:
+        diff = ""
 
     return f"**{time:%H:%M}{diff}**"
 
 
 def format_delta(delta):
-    "turn a timedelta into  representation like 1h37m"
+    "turn a timedelta into representation like 1h37m"
     h, m = divmod(delta, timedelta(hours=1))
     m = int(m.total_seconds() // 60)
     if h > 0:
@@ -200,6 +201,8 @@ def generate_train_link(data):
             + jid.replace("#", "%23")
             + f"?hafas={hafas}"
         )
+    elif data["backend"]["type"] == "EFA":
+        link = f"https://dbf.finalrewind.org/z/{data['train']['id']}?efa={data['backend']['name']}"
     elif data["backend"]["type"] == "MOTIS":
         trip_viewers = {
             "transitous": "https://api.transitous.org/?tripId=",
@@ -433,6 +436,7 @@ replace_operators = {
     "DB Regio AG S-Bahn München": "der S-Bahn München",
     "Graz-Köflacher Bahn und Busbetrieb GmbH": "der GKB",
     "Kölner Verkehrs-Betriebe": "der KVB",
+    "Kölner VB": "der KVB",  # transitous spelling
     "oberpfalzbahn - Die Länderbahn GmbH DLB": "der oberpfalzbahn",
     "Österreichische Bundesbahnen": "den ÖBB",
     "Ostdeutsche Eisenbahn GmbH": "der ODEG",
