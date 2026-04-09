@@ -139,6 +139,9 @@ def get_network(status):
     if operator.startswith("Wiener Linien"):
         return "WL"
 
+    if "regiobahn" in operator.casefold():
+        return "REGIOBAHN"
+
     # network SWien: S-Bahn Wien
     if haversine((lat, lon), (48.21, 16.39)) < 70:
         return "SWien"
@@ -323,6 +326,9 @@ def get_display(bot, status):
             if type == "SN":
                 type = "S"
                 line = f"N{line}"
+
+        if get_network(status) == "REGIOBAHN" and line.startswith("S"):
+            type = "S"
 
         if status["backend"]["type"] == "MOTIS":
             motis_train_types = {"TRAM": "STR"}

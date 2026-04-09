@@ -440,10 +440,11 @@ replace_operators = {
     "oberpfalzbahn - Die Länderbahn GmbH DLB": "der oberpfalzbahn",
     "Österreichische Bundesbahnen": "den ÖBB",
     "Ostdeutsche Eisenbahn GmbH": "der ODEG",
-    "Rhein-Neckar-Verkehr GmbH": "der RNV",
-    "Rhein-Neckar-Verkehr GmbH (Oberrheinische Eisenbahn)": "der RNV",
-    "Rhein-Neckar-Verkehr GmbH (Rhein-Haardtbahn)": "der RNV",
-    "Rhein-Neckar-Verkehr GmbH (rnv)": "der RNV",
+    "Rhein-Neckar-Verkehr GmbH": "der rnv",
+    "Rhein-Neckar-Verkehr GmbH (Oberrheinische Eisenbahn)": "der rnv",
+    "Rhein-Neckar-Verkehr GmbH (Rhein-Haardtbahn)": "der rnv",
+    "Rhein-Neckar-Verkehr GmbH (rnv)": "der rnv",
+    "Rhein-Sieg-Verkehrsgesellschaft mbH": "der RSVG",
     "S-Bahn Hannover (Transdev)": "der S-Bahn Hannover",
     "Schweizerische Bundesbahnen": "der SBB",
     "Schweizerische Bundesbahnen SBB": "der SBB",  # bls hafas spelling
@@ -473,7 +474,7 @@ def decline_operator_with_article(operator: str):
         return f" mit {replace_operators[operator]}"
     if operator in known_operator_pronouns:
         return f" mit {known_operator_pronouns[operator]} {operator}"
-    if operator.startswith("DB Regio"):
+    if operator.startswith("DB Regio") or operator.startswith("DB - Regio"):
         return " mit DB Regio"
     if operator.endswith("mbH") or operator.endswith("AG"):
         return f" mit der {operator}"
