@@ -38,6 +38,7 @@ re_u_number = re.compile(r"(?P<station>.+) [\(\[]U\d+[\)\]]")
 re_decompose_him = re.compile(r"(?P<from>.+) - (?P<to>.+): Information\. (?P<msg>.+)")
 
 blanket_replace_train_type = {
+    "Ersatzverkehr": "SEV",
     "EV": "SEV",
     "IRE": "RE",
     "RNV": "STR",
