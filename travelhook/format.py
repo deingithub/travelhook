@@ -687,14 +687,15 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                 pass
 
         route_link = generate_train_link(train)
-        headsign = _conv(
-            shortened_name(train["fromStation"]["name"], trip.fetch_headsign())
-        )
 
+        headsign = trip.fetch_headsign()
         # all lines in vienna have overly long HAFAS destinations not consistent with the vehicle display
         # like "Wien Winckelmannstraße (Schwendergasse 61)" when it should just be Winckelmannstraße
         if match := re_remove_vienna_suffixes.match(headsign):
             headsign = _conv(match["name"])
+        headsign = _conv(
+            shortened_name(train["fromStation"]["name"], headsign)
+        )
 
         headsign = "» " + headsign
 
