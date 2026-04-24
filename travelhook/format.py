@@ -600,7 +600,9 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         else:
             return frenchify(name)
 
-    if dt.month == 4 and dt.day == 1:
+    dt_monthday = (dt.month, dt.day)
+    shouldfrench = (dt_monthday == (4,1) or dt_monthday == (7,14))
+    if shouldfrench:
         _conv = _convert_name
     else:
         _conv = lambda n: n
@@ -966,7 +968,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         copy_link = DB.Link.make(copy_url)
         desc += f" · [Copy]({config['shortener_url']}/{copy_link.short_id})"
 
-    if dt.month == 4 and dt.day == 1:
+    if shouldfrench:
         embed_title = f"Mon dieu! L'{user.name}, c'{'était' if not trips[-1].status['checkedIn'] else 'est'} en route"
         if _operator := decline_operator_with_article(
             trips[-1].status.get("operator") or trips[-1].hafas_data.get("operator")
