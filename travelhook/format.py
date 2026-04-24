@@ -467,9 +467,15 @@ def shortened_name(previous_name, this_name):
         return this_name
 
     if mprev["city"] == mthis["city"] and DB.City.find(mprev["city"]):
-        return mthis["station"]
+        if mthis["station"] and not (
+            mthis["station"].endswith("bf") or mthis["station"].endswith("bahnhof")
+        ):
+            return mthis["station"]
     elif mprev["station"] == mthis["station"] and DB.City.find(mprev["station"]):
-        return mthis["city"]
+        if mthis["city"] and (
+            mthis["city"].endswith("bf") or mthis["city"].endswith("bahnhof")
+        ):
+            return mthis["city"]
 
     return this_name
 
@@ -601,7 +607,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
             return frenchify(name)
 
     dt_monthday = (dt.month, dt.day)
-    shouldfrench = (dt_monthday == (4,1) or dt_monthday == (7,14))
+    shouldfrench = dt_monthday == (4, 1) or dt_monthday == (7, 14)
     if shouldfrench:
         _conv = _convert_name
     else:
