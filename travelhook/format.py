@@ -452,8 +452,13 @@ def shortened_name(previous_name, this_name):
     "if the last station follows the 'Stop , City' convention and we're still in the same city, drop that suffix"
     mprev = re_station_city.match(previous_name)
     mthis = re_station_city.match(this_name)
-    if not mprev or not mthis:
-        return this_name
+    # just try out if the first word is a station?
+    if not mprev:
+        mprev = previous_name.split(" ")
+        mprev = {"city": mprev[0], "station": " ".join(mprev[1:])}
+    if not mthis:
+        mthis = this_name.split(" ")
+        mthis = {"city": mthis[0], "station": " ".join(mthis[1:])}
 
     # special case almost exclusively for "Bahnhof (Bus), Grimma"
     # the (Bahnhof ) prefix in the station regex eats the thing that makes the name
@@ -520,11 +525,7 @@ def frenchify(name):
         stopname = match[2]
 
     if match := re.search(r"(.+) (Ost|West|Süd)", stopname):
-        replace = {
-            "Ost": " Est",
-            "West": " Ouest",
-            "Süd": " Sud"
-        }
+        replace = {"Ost": " Est", "West": " Ouest", "Süd": " Sud"}
         stopname = match[1] + replace[match[2]]
 
     city = cities_translated.get(city, city)
@@ -1102,9 +1103,7 @@ def sillies(bot, trips, embed):
             url="https://upload.wikimedia.org/wikipedia/commons/4/4c/Potato_heart_mutation.jpg"
         )
     if "Bonn Hbf" in status["toStation"]["name"]:
-        return embed.set_thumbnail(
-            url="https://i.imgur.com/xuOnHG9.png"
-        )
+        return embed.set_thumbnail(url="https://i.imgur.com/xuOnHG9.png")
     if any(
         ba in status["toStation"]["name"]
         for ba in ["Arbeitsagentur", "Arbeitsamt", "Agentur für Arbeit"]
