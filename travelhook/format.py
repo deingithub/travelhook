@@ -1101,6 +1101,10 @@ def sillies(bot, trips, embed):
         return embed.set_thumbnail(
             url="https://upload.wikimedia.org/wikipedia/commons/4/4c/Potato_heart_mutation.jpg"
         )
+    if "Bonn Hbf" in status["toStation"]["name"]:
+        return embed.set_thumbnail(
+            url="https://i.imgur.com/xuOnHG9.png"
+        )
     if any(
         ba in status["toStation"]["name"]
         for ba in ["Arbeitsagentur", "Arbeitsamt", "Agentur für Arbeit"]
