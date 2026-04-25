@@ -384,6 +384,7 @@ db_classes3 = {
     "644": "Talent 1",
     "648": "LINT 41",
     "650": "RegioShuttle",
+    "798": "Schienenbus",
 }
 db_classes4 = {
     "1430": "FLIRT",
