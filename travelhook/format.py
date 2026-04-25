@@ -452,7 +452,7 @@ def shortened_name(previous_name, this_name):
     "if the last station follows the 'Stop , City' convention and we're still in the same city, drop that suffix"
     mprev = re_station_city.match(previous_name)
     mthis = re_station_city.match(this_name)
-    # just try out if the first word is a station?
+    # just try out if the first word is a city?
     if not mprev:
         mprev = previous_name.split(" ")
         mprev = {"city": mprev[0], "station": " ".join(mprev[1:])}
@@ -472,7 +472,7 @@ def shortened_name(previous_name, this_name):
         ):
             return mthis["station"]
     elif mprev["station"] == mthis["station"] and DB.City.find(mprev["station"]):
-        if mthis["city"] and (
+        if mthis["city"] and not (
             mthis["city"].endswith("bf") or mthis["city"].endswith("bahnhof")
         ):
             return mthis["city"]
