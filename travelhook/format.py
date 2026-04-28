@@ -800,7 +800,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
                     or train["toStation"]["name"]
                 )
                 station_name = _conv(
-                    shortened_name(next_train["fromStation"]["name"], station_name)
+                    shortened_name(train["fromStation"]["name"], station_name)
                 )
                 next_train_departure = format_time(
                     next_train["fromStation"]["scheduledTime"],
