@@ -467,13 +467,13 @@ def shortened_name(previous_name, this_name):
         return this_name
 
     if mprev["city"] == mthis["city"] and DB.City.find(mprev["city"]):
-        if mthis["station"] and not (
-            mthis["station"].endswith("bf") or mthis["station"].endswith("bahnhof")
+        if mthis["station"] and not any(
+            mthis["station"].casefold().endswith(x) for x in ("bf", "bhf", "bahnhof", "bushof")
         ):
             return mthis["station"]
     elif mprev["station"] == mthis["station"] and DB.City.find(mprev["station"]):
-        if mthis["city"] and not (
-            mthis["city"].endswith("bf") or mthis["city"].endswith("bahnhof")
+        if mthis["city"] and not any(
+            mthis["city"].casefold().endswith(x) for x in ("bf", "bhf", "bahnhof", "bushof")
         ):
             return mthis["city"]
 
