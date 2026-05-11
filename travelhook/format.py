@@ -76,6 +76,7 @@ london_underground_lines = {
 }
 british_tocs = {
     "Avanti",
+    "Greater Anglia",
     "TransPennine Express",
     "Thameslink",
     "LNR",
@@ -238,6 +239,7 @@ def get_network(status):
         or trainplusline in london_overground_lines
         or trainplusline in london_underground_lines
         or trainplusline in british_tocs
+        or operator in british_tocs
         or trainplusline in ("STR DLR", "DLR")
         or operator
         in (
