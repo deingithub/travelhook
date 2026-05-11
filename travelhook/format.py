@@ -234,7 +234,7 @@ def get_network(status):
         .strip()
     )
     if (
-        (7000000 < (status["fromStation"]["uic"] or 0) < 7100000)
+        (700000 < (status["fromStation"]["uic"] or 0) < 710000)
         or trainplusline in london_overground_lines
         or trainplusline in london_underground_lines
         or trainplusline in british_tocs
@@ -245,6 +245,7 @@ def get_network(status):
             "London Docklands Light Railway - TfL",
             "London Underground (TfL)",
         )
+        and not status["backend"]["name"] == "KVV"
     ):
         return "UK"
 
