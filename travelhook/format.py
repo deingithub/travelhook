@@ -291,7 +291,7 @@ def get_display(bot, status):
             elif trainplusline == "DLR":
                 type = "STR"
                 line = "DLR"
-            elif type.casefold() not in all_types:
+            else:
                 type = "NationalRail"
                 line = operator
 
