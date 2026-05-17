@@ -76,13 +76,18 @@ london_underground_lines = {
 }
 british_tocs = {
     "Avanti",
+    "CrossCountry",
     "Greater Anglia",
     "TransPennine Express",
     "Thameslink",
     "LNR",
     "LNER",
+    "ScotRail",
     "Southeastern",
     "Stansted Express",
+    "London Overground",
+    "London Docklands Light Railway - TfL",
+    "London Underground (TfL)",
 }
 train_types_config = {}
 with open("train_types.toml", "rb") as f:
@@ -241,12 +246,6 @@ def get_network(status):
         or trainplusline in british_tocs
         or operator in british_tocs
         or trainplusline in ("STR DLR", "DLR")
-        or operator
-        in (
-            "London Overground",
-            "London Docklands Light Railway - TfL",
-            "London Underground (TfL)",
-        )
         and not status["backend"]["name"] == "KVV"
     ):
         return "UK"
@@ -294,7 +293,7 @@ def get_display(bot, status):
                 line = "DLR"
             elif type.casefold() not in all_types:
                 type = "NationalRail"
-                line = trainplusline
+                line = operator
 
         # account for "ME RE2" instead of "RE 2"
         if line and (type.casefold() not in all_types or not type):
