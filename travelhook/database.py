@@ -923,7 +923,9 @@ class Trip:
 
         if not (7000000 < (self.status["fromStation"]["uic"] or 0) < 7100000):
             return
-        if not re_british_train_no.match(self.status["train"]["line"] or ""):
+        if not re_british_train_no.match(
+            self.get_unpatched_status()["train"]["line"] or ""
+        ):
             return
 
         now = datetime.now(tz=User.find(discord_id=self.user_id).get_timezone())
@@ -931,9 +933,9 @@ class Trip:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     "https://www.realtimetrains.co.uk/service/gb-nr:"
-                    f"{self.status['train']['line']}/{now:%Y-%m-%d}/detailed"
+                    f"{self.get_unpatched_status()['train']['line']}/{now:%Y-%m-%d}/detailed"
                 ) as response:
-                    apply_patch = {"network": "UK"}
+                    apply_patch = {"network": "UK", "train": {}}
                     soup = BeautifulSoup(await response.text(), "html.parser")
                     try:
                         plan_nodes = soup.select_one("div.allocation").getText().strip()
@@ -944,17 +946,21 @@ class Trip:
                         )
                         apply_patch["composition"] = plan_nodes
                     except:
-                        print("rtt: no nodes found")
+                        print("rtt: no composition nodes found")
                         traceback.print_exc()
                         apply_patch["failedcomposition-rtt"] = True
-                    operatorheader = soup.select_one("#servicetitle .header")
-                    destination_text = " ".join(operatorheader.stripped_strings)
+
+                    destination_text = " ".join(
+                        soup.select_one("#servicetitle .header").stripped_strings
+                    )
                     if "to" in destination_text:
                         destination = destination_text.split("to")[-1].strip()
-                        apply_patch["train"] = {"fakeheadsign": destination}
-                    apply_patch["operator"] = soup.select_one(
-                        "#servicetitle .toc > div"
-                    ).getText()
+                        apply_patch["train"]["fakeheadsign"] = destination
+
+                    operator = soup.select_one("#servicetitle .toc > div").getText()
+                    apply_patch["operator"] = operator
+                    apply_patch["train"]["line"] = operator
+
                     self.patch_patch(apply_patch)
         except:
             print(f"rtt request broke")

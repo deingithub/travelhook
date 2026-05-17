@@ -308,7 +308,6 @@ def get_display(bot, status):
                 line = "DLR"
             else:
                 type = "NationalRail"
-                line = operator
 
         # account for "ME RE2" instead of "RE 2"
         if line and (type.casefold() not in all_types or not type):
