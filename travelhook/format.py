@@ -76,15 +76,30 @@ london_underground_lines = {
 }
 british_tocs = {
     "Avanti",
+    "c2c",
+    "Caledonian Sleeper",
+    "Chiltern Railways",
     "CrossCountry",
+    "East Midlands Railway",
+    "Gatwick Express",
+    "Grand Central",
+    "Great Northern",
+    "Great Western Railway",
     "Greater Anglia",
+    "Heathrow Express",
+    "Hull Trains",
+    "Merseyrail",
+    "Northern",
     "TransPennine Express",
     "Thameslink",
     "LNR",
     "LNER",
+    "lumo",
     "ScotRail",
     "Southeastern",
+    "Southern",
     "Stansted Express",
+    "Transport for Wales Rail",
     "London Overground",
     "London Docklands Light Railway - TfL",
     "London Underground (TfL)",
@@ -470,12 +485,14 @@ def shortened_name(previous_name, this_name):
 
     if mprev["city"] == mthis["city"] and DB.City.find(mprev["city"]):
         if mthis["station"] and not any(
-            mthis["station"].casefold().endswith(x) for x in ("bf", "bhf", "bahnhof", "bushof")
+            mthis["station"].casefold().endswith(x)
+            for x in ("bf", "bhf", "bahnhof", "bushof")
         ):
             return mthis["station"]
     elif mprev["station"] == mthis["station"] and DB.City.find(mprev["station"]):
         if mthis["city"] and not any(
-            mthis["city"].casefold().endswith(x) for x in ("bf", "bhf", "bahnhof", "bushof")
+            mthis["city"].casefold().endswith(x)
+            for x in ("bf", "bhf", "bahnhof", "bushof")
         ):
             return mthis["city"]
 
@@ -695,9 +712,7 @@ def format_travelynx(bot, userid, trips, continue_link=None):
         # like "Wien Winckelmannstraße (Schwendergasse 61)" when it should just be Winckelmannstraße
         if match := re_remove_vienna_suffixes.match(headsign):
             headsign = _conv(match["name"])
-        headsign = _conv(
-            shortened_name(train["fromStation"]["name"], headsign)
-        )
+        headsign = _conv(shortened_name(train["fromStation"]["name"], headsign))
 
         headsign = "» " + headsign
 
