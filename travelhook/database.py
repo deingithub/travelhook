@@ -931,24 +931,23 @@ class Trip:
 
         now = datetime.now(tz=User.find(discord_id=self.user_id).get_timezone())
         try:
+            url = f"https://www.realtimetrains.co.uk/service/gb-nr:{self.get_unpatched_status()['train']['line']}/{now:%Y-%m-%d}/detailed"
             async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    "https://www.realtimetrains.co.uk/service/gb-nr:"
-                    f"{self.get_unpatched_status()['train']['line']}/{now:%Y-%m-%d}/detailed"
-                ) as response:
-                    apply_patch = {"network": "UK", "train": {}}
+                async with session.get(url) as response:
+                    apply_patch = {"network": "UK", "train": {}, "link": url}
                     soup = BeautifulSoup(await response.text(), "html.parser")
                     try:
                         plan_nodes = soup.select_one("div.allocation").getText().strip()
-                        plan_nodes = re_british_class_numbers.sub(r"\1 \2", plan_nodes)
-                        plan_nodes = plan_nodes.split("+")
-                        plan_nodes = " + ".join(
+                        plan_nodes = [
+                            re_british_class_numbers.sub(r"\1 \2", node).strip()
+                            for node in plan_nodes.split("+")
+                        ]
+                        apply_patch["composition"] = " + ".join(
                             format_composition_element(
-                                node + " " + br_classes.get(node.split(" ")[0], "")
+                                (node + " " + br_classes.get(node.split(" ")[0], ""))
                             )
                             for node in plan_nodes
                         )
-                        apply_patch["composition"] = plan_nodes
                     except:
                         print("rtt: no composition nodes found")
                         traceback.print_exc()
