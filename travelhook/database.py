@@ -25,6 +25,7 @@ from .helpers import (
     replace_headsign,
     format_composition_element,
     db_replace_group_classes,
+    br_classes,
     describe_class,
 )
 from .format import get_network, train_types_config
@@ -942,7 +943,10 @@ class Trip:
                         plan_nodes = re_british_class_numbers.sub(r"\1 \2", plan_nodes)
                         plan_nodes = plan_nodes.split("+")
                         plan_nodes = " + ".join(
-                            format_composition_element(node) for node in plan_nodes
+                            format_composition_element(
+                                node + " " + br_classes.get(node.split(" ")[0], "")
+                            )
+                            for node in plan_nodes
                         )
                         apply_patch["composition"] = plan_nodes
                     except:
