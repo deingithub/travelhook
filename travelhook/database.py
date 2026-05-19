@@ -59,10 +59,6 @@ def json_patch_dicts(patch, old_dict):
     )
 
 
-re_british_train_no = re.compile(r"[A-Z]\d{5}$")
-re_british_class_numbers = re.compile(r"(\d{3})(\d{3})")
-
-
 @dataclass
 class Server:
     "servers the bot is enabled on"
@@ -924,45 +920,63 @@ class Trip:
 
         if not (7000000 < (self.status["fromStation"]["uic"] or 0) < 7100000):
             return
-        if not re_british_train_no.match(
-            self.get_unpatched_status()["train"]["line"] or ""
+        if not re.match(
+            r"[A-Z]\d{5}$", self.get_unpatched_status()["train"]["line"] or ""
         ):
             return
 
-        now = datetime.now(tz=User.find(discord_id=self.user_id).get_timezone())
+        departure = datetime.fromtimestamp(
+            self.status["fromStation"]["scheduledTime"], tz=ZoneInfo("Europe/London")
+        )
         try:
-            url = f"https://www.realtimetrains.co.uk/service/gb-nr:{self.get_unpatched_status()['train']['line']}/{now:%Y-%m-%d}/detailed"
+            url = (
+                "https://www.realtimetrains.co.uk/service/"
+                f"gb-nr:{self.get_unpatched_status()['train']['line']}/{departure:%Y-%m-%d}"
+            )
             async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
+                async with session.get(url + "/detailed") as response:
                     apply_patch = {"network": "UK", "train": {}, "link": url}
                     soup = BeautifulSoup(await response.text(), "html.parser")
-                    try:
-                        plan_nodes = soup.select_one("div.allocation").getText().strip()
-                        plan_nodes = [
-                            re_british_class_numbers.sub(r"\1 \2", node).strip()
-                            for node in plan_nodes.split("+")
-                        ]
-                        apply_patch["composition"] = " + ".join(
-                            format_composition_element(
-                                (node + " " + br_classes.get(node.split(" ")[0], ""))
+
+                    if composition := soup.select_one("div.allocation"):
+                        if composition := composition.getText(" ", strip=True):
+                            units = [
+                                re.sub(r"(\d{3})(\d{3})", r"\1 \2", unit).strip()
+                                for unit in composition.split("+")
+                            ]
+                            units = [
+                                f"{unit} {br_classes.get(unit[:3], '')}".strip()
+                                for unit in units
+                            ]
+                            apply_patch["composition"] = " + ".join(
+                                format_composition_element(unit) for unit in units
                             )
-                            for node in plan_nodes
-                        )
-                    except:
-                        print("rtt: no composition nodes found")
-                        traceback.print_exc()
+
+                    if not "composition" in apply_patch:
+                        print("rtt: did not find composition")
                         apply_patch["failedcomposition-rtt"] = True
 
-                    destination_text = " ".join(
-                        soup.select_one("#servicetitle .header").stripped_strings
-                    )
-                    if "to" in destination_text:
-                        destination = destination_text.split("to")[-1].strip()
-                        apply_patch["train"]["fakeheadsign"] = destination
+                    if header := soup.select_one("#servicetitle .header"):
+                        if matches := re.search(
+                            r"(\d[A-Z]\d\d) \d{4} .+ to (.+)",
+                            header.getText(" ", strip=True),
+                        ):
+                            apply_patch["train"]["fakeheadsign"] = matches[2]
+                            apply_patch["train"]["no"] = matches[1]
+                        else:
+                            print(
+                                f"rtt: could not extract information from header {header.getText(' ', strip=True)}"
+                            )
+                    else:
+                        print("rtt: did not find header")
 
-                    operator = soup.select_one("#servicetitle .toc > div").getText()
-                    apply_patch["operator"] = operator
-                    apply_patch["train"]["line"] = operator
+                    if operator := soup.select_one(
+                        "#servicetitle .toc > div"
+                    ).getText():
+                        apply_patch["operator"] = operator
+                        apply_patch["train"]["line"] = operator
+                    else:
+                        print("rtt: could not find operator")
 
                     self.patch_patch(apply_patch)
         except:
