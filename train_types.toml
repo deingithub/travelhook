@@ -47,7 +47,7 @@ train_types = [
 	{ type = "EIC", emoji = "pia|pib", color = "#ff0404", always_show_train_number = true, class="poland" },
 	{ type = "EIP", emoji = "eip0|eip1", color = "#ff0404", always_show_train_number = true, class="poland" },
 	{ type = "EN", emoji = "na|nb", color = "#282559", always_show_train_number = true, class="night trains" },
-	{ type = "EST", emoji = "est0|est1", color = "#ff0404", always_show_train_number = true, class="private operators" },
+	{ type = "EUR", emoji = "eur0|eur1", color = "#00286a", always_show_train_number = true, class="private operators" },
 	{ type = "Ex", emoji = "ex0|ex1", color = "#ff0404", class = "eastern europe™" },
 	{ type = "FA", emoji = "fa0|fa1", color = "#cccccc", always_show_train_number = true, class="long-distance 2" },
 	{ type = "Fähre", emoji = "Faehre", color = "#00a4db", class="city transit" },

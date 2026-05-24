@@ -1078,6 +1078,8 @@ def sillies(bot, trips, embed):
         return embed.set_image(url="https://i.imgur.com/4LQI5ep.jpeg")
     if "Lange Rötterstraße" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/mZf2MfJ.png")
+    if "Hôpital" in status["toStation"]["name"]:
+        return embed.set_image(url="https://i.imgur.com/cmBFQos.png")
     if "Dalbergstraße" in status["toStation"]["name"]:
         return embed.set_image(url="https://i.imgur.com/P3w72xX.png")
     if (
