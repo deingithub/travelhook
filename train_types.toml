@@ -159,6 +159,7 @@ train_types = [
 	{ type = "STR", network = "RNV", line = "8", emoji = "KASTR|rnv8", color = "#e17500", hide_line_number = true  },
 	{ type = "STR", network = "RNV", line = "9", emoji = "KASTR|rnv9", color = "#95c23d", hide_line_number = true  },
 	{ type = "STR", network = "RNV", line = "10", emoji = "KASTR|rnv10", color = "#a71680", hide_line_number = true  },
+	{ type = "STR", network = "RNV", line = "12", emoji = "KASTR|rnv12", color = "#db623d", hide_line_number = true  },
 	{ type = "STR", network = "RNV", line = "15", emoji = "KASTR|rnv15", color = "#f7ab64", hide_line_number = true  },
 	{ type = "STR", network = "RNV", line = "16", emoji = "KASTR|rnv16", color = "#5f6caf", hide_line_number = true  },
 	{ type = "STR", network = "RNV", line = "21", emoji = "KASTR|rnv21", color = "#e30613", hide_line_number = true  },
