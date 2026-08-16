@@ -1,4 +1,4 @@
-emoji_server_ids = [552249406808653836, 1109251867051044994, 1189295652518232155, 1162759875667964005, 1235129674485600276, 1323238503940755466, 1367446239515381893] # emoji will be looked up by name from these servers only
+emoji_server_ids = [552249406808653836, 1109251867051044994, 1189295652518232155, 1162759875667964005, 1235129674485600276, 1323238503940755466, 1367446239515381893, 1538550537148956742] # emoji will be looked up by name from these servers only
 train_types = [
 	# possible options for matching, not provided = matches all
 	# { type = "IC", line = "1",  line_startswith = "1", network = "SBB"}
@@ -72,6 +72,20 @@ train_types = [
 	{ type = "M", line = "2", network = "BKV", emoji = "M2|BKV2", color = "#c9181d", hide_line_number = true },
 	{ type = "M", line = "3", network = "BKV", emoji = "M2|BKV3", color = "#005395", hide_line_number = true },
 	{ type = "M", line = "4", network = "BKV", emoji = "M2|BKV4", color = "#42a634", hide_line_number = true },
+	{ type = "M", line = "A", network = "Tokyo", emoji = "M2|TokyoA", color = "#ec6e65", hide_line_number = true },
+	{ type = "M", line = "C", network = "Tokyo", emoji = "M2|TokyoC", color = "#00bb85", hide_line_number = true },
+	{ type = "M", line = "E", network = "Tokyo", emoji = "M2|TokyoE", color = "#ce045b", hide_line_number = true },
+	{ type = "M", line = "F", network = "Tokyo", emoji = "M2|TokyoF", color = "#9c5e31", hide_line_number = true },
+	{ type = "M", line = "G", network = "Tokyo", emoji = "M2|TokyoG", color = "#ff9500", hide_line_number = true },
+	{ type = "M", line = "H", network = "Tokyo", emoji = "M2|TokyoH", color = "#b5b5ac", hide_line_number = true },
+	{ type = "M", line = "I", network = "Tokyo", emoji = "M2|TokyoI", color = "#006cb6", hide_line_number = true },
+	{ type = "M", line = "M", network = "Tokyo", emoji = "M2|TokyoM", color = "#f62e36", hide_line_number = true },
+	{ type = "M", line = "Mb", network = "Tokyo", emoji = "M2|TokyoMB", color = "#f62e36", hide_line_number = true },
+	{ type = "M", line = "N", network = "Tokyo", emoji = "M2|TokyoN", color = "#00ac9b", hide_line_number = true },
+	{ type = "M", line = "S", network = "Tokyo", emoji = "M2|TokyoS", color = "#b0c124", hide_line_number = true },
+	{ type = "M", line = "T", network = "Tokyo", emoji = "M2|TokyoT", color = "#009bbf", hide_line_number = true },
+	{ type = "M", line = "Y", network = "Tokyo", emoji = "M2|TokyoY", color = "#c1a470", hide_line_number = true },
+	{ type = "M", line = "Z", network = "Tokyo", emoji = "M2|TokyoZ", color = "#8f76d6", hide_line_number = true },
 	{ type = "M", emoji = "metro", color = "#014e8d", class="rapid transit" },
 	{ type = "MBV", emoji = "mbv0|mbv1", color = "#ff0404", always_show_train_number = true, class="eastern europe™" },
 	{ type = "MEX", emoji = "m0|m1", color = "#204a87", class="regional" },

@@ -160,6 +160,9 @@ def get_network(status):
     if operator.startswith("Wiener Linien"):
         return "WL"
 
+    if "Tokyo Metro" in operator or "Toei Subway" in operator:
+        return "Tokyo"
+
     if "regiobahn" in operator.casefold():
         return "REGIOBAHN"
 
@@ -330,7 +333,7 @@ def get_display(bot, status):
             type = "coach"
             line = "Intercitybus"
         if get_network(status) == "RNV":
-            if not type:
+            if not type or type == "Stadtbahn":
                 type = "STR"
             line = line.removeprefix("RNV ")
             if line in ("8X", "9X"):
@@ -347,7 +350,7 @@ def get_display(bot, status):
             type = "S"
 
         if status["backend"]["type"] == "MOTIS":
-            motis_train_types = {"TRAM": "STR"}
+            motis_train_types = {"TRAM": "STR", "SUBWAY": "M", "REGIONAL_RAIL": "", "REGIONAL_FAST_RAIL": ""}
             type = motis_train_types.get(type, type)
 
         if get_network(status) == "KVB" and type == "SUBWAY":
