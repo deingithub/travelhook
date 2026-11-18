@@ -40,16 +40,25 @@ re_decompose_him = re.compile(r"(?P<from>.+) - (?P<to>.+): Information\. (?P<msg
 blanket_replace_train_type = {
     "Ersatzverkehr": "SEV",
     "EV": "SEV",
+    "ExpressBus": "Bus",
+    "FERRY": "boat",
     "IRE": "RE",
     "RNV": "STR",
+    "Niederflurbus": "Bus",
+    "Niederflurstrab": "STR",
     "O-Bus": "Bus",
-    "Tram": "STR",
+    "RegionalBus": "Bus",
     "Schiff": "boat",
+    "Stadtbahn": "STR",
+    "Stadtbus": "Bus",
+    "StadtBus": "Bus",
+    "Strab": "STR",
+    "Straßenbahn": "STR",
     "SKW": "S",
     "SVG": "FEX",
-    "Trm": "STR",
+    "Tram": "STR",
     "TRAM": "STR",
-    "Straßenbahn": "STR",
+    "Trm": "STR",
     "west": "WB",
 }
 london_overground_lines = {
@@ -314,12 +323,11 @@ def get_display(bot, status):
 
         # account for "ME RE2" instead of "RE 2"
         if line and (type.casefold() not in all_types or not type):
-            if len(line) > 2 and line[0:2].casefold() in all_types:
-                type = line[0:2]
-                line = line[2:]
-            if line[0].casefold() in all_types:
-                type = line[0]
-                line = line[1:]
+            for atype in reversed(sorted(all_types, key=lambda s: len(s))):
+                if line.casefold().startswith(atype):
+                    type = line[: len(atype)]
+                    line = line[len(atype) :]
+                    break
 
         if not type and line == "BB":
             type = "WLB"
@@ -350,7 +358,12 @@ def get_display(bot, status):
             type = "S"
 
         if status["backend"]["type"] == "MOTIS":
-            motis_train_types = {"TRAM": "STR", "SUBWAY": "M", "REGIONAL_RAIL": "", "REGIONAL_FAST_RAIL": ""}
+            motis_train_types = {
+                "TRAM": "STR",
+                "SUBWAY": "M",
+                "REGIONAL_RAIL": "",
+                "REGIONAL_FAST_RAIL": "",
+            }
             type = motis_train_types.get(type, type)
 
         if get_network(status) == "KVB" and type == "SUBWAY":
