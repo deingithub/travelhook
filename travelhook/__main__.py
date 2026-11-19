@@ -1362,6 +1362,23 @@ def explain_display(bot, tt, for_variants=False):
 async def train_types(ia):
     "list the train types the relay bot knows about"
     train_types = train_types_config["train_types"]
+    replace_sort = lambda t: t[1]
+    groups = {}
+    for k, g in itertools.groupby(
+        sorted(blanket_replace_train_type.items(), key=replace_sort), key=replace_sort
+    ):
+        groups[
+            emoji(
+                bot,
+                discord.utils.find(
+                    lambda t: t["type"] == k
+                    and not t.get("network")
+                    and not t.get("line_startswith"),
+                    train_types,
+                ),
+            )
+        ] = sorted(t[0] for t in g)
+
     embed = discord.Embed(
         color=discord.Color.from_str("#2e2e7d"),
         title="manual: train types",
@@ -1371,9 +1388,8 @@ async def train_types(ia):
         "is in. you can find out more about the supported networks by using **/explain train_variants**.",
     ).add_field(
         name="type aliases",
-        value="\n".join(
-            [f"`{k:>6}` **→** `{v:<6}`" for k, v in blanket_replace_train_type.items()]
-        ),
+        value="\n".join(f"{k} " + f"← {', '.join(v)}" for k, v in groups.items()),
+        inline=False,
     )
     sort_by_class = lambda tt: tt.get("class", "other")
     networkless_train_types = sorted(

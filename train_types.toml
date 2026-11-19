@@ -36,7 +36,7 @@ train_types = [
 	{ type = "Bus", network = "CTS", line = "C9", emoji = "Bus2|ctsC9", color = "#f26640", hide_line_number = true },
 	{ type = "Bus", line_startswith = "N", emoji = "BusN", color = "#17181c", class="city transit" },
 	{ type = "Bus", line_startswith = "X", emoji = "BusX", remove_line_startswith = true, color = "#a3167e", class="city transit" },
-        { type = "Bus", line_startswith = "SV", emoji = "Sa|Sb", class="special" },
+	{ type = "Bus", line_startswith = "SV", emoji = "Sa|Sb", class="special" },
 	{ type = "Bus", emoji = "Bus", color = "#a3167e", class="city transit" },
 	{ type = "BV", emoji = "bv0|bv1", color = "#ff0404", always_show_train_number = true, class="eastern europe™" },
 	{ type = "CB", emoji = "cbc", color = "#c91432", class="special" },

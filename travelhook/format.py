@@ -44,6 +44,7 @@ blanket_replace_train_type = {
     "FERRY": "boat",
     "IRE": "RE",
     "RNV": "STR",
+    "MetroBus": "Bus",
     "Niederflurbus": "Bus",
     "Niederflurstrab": "STR",
     "O-Bus": "Bus",
@@ -196,7 +197,7 @@ def get_network(status):
 
     # network Ü: Stadtbahn Hannover
     if (
-        status["train"]["type"].casefold().strip() in ("str", "stb")
+        status["train"]["type"].casefold().strip() in ("str", "stb", "stadtbahn")
         and haversine((lat, lon), (52.369, 9.740)) < 20
     ):
         return "Ü"
