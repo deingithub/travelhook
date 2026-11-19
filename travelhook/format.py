@@ -50,7 +50,7 @@ blanket_replace_train_type = {
     "O-Bus": "Bus",
     "RegionalBus": "Bus",
     "Schiff": "boat",
-    "Stadtbahn": "STR",
+    "Stadtbahn": "STB",
     "Stadtbus": "Bus",
     "StadtBus": "Bus",
     "Strab": "STR",
