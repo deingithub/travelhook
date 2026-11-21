@@ -264,10 +264,14 @@ in python310Packages.buildPythonPackage {
   in ''
     mkdir -p $out/bin
     cp $src/*.pl $out/bin
-    wrapProgram $out/bin/json-hafas.pl --set PERL5LIB ${hafasperl}
-    wrapProgram $out/bin/json-hafas-stationboard.pl --set PERL5LIB ${hafasperl}
-    wrapProgram $out/bin/json-db-composition.pl --set PERL5LIB ${hafasperl}
-    wrapProgram $out/bin/json-hafas-dbris-stopfinder.pl --set PERL5LIB ${hafasperl}
+    wrapProgram $out/bin/json-hafas.pl --prefix PATH : ${lib.strings.makeBinPath [pkgs.perl]} \
+      --set PERL5LIB ${hafasperl}
+    wrapProgram $out/bin/json-hafas-stationboard.pl --prefix PATH : ${lib.strings.makeBinPath [pkgs.perl]} \
+      --set PERL5LIB ${hafasperl}
+    wrapProgram $out/bin/json-db-composition.pl --prefix PATH : ${lib.strings.makeBinPath [pkgs.perl]} \
+      --set PERL5LIB ${hafasperl}
+    wrapProgram $out/bin/json-hafas-dbris-stopfinder.pl --prefix PATH : ${lib.strings.makeBinPath [pkgs.perl]} \
+      --set PERL5LIB ${hafasperl}
   '';
 
   propagatedBuildInputs = (with python310Packages; [

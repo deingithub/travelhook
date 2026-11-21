@@ -463,9 +463,6 @@ class Trip:
             )
 
         def get_stationboard(backend_name, station_id):
-            if backend_name == "ÖBB":
-                # wonky perl unicode handling that i do not understand
-                backend_name = bytes([214, 66, 66])
             sb = subprocess.run(
                 [
                     "json-hafas-stationboard.pl",
@@ -514,10 +511,6 @@ class Trip:
             return stations[0]
 
         def get_trip(backend_name, trip_id):
-            if backend_name == "ÖBB":
-                # wonky perl unicode handling that i do not understand
-                backend_name = bytes([214, 66, 66])
-
             hafas = subprocess.run(
                 ["json-hafas.pl", backend_name, trip_id],
                 capture_output=True,

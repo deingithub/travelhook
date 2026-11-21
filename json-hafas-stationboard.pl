@@ -2,6 +2,7 @@
 
 use strict;
 use warnings;
+use utf8;
 
 use JSON;
 use Travel::Status::DE::HAFAS;
@@ -9,8 +10,13 @@ use Travel::Status::DE::DBRIS;
 use Travel::Status::MOTIS;
 use Travel::Status::DE::EFA;
 use DateTime;
+use Encode qw(decode);
 
 sub  trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
+
+for my $arg (@ARGV) {
+	$arg = decode( 'UTF-8', $arg );
+}
 
 my $dt = DateTime->now(time_zone=>'Europe/Berlin');
 if ($ARGV[2]) {

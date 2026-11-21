@@ -2,12 +2,20 @@
 
 use strict;
 use warnings;
+use utf8;
 
 use JSON;
 use Travel::Status::DE::DBRIS;
 use Travel::Status::DE::HAFAS;
 use Travel::Status::DE::EFA;
 use Travel::Status::MOTIS;
+
+use Encode qw(decode);
+
+for my $arg (@ARGV) {
+	$arg = decode( 'UTF-8', $arg );
+}
+
 
 if ($ARGV[0] =~ /^MOTIS-/) {
 	my $service = substr($ARGV[0],6);
