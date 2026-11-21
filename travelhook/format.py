@@ -160,7 +160,7 @@ def get_network(status):
         operator.startswith("Rhein-Neckar-Verkehr")
         or operator.startswith("RNV")
         or (
-            (status["train"]["type"] in ("", "STR", "RNV", "TRAM"))
+            (status["train"]["type"] in ("", "STB", "STR", "RNV", "TRAM"))
             and haversine((lat, lon), (49.47884, 8.55787)) < 29
         )
     ):
